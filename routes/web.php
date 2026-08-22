@@ -1,0 +1,122 @@
+<?php
+
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\Import\ImportController;
+use App\Http\Controllers\Management\ManagementController;
+use App\Http\Controllers\Member\KtaController;
+use App\Http\Controllers\Member\MemberController;
+use App\Http\Controllers\Print\PrintController;
+use App\Http\Controllers\Region\RegionController;
+use App\Http\Controllers\User\UserController;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
+
+// Public routes
+Route::get('/', fn() => redirect()->route('login'));
+
+Route::middleware('guest')->group(function () {
+    Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+    Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+    Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+    Route::post('reset-password/{token}', [NewPasswordController::class, 'store'])->name('password.store');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::get('password/edit', [PasswordController::class, 'edit'])->name('password.edit');
+    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+
+    // Dashboard
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Members
+    Route::middleware('permission:anggota-view')->group(function () {
+        Route::get('members', [MemberController::class, 'index'])->name('members.index');
+        Route::get('members/create', [MemberController::class, 'create'])->name('members.create');
+        Route::post('members', [MemberController::class, 'store'])->name('members.store');
+        Route::get('members/{member}', [MemberController::class, 'show'])->name('members.show');
+        Route::get('members/{member}/edit', [MemberController::class, 'edit'])->name('members.edit');
+        Route::put('members/{member}', [MemberController::class, 'update'])->name('members.update');
+        Route::delete('members/{member}', [MemberController::class, 'destroy'])->name('members.destroy');
+        Route::post('members/bulk-action', [MemberController::class, 'bulkAction'])->name('members.bulk-action');
+
+        // KTA
+        Route::get('members/{member}/kta/preview', [KtaController::class, 'preview'])->name('members.kta.preview');
+        Route::post('members/{member}/kta/generate', [KtaController::class, 'generate'])->name('members.kta.generate');
+        Route::get('members/{member}/kta/download', [KtaController::class, 'download'])->name('members.kta.download');
+
+        // AJAX
+        Route::get('api/regencies', [MemberController::class, 'getRegencies'])->name('api.regencies');
+        Route::get('api/districts', [MemberController::class, 'getDistricts'])->name('api.districts');
+    });
+
+    // Import
+    Route::middleware('permission:import')->group(function () {
+        Route::get('import', [ImportController::class, 'index'])->name('imports.index');
+        Route::get('import/template', [ImportController::class, 'downloadTemplate'])->name('imports.template');
+        Route::post('import/validate', [ImportController::class, 'validateImport'])->name('imports.validate');
+        Route::post('import', [ImportController::class, 'processImport'])->name('imports.process');
+    });
+
+    // Print
+    Route::middleware('permission:cetak')->group(function () {
+        Route::get('print', [PrintController::class, 'index'])->name('print.index');
+        Route::get('print/create', [PrintController::class, 'create'])->name('print.create');
+        Route::post('print/preview', [PrintController::class, 'preview'])->name('print.preview');
+        Route::post('print', [PrintController::class, 'store'])->name('print.store');
+        Route::get('print/{batch}', [PrintController::class, 'show'])->name('print.show');
+        Route::get('print/{batch}/pdf', [PrintController::class, 'downloadPdf'])->name('print.pdf');
+        Route::delete('print/{batch}', [PrintController::class, 'destroy'])->name('print.destroy');
+    });
+
+    // Management Periods
+    Route::middleware('permission:pengurus')->group(function () {
+        Route::get('management', [ManagementController::class, 'index'])->name('management.index');
+        Route::post('management', [ManagementController::class, 'store'])->name('management.store');
+        Route::get('management/{period}', [ManagementController::class, 'show'])->name('management.show');
+        Route::put('management/{period}', [ManagementController::class, 'update'])->name('management.update');
+        Route::post('management/{period}/set-active', [ManagementController::class, 'setActive'])->name('management.set-active');
+        Route::delete('management/{period}', [ManagementController::class, 'destroy'])->name('management.destroy');
+
+        // Officials
+        Route::post('management/{period}/officials', [ManagementController::class, 'storeOfficial'])->name('management.officials.store');
+        Route::put('management/{period}/officials/{official}', [ManagementController::class, 'updateOfficial'])->name('management.officials.update');
+        Route::delete('management/{period}/officials/{official}', [ManagementController::class, 'destroyOfficial'])->name('management.officials.destroy');
+    });
+
+    // Regions
+    Route::middleware('permission:wilayah')->group(function () {
+        Route::get('regions', [RegionController::class, 'index'])->name('regions.index');
+        Route::get('regions/create', [RegionController::class, 'create'])->name('regions.create');
+        Route::post('regions', [RegionController::class, 'store'])->name('regions.store');
+        Route::post('regions/import', [RegionController::class, 'import'])->name('regions.import');
+        Route::get('regions/{province}', [RegionController::class, 'show'])->name('regions.show');
+        Route::delete('regions/{province}', [RegionController::class, 'destroy'])->name('regions.destroy');
+    });
+
+    // Users
+    Route::middleware('permission:user-view')->group(function () {
+        Route::get('users', [UserController::class, 'index'])->name('users.index');
+        Route::get('users/create', [UserController::class, 'create'])->name('users.create');
+        Route::post('users', [UserController::class, 'store'])->name('users.store');
+        Route::get('users/{user}', [UserController::class, 'show'])->name('users.show');
+        Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+        Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    });
+
+    // Storage - serve files from local disk (root: storage/app/private)
+    Route::get('storage/{path}', function ($path) {
+        $diskPath = storage_path('app/private/' . $path);
+        if (!file_exists($diskPath)) {
+            abort(404);
+        }
+        return response()->file($diskPath);
+    })->where('path', '.*')->name('storage.local');
+});

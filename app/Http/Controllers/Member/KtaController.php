@@ -1,0 +1,107 @@
+<?php
+
+namespace App\Http\Controllers\Member;
+
+use App\Http\Controllers\Controller;
+use App\Models\Member;
+use App\Models\ManagementPeriod;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
+
+class KtaController extends Controller
+{
+    public function generate(Request $request, Member $member): \Illuminate\Http\RedirectResponse
+    {
+        if (!$member->hasPhoto()) {
+            return redirect()
+                ->back()
+                ->with('error', 'Tidak dapat generate KTA. Foto anggota belum tersedia.');
+        }
+
+        $period = ManagementPeriod::where('status', 'active')->first();
+
+        if (!$period) {
+            return redirect()
+                ->back()
+                ->with('error', 'Tidak dapat generate KTA. Periode kepengurusan aktif tidak ditemukan.');
+        }
+
+        $member->update([
+            'status' => 'generated',
+            'generated_at' => now(),
+            'management_period_id' => $period->id,
+        ]);
+
+        return redirect()
+            ->route('members.kta.preview', $member)
+            ->with('success', 'KTA berhasil di-generate.');
+    }
+
+    public function preview(Request $request, Member $member): View
+    {
+        $period = ManagementPeriod::where('status', 'active')->first();
+        $officials = $period ? $period->activeOfficials()->get() : collect();
+
+        $ketua = $officials->firstWhere('jabatan', 'Ketua Umum');
+        $sekretaris = $officials->firstWhere('jabatan', 'Sekretaris Umum');
+
+        $ktaData = [
+            'member' => $member,
+            'period' => $period,
+            'ketua' => $ketua,
+            'sekretaris' => $sekretaris,
+            'tanggal_cetak' => now()->format('d F Y'),
+            'logo_path' => public_path('images/logo-kta.png'),
+            'ttd_ketua_path' => $ketua && $ketua->signature_path
+                ? storage_path('app/' . $ketua->signature_path)
+                : null,
+            'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path
+                ? storage_path('app/' . $sekretaris->signature_path)
+                : null,
+            'foto_path' => $member->foto_path
+                ? storage_path('app/' . $member->foto_path)
+                : null,
+        ];
+
+        return view('members.kta-preview', $ktaData);
+    }
+
+    public function download(Request $request, Member $member): Response
+    {
+        $period = ManagementPeriod::where('status', 'active')->first();
+        $officials = $period ? $period->activeOfficials()->get() : collect();
+
+        $ketua = $officials->firstWhere('jabatan', 'Ketua Umum');
+        $sekretaris = $officials->firstWhere('jabatan', 'Sekretaris Umum');
+
+        $ktaData = [
+            'member' => $member,
+            'period' => $period,
+            'ketua' => $ketua,
+            'sekretaris' => $sekretaris,
+            'tanggal_cetak' => now()->format('d F Y'),
+            'is_pdf' => true,
+            'foto_path' => $member->foto_path
+                ? storage_path('app/' . $member->foto_path)
+                : null,
+            'ttd_ketua_path' => $ketua && $ketua->signature_path
+                ? storage_path('app/' . $ketua->signature_path)
+                : null,
+            'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path
+                ? storage_path('app/' . $sekretaris->signature_path)
+                : null,
+        ];
+
+        $pdf = Pdf::loadView('members.kta-pdf', $ktaData);
+        $pdf->setPaper('a4', 'landscape');
+
+        $filename = 'KTA-' . $member->nik . '-' . now()->format('Ymd') . '.pdf';
+
+        return response($pdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+}
