@@ -7,14 +7,29 @@
 <div class="card">
     <div class="card-header">
         <h3>Detail Batch</h3>
-        <div style="display:flex;gap:0.5rem;">
-            <a href="{{ route('print.pdf', $batch) }}" class="btn btn-sm btn-success">Download PDF</a>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <a href="{{ route('print.pdf', ['batch' => $batch, 'side' => 'front']) }}" class="btn btn-sm btn-success">
+                <i class="bi bi-download me-1"></i> Download FRONT
+            </a>
+            <a href="{{ route('print.pdf', ['batch' => $batch, 'side' => 'back']) }}" class="btn btn-sm btn-primary">
+                <i class="bi bi-download me-1"></i> Download BACK
+            </a>
             <form action="{{ route('print.destroy', $batch) }}" method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus batch ini?')">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
             </form>
         </div>
+    </div>
+
+    <div style="background:#fef3c7;padding:1rem;border-radius:0.5rem;margin-bottom:1.5rem;">
+        <strong>Petunjuk Cetak Duplex:</strong>
+        <ol style="margin:0.5rem 0 0 1.5rem;">
+            <li>Download PDF <strong>FRONT</strong> lalu cetak pada lembar pertama.</li>
+            <li>Download PDF <strong>BACK</strong> lalu cetak pada sisi sebaliknya (balik kertas).</li>
+            <li>Pastikan printer menggunakan mode <strong>Flip on Long Edge</strong>.</li>
+            <li>Setelah tercetak, potong mengikuti garis kartu (10 KTA per halaman A4).</li>
+        </ol>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem;">

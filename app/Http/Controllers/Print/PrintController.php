@@ -104,7 +104,6 @@ class PrintController extends Controller
     {
         $request->validate([
             'member_ids' => ['required', 'array', 'min:1'],
-            'side' => ['required', 'in:front,back'],
         ]);
 
         $members = Member::whereIn('id', $request->member_ids)->get();
@@ -123,29 +122,30 @@ class PrintController extends Controller
                 ->with('error', 'Periode kepengurusan aktif tidak ditemukan.');
         }
 
+        // Satu batch merepresentasikan satu kumpulan anggota.
+        // Field 'type' tetap disimpan untuk kompatibilitas historis (default 'front').
         $batch = PrintBatch::create([
             'batch_number' => PrintBatch::generateBatchNumber(),
             'management_period_id' => $period->id,
             'printed_by' => auth()->id(),
             'tanggal_cetak' => now()->toDateString(),
             'jumlah' => count($members),
-            'type' => $request->side,
+            'type' => 'front',
         ]);
 
         foreach ($members as $index => $member) {
             $batch->members()->attach($member->id, ['position' => $index + 1]);
-            $member->update(['status' => 'printed']);
+            // Status tidak diubah di sini — anggota akan dicetak, bukan otomatis 'printed'.
         }
 
         AuditLog::log('create_print_batch', $batch, null, [
             'member_count' => count($members),
-            'type' => $request->side,
             'member_ids' => $request->member_ids,
         ]);
 
         return redirect()
             ->route('print.show', $batch)
-            ->with('success', "Batch {$batch->batch_number} berhasil dibuat.");
+            ->with('success', "Batch {$batch->batch_number} berhasil dibuat dengan " . count($members) . " anggota.");
     }
 
     public function show(PrintBatch $batch): View
@@ -185,6 +185,18 @@ class PrintController extends Controller
         $ketua = $officials->firstWhere('jabatan', 'Ketua Umum');
         $sekretaris = $officials->firstWhere('jabatan', 'Sekretaris Umum');
 
+        // Query parameter: ?side=front|back (default front)
+        $side = $request->input('side', 'front');
+        if (!in_array($side, ['front', 'back'], true)) {
+            $side = 'front';
+        }
+
+        // Query parameter: ?duplex=long-edge|short-edge (default long-edge)
+        $duplexMode = $request->input('duplex', 'long-edge');
+        if (!in_array($duplexMode, ['long-edge', 'short-edge'], true)) {
+            $duplexMode = 'long-edge';
+        }
+
         $ktaData = $batch->members->map(function ($member) use ($ketua, $sekretaris, $batch) {
             return [
                 'member' => $member,
@@ -198,24 +210,21 @@ class PrintController extends Controller
             ];
         });
 
-        // Duplex mode: 'long-edge' (default for flip-on-long-edge) or 'short-edge'
-        $duplexMode = $request->input('duplex', 'long-edge');
-
         $pdf = Pdf::loadView('print.batch-pdf', [
             'members' => $ktaData,
             'batch' => $batch,
             'ketua' => $ketua,
             'sekretaris' => $sekretaris,
+            'side' => $side,
             'duplexMode' => $duplexMode,
-            'side' => $batch->type, // 'front' or 'back'
         ]);
 
-        // A4 Portrait — 210x297mm — 2 columns x 5 rows = 10 KTA/page
+        // A4 Portrait — 210x297mm — 2 kolom × 5 baris = 10 KTA/page
         $pdf->setPaper('a4', 'portrait');
 
-        $filename = $batch->batch_number . '-' . strtoupper($batch->type) . '.pdf';
+        $filename = $batch->batch_number . '-' . strtoupper($side) . '.pdf';
 
-        AuditLog::log('download_print_batch_pdf', $batch);
+        AuditLog::log('download_print_batch_pdf', $batch, null, ['side' => $side, 'duplex' => $duplexMode]);
 
         return response($pdf->output(), 200, [
             'Content-Type' => 'application/pdf',

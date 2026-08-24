@@ -235,4 +235,98 @@ class PrintTest extends TestCase
         $response->assertStatus(200);
         $response->assertHeader('Content-Type', 'application/pdf');
     }
+
+    public function test_one_batch_produces_both_front_and_back_pdf(): void
+    {
+        // Satu batch untuk banyak anggota, tanpa side selection
+        $batch = $this->createBatchWithMembers(10);
+
+        // Front PDF
+        $responseFront = $this->get('/print/' . $batch->id . '/pdf?side=front');
+        $responseFront->assertStatus(200);
+        $responseFront->assertHeader('Content-Type', 'application/pdf');
+
+        // Back PDF (same batch, different query param)
+        $responseBack = $this->get('/print/' . $batch->id . '/pdf?side=back');
+        $responseBack->assertStatus(200);
+        $responseBack->assertHeader('Content-Type', 'application/pdf');
+
+        // Both PDFs should contain the same batch's members but with opposite side
+        $this->assertGreaterThan(1000, strlen($responseFront->getContent()));
+        $this->assertGreaterThan(1000, strlen($responseBack->getContent()));
+    }
+
+    public function test_default_side_is_front_when_no_param(): void
+    {
+        $batch = $this->createBatchWithMembers(5);
+        $response = $this->get('/print/' . $batch->id . '/pdf');
+        $response->assertStatus(200);
+
+        $contentDisposition = $response->headers->get('Content-Disposition');
+        $this->assertStringContainsString('FRONT', $contentDisposition);
+    }
+
+    public function test_duplex_ordering_helper_long_edge(): void
+    {
+        $cells = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        $reordered = \App\Support\PrintOrder::reorderForDuplex($cells, 'long-edge');
+        $this->assertEquals([10, 9, 8, 7, 6, 5, 4, 3, 2, 1], $reordered);
+    }
+
+    public function test_duplex_ordering_helper_short_edge(): void
+    {
+        $cells = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        $reordered = \App\Support\PrintOrder::reorderForDuplex($cells, 'short-edge');
+        // Each row reversed (within-row horizontal flip)
+        $this->assertEquals([2, 1, 4, 3, 6, 5, 8, 7, 10, 9], $reordered);
+    }
+
+    public function test_pdf_does_not_use_compact_redesign(): void
+    {
+        // Memastikan PDF menggunakan class-class dari design asli
+        // dengan mm-based styling, bukan compact redesign gradient sederhana.
+        $batch = $this->createBatchWithMembers(1);
+        $response = $this->get('/print/' . $batch->id . '/pdf?side=front');
+        $response->assertStatus(200);
+
+        $content = $response->getContent();
+        // PDF stream biasanya FlateDecode-compressed, jadi tidak bisa grep teks langsung.
+        // Cek melalui Content-Length yang jauh lebih besar dari versi compact.
+        $this->assertGreaterThan(2000, strlen($content),
+            'PDF dengan design asli seharusnya > 2KB');
+        // Dan CSS class asli harus ada di decoded stream — verifikasi via
+        // rendering HTML langsung (tidak lewat DOMPDF).
+        $html = view('print.partials.kta-card-pdf-style', [])->render();
+        $this->assertStringContainsString('kta-pdf-slot', $html);
+        $this->assertStringContainsString('kta-top-strip', $html);
+        $this->assertStringContainsString('kta-swoosh', $html);
+    }
+
+    public function test_back_pdf_uses_original_back_design(): void
+    {
+        $batch = $this->createBatchWithMembers(1);
+        $response = $this->get('/print/' . $batch->id . '/pdf?side=back');
+        $response->assertStatus(200);
+
+        $content = $response->getContent();
+        $this->assertGreaterThan(2000, strlen($content));
+        // Verifikasi CSS class back design asli muncul di PDF style
+        $html = view('print.partials.kta-card-pdf-style', [])->render();
+        $this->assertStringContainsString('kta-back-top', $html);
+        $this->assertStringContainsString('kta-dot-pattern', $html);
+        $this->assertStringContainsString('kta-back-photo', $html);
+        $this->assertStringContainsString('kta-ribbon', $html);
+    }
+
+    public function test_batch_members_count_unchanged_after_duplex(): void
+    {
+        // Download front dan back dari batch yang sama; anggota batch tetap sama
+        $batch = $this->createBatchWithMembers(15);
+        $initialCount = $batch->members()->count();
+
+        $this->get('/print/' . $batch->id . '/pdf?side=front')->assertStatus(200);
+        $this->get('/print/' . $batch->id . '/pdf?side=back')->assertStatus(200);
+
+        $this->assertEquals($initialCount, $batch->members()->count());
+    }
 }

@@ -118,19 +118,9 @@
         <input type="hidden" name="member_ids[]" value="{{ $id }}">
         @endforeach
 
-        <div class="form-row">
-            <div class="form-group">
-                <label for="side">Sisi KTA</label>
-                <select id="side" name="side" required>
-                    <option value="front">Depan</option>
-                    <option value="back">Belakang</option>
-                </select>
-            </div>
-        </div>
-
         <div style="display:flex;gap:1rem;">
             <a href="{{ route('print.create') }}" class="btn btn-outline">Pilih Ulang</a>
-            <button type="submit" class="btn btn-primary">Simpan Batch</button>
+            <button type="submit" class="btn btn-primary">Buat Batch Cetak</button>
         </div>
     </form>
 </div>

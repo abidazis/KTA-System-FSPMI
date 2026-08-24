@@ -3,11 +3,9 @@
     |--------------------------------------------------------------------------
     | KTA CARD TEMPLATE
     |--------------------------------------------------------------------------
-    | $member = data anggota
-    | $side   = front / back
-    |
-    | Asset logo di bawah silakan sesuaikan dengan file logo yang memang
-    | sudah tersedia di public/ project.
+    | $member     = data anggota
+    | $side       = front / back
+    | $isPdf      = true jika dirender oleh DOMPDF (untuk base64 images)
     |--------------------------------------------------------------------------
     */
 
@@ -22,19 +20,21 @@
         ? \Carbon\Carbon::parse($member->berlaku_hingga)->format('d/m/Y')
         : '-';
 
-    /*
-    |--------------------------------------------------------------------------
-    | Logo
-    |--------------------------------------------------------------------------
-    | Ganti nama file jika nama asset logo di project berbeda.
-    |--------------------------------------------------------------------------
-    */
+    // Path logo. Saat $isPdf=true, gunakan absolute file path + base64 agar
+    // DOMPDF dapat merender tanpa harus resolve HTTP URL.
+    $useFilePath = isset($isPdf) && $isPdf === true;
 
-    $logoPuk = asset('images/logo-puk-spamk.png');
-    $logoFspmi = asset('images/logo-fspmi.png');
-    $logoSpami = asset('images/logo-spamk.png');
-    $logoPp = asset('images/logo-pp-spamk.png');
-
+    if ($useFilePath) {
+        $logoPuk = 'file://' . public_path('images/puk-spamk.png');
+        $logoFspmi = 'file://' . public_path('images/fspmi.png');
+        $logoSpami = 'file://' . public_path('images/pp-spamk.png'); // fallback ke pp-spamk karena spamk.png tidak ada
+        $logoPp = 'file://' . public_path('images/pp-spamk.png');
+    } else {
+        $logoPuk = asset('images/puk-spamk.png');
+        $logoFspmi = asset('images/fspmi.png');
+        $logoSpami = asset('images/pp-spamk.png');
+        $logoPp = asset('images/pp-spamk.png');
+    }
 @endphp
 
 
