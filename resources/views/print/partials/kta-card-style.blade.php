@@ -1,4 +1,12 @@
-<style>
+/*
+|--------------------------------------------------------------------------
+| KTA FSPMI - ORIGINAL DESIGN
+|--------------------------------------------------------------------------
+| Physical size:
+| Width  : 54 mm
+| Height : 85.6 mm
+|--------------------------------------------------------------------------
+*/
 
 * {
     box-sizing: border-box;
@@ -6,563 +14,672 @@
 
 .kta-card {
     position: relative;
-
-    /*
-    |--------------------------------------------------------------------------
-    | Rasio mengikuti template asli
-    |--------------------------------------------------------------------------
-    */
-    width: 425px;
-    height: 661px;
-
+    width: 54mm;
+    height: 85.6mm;
+    margin: 0;
+    padding: 0;
     overflow: hidden;
 
     font-family: Arial, Helvetica, sans-serif;
 
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-
-    page-break-inside: avoid;
 }
 
 
-/* =========================================================
-   FRONT
-   ========================================================= */
+/*
+|--------------------------------------------------------------------------
+| FRONT
+|--------------------------------------------------------------------------
+*/
 
 .kta-front {
+    background:
+        linear-gradient(
+            to bottom,
+            #ed8d91 0%,
+            #f39a91 15%,
+            #f7b37f 34%,
+            #f9cb63 55%,
+            #f9dc28 76%,
+            #f7e20b 100%
+        );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| FRONT TOP GREEN STRIP
+|--------------------------------------------------------------------------
+*/
+
+.kta-front-strip {
+    position: absolute;
+    left: 0;
+    top: 0;
+
+    width: 100%;
+    height: 5mm;
+
+    background: #b9df18;
+
+    display: table;
+
+    border-bottom: 0.2mm solid rgba(255,255,255,.75);
+}
+
+.kta-front-strip span {
+    display: table-cell;
+
+    width: 14.285%;
+
+    border-right: 0.15mm solid rgba(255,255,255,.65);
+}
+
+.kta-front-strip span:last-child {
+    border-right: none;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| FRONT HEADER
+|--------------------------------------------------------------------------
+*/
+
+.kta-front-header {
+    position: absolute;
+
+    left: 0;
+    top: 5mm;
+
+    width: 100%;
+    height: 11mm;
+
+    z-index: 20;
+}
+
+
+/* LEFT PUK LOGO */
+
+.kta-front-logo-left {
+    position: absolute;
+
+    left: 4mm;
+    top: 0.8mm;
+
+    width: 9mm;
+    height: 9mm;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.kta-front-logo-left img {
+    display: block;
+
+    width: 9mm;
+    height: 9mm;
+
+    object-fit: contain;
+}
+
+
+/* TITLE */
+
+.kta-front-title {
+    position: absolute;
+
+    left: 13mm;
+    top: 1.1mm;
+
+    width: 29mm;
+
+    text-align: center;
+
+    font-size: 2.45mm;
+    line-height: 3mm;
+
+    font-weight: 700;
+
+    color: #000;
+
+    white-space: nowrap;
+}
+
+
+/* RIGHT FSPMI */
+
+.kta-front-logo-right {
+    position: absolute;
+
+    right: 2.8mm;
+    top: 0.8mm;
+
+    width: 12mm;
+    height: 8mm;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.kta-front-logo-right img {
+    display: block;
+
+    width: 12mm;
+    height: 8mm;
+
+    object-fit: contain;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| FRONT BODY
+|--------------------------------------------------------------------------
+*/
+
+.kta-front-body {
+    position: absolute;
+
+    left: 0;
+    top: 16mm;
+
+    width: 100%;
+    height: calc(100% - 16mm);
+
+    overflow: hidden;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| LEFT COLOR BLOCK
+|--------------------------------------------------------------------------
+*/
+
+.kta-front-left-block {
+    position: absolute;
+
+    left: 0;
+    top: 5mm;
+
+    width: 25.5mm;
+    height: 34mm;
 
     background:
         linear-gradient(
             to bottom,
-            #ef9b8c 0%,
-            #f1a18d 18%,
-            #f5b07c 38%,
-            #f8c55c 65%,
-            #ffe10b 100%
+            rgba(222,100,82,.22),
+            rgba(239,151,72,.17),
+            rgba(255,204,58,.05)
         );
 
+    z-index: 1;
 }
 
 
-/* TOP GREEN STRIP */
+/*
+|--------------------------------------------------------------------------
+| MEMBER FIELDS
+|--------------------------------------------------------------------------
+*/
 
-.kta-top-strip {
-
-    height: 39px;
-
-    background: #b8dc16;
-
-    display: flex;
-
-    border-bottom: 1px solid rgba(255,255,255,.4);
-}
-
-.kta-top-strip span {
-
-    flex: 1;
-
-    border-right: 1px solid rgba(255,255,255,.35);
-}
-
-
-/* HEADER */
-
-.kta-front-header {
-
-    height: 82px;
-
-    display: flex;
-
-    align-items: center;
-
-    position: relative;
-
-    padding: 0 16px;
-
-}
-
-
-.kta-logo-left {
-
-    width: 66px;
-    height: 66px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.kta-logo-left img {
-
-    max-width: 65px;
-    max-height: 65px;
-
-    object-fit: contain;
-}
-
-
-.kta-title {
-
+.kta-front-fields {
     position: absolute;
 
-    left: 115px;
-    top: 10px;
+    left: 4mm;
+    top: 0mm;
 
-    font-size: 18px;
-
-    font-weight: 700;
-
-    color: #000;
-
-    white-space: nowrap;
-}
-
-
-.kta-logo-right {
-
-    position: absolute;
-
-    right: 14px;
-    top: 8px;
-
-    width: 90px;
-    height: 55px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.kta-logo-right img {
-
-    max-width: 90px;
-    max-height: 55px;
-
-    object-fit: contain;
-}
-
-
-/* FRONT BODY */
-
-.kta-front-body {
-
-    position: relative;
-
-    height: calc(100% - 121px);
-}
-
-
-/* DATA */
-
-.kta-fields {
-
-    position: absolute;
-
-    left: 20px;
-    top: 26px;
-
-    width: 365px;
-
-    z-index: 5;
-}
-
-
-.kta-field {
-
-    display: grid;
-
-    grid-template-columns: 135px 15px 1fr;
-
-    min-height: 36px;
-
-    align-items: start;
-
-    font-size: 14px;
-
-    color: #000;
-}
-
-
-.kta-field .label {
-
-    font-weight: 500;
-
-    white-space: nowrap;
-}
-
-
-.kta-field .separator {
-
-    text-align: center;
-
-    font-weight: 700;
-}
-
-
-.kta-field .value {
-
-    font-weight: 500;
-
-    line-height: 18px;
-
-    word-break: break-word;
-}
-
-
-.kta-field-spacer {
-
-    margin-top: 34px;
-}
-
-
-/* =========================================================
-   WHITE SWOOSH
-   ========================================================= */
-
-.kta-swoosh {
-
-    position: absolute;
-
-    right: 75px;
-    top: 205px;
-
-    width: 230px;
-    height: 110px;
-
-    transform: rotate(5deg);
-
-    z-index: 2;
-
-    opacity: .95;
-}
-
-
-.swoosh {
-
-    position: absolute;
-
-    right: 0;
-
-    width: 230px;
-
-    height: 30px;
-
-    border-top: 8px solid #fff;
-
-    border-radius: 50%;
-
-    transform: rotate(5deg);
-}
-
-
-.swoosh-1 {
-    top: 5px;
-}
-
-.swoosh-2 {
-    top: 32px;
-    right: 4px;
-}
-
-.swoosh-3 {
-    top: 59px;
-    right: 8px;
-}
-
-
-.swoosh-dot {
-
-    position: absolute;
-
-    width: 18px;
-    height: 18px;
-
-    background: #fff;
-
-    border-radius: 50%;
-
-    left: 0;
-}
-
-
-.dot-1 {
-    top: 12px;
-}
-
-.dot-2 {
-    top: 41px;
-}
-
-
-/* =========================================================
-   SIGNATURE
-   ========================================================= */
-
-.kta-signature-area {
-
-    position: absolute;
-
-    left: 18px;
-    right: 18px;
-    bottom: 20px;
-
-    text-align: center;
+    width: 45mm;
 
     z-index: 10;
 }
 
+.kta-row {
+    display: table;
 
-.kta-jakarta {
+    width: 100%;
 
-    font-size: 13px;
+    table-layout: fixed;
 
-    margin-bottom: 4px;
+    min-height: 5.8mm;
+
+    font-size: 2.15mm;
+    line-height: 2.8mm;
+
+    color: #000;
+}
+
+.kta-row > div {
+    display: table-cell;
+
+    vertical-align: top;
+}
+
+.kta-label {
+    width: 18mm;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+}
+
+.kta-colon {
+    width: 2.8mm;
+
+    text-align: center;
+
+    font-weight: 700;
+}
+
+.kta-value {
+    width: auto;
+
+    font-weight: 500;
+
+    word-break: break-word;
+}
+
+.kta-row-tanggal {
+    margin-top: 0.5mm;
+}
+
+.kta-row-alamat {
+    min-height: 8mm;
+}
+
+.kta-row-gender {
+    margin-top: 8mm;
 }
 
 
-.kta-pimpinan {
+/*
+|--------------------------------------------------------------------------
+| WHITE SWOOSH
+|--------------------------------------------------------------------------
+*/
 
-    font-size: 12px;
+.kta-swoosh {
+    position: absolute;
+
+    left: 10mm;
+    top: 38mm;
+
+    width: 40mm;
+    height: 21mm;
+
+    z-index: 8;
+}
+
+.kta-swoosh-line {
+    position: absolute;
+
+    left: 0;
+
+    width: 36mm;
+    height: 9mm;
+
+    border-top: 1.05mm solid rgba(255,255,255,.94);
+
+    border-radius: 50%;
+}
+
+.swoosh-1 {
+    top: 0;
+    left: 0;
+
+    transform: rotate(3deg);
+}
+
+.swoosh-2 {
+    top: 4.7mm;
+    left: 0.7mm;
+
+    transform: rotate(5deg);
+}
+
+.swoosh-3 {
+    top: 9.4mm;
+    left: 1.4mm;
+
+    transform: rotate(7deg);
+}
+
+.kta-swoosh-dot {
+    position: absolute;
+
+    width: 2.5mm;
+    height: 2.5mm;
+
+    background: #fff;
+
+    border-radius: 50%;
+}
+
+.dot-1 {
+    left: -0.2mm;
+    top: -0.8mm;
+}
+
+.dot-2 {
+    left: 0.5mm;
+    top: 3.9mm;
+}
+
+.dot-3 {
+    left: 1.2mm;
+    top: 8.6mm;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| FRONT SIGNATURE
+|--------------------------------------------------------------------------
+*/
+
+.kta-front-signature {
+    position: absolute;
+
+    left: 3mm;
+    right: 3mm;
+    bottom: 2.4mm;
+
+    text-align: center;
+
+    z-index: 20;
+}
+
+.kta-jakarta {
+    font-size: 1.95mm;
+    line-height: 2.3mm;
+
+    margin-bottom: 0.7mm;
+}
+
+.kta-pimpinan {
+    font-size: 1.65mm;
+    line-height: 2mm;
 
     font-weight: 700;
 
-    line-height: 15px;
-
-    margin-bottom: 12px;
+    margin-bottom: 1mm;
 }
 
+.kta-signature-columns {
+    display: table;
 
-.kta-signatures {
+    width: 100%;
 
-    display: flex;
-
-    justify-content: space-between;
-
-    align-items: flex-end;
+    table-layout: fixed;
 }
 
+.kta-signature-column {
+    display: table-cell;
 
-.signature-box {
-
-    width: 48%;
+    width: 50%;
 
     position: relative;
+
+    vertical-align: bottom;
 
     text-align: center;
 }
 
-
-.signature-title {
-
-    font-size: 12px;
+.kta-signature-title {
+    font-size: 1.7mm;
+    line-height: 2mm;
 
     font-weight: 600;
-
-    margin-bottom: 2px;
 }
 
+.kta-signature-space {
+    position: relative;
 
-.signature-image {
-
-    height: 53px;
+    height: 8mm;
 
     display: flex;
 
     align-items: center;
-
     justify-content: center;
 }
 
-
-.signature-image img {
-
-    max-width: 100px;
-
-    max-height: 50px;
+.kta-signature-space > img:not(.kta-pp-seal) {
+    max-width: 13mm;
+    max-height: 6mm;
 
     object-fit: contain;
 }
 
-
-.signature-seal {
-
+.kta-pp-seal {
     position: absolute;
 
     left: 50%;
-
-    bottom: 17px;
+    top: 1.8mm;
 
     transform: translateX(-50%);
 
-    width: 45px;
-    height: 45px;
-}
-
-
-.signature-seal img {
-
-    width: 100%;
-    height: 100%;
+    width: 6mm;
+    height: 6mm;
 
     object-fit: contain;
 
-    opacity: .9;
+    opacity: .95;
 }
 
-
-.signature-name {
-
-    font-size: 11px;
+.kta-signature-name {
+    font-size: 1.55mm;
+    line-height: 2mm;
 
     font-weight: 600;
+
+    white-space: nowrap;
 }
 
 
-/* =========================================================
-   BACK
-   ========================================================= */
+/*
+|--------------------------------------------------------------------------
+| BACK
+|--------------------------------------------------------------------------
+*/
 
 .kta-back {
-
     background:
-
         linear-gradient(
             to bottom,
-            #f47b91 0%,
-            #f5a077 40%,
-            #f9c65c 72%,
-            #ffe11a 100%
+            #f08494 0%,
+            #f28b91 17%,
+            #f4a080 34%,
+            #f6bc69 53%,
+            #f8d63a 76%,
+            #f7df12 100%
         );
-
 }
 
 
-/* BACK TOP */
+/*
+|--------------------------------------------------------------------------
+| BACK HEADER
+|--------------------------------------------------------------------------
+*/
 
-.kta-back-top {
+.kta-back-header {
+    position: absolute;
 
-    height: 84px;
+    left: 0;
+    top: 0;
 
-    position: relative;
+    width: 100%;
+    height: 11mm;
 
-    background: #b9dd17;
+    background: #b9df18;
 
-    border-top: 22px solid #ed0873;
+    z-index: 20;
+}
 
-    border-bottom: 1px solid rgba(255,255,255,.5);
+.kta-back-pink-top {
+    position: absolute;
 
-    display: flex;
+    left: 0;
+    top: 0;
 
-    align-items: center;
+    width: 100%;
+    height: 4.7mm;
+
+    background: #e90073;
+}
+
+.kta-back-header-content {
+    position: absolute;
+
+    left: 0;
+    top: 4.7mm;
+
+    width: 100%;
+    height: 6.3mm;
+
+    border-bottom: 0.2mm solid rgba(255,255,255,.8);
 }
 
 
-.back-top-logo {
+/*
+|--------------------------------------------------------------------------
+| BACK HEADER LOGOS
+|--------------------------------------------------------------------------
+*/
 
-    width: 90px;
-    height: 45px;
+.kta-back-logo {
+    position: absolute;
 
-    margin-left: 15px;
+    top: 0.5mm;
+
+    width: 11mm;
+    height: 5mm;
 
     display: flex;
 
     align-items: center;
     justify-content: center;
+
+    transform: rotate(180deg);
 }
 
-
-.back-top-logo img {
-
-    max-width: 85px;
-    max-height: 45px;
+.kta-back-logo img {
+    width: 11mm;
+    height: 5mm;
 
     object-fit: contain;
 }
 
+.kta-back-logo-1 {
+    left: 2.5mm;
+}
 
-.back-top-logo.fspmi {
-
-    margin-left: 4px;
+.kta-back-logo-2 {
+    left: 14mm;
 }
 
 
-.back-url {
+/*
+|--------------------------------------------------------------------------
+| BACK URL
+|--------------------------------------------------------------------------
+*/
 
+.kta-back-url {
     position: absolute;
 
-    right: 14px;
+    right: 2.5mm;
+    top: 0.7mm;
 
-    top: 25px;
-
-    font-size: 16px;
+    font-size: 2.2mm;
+    line-height: 2.6mm;
 
     font-weight: 500;
 
     color: #000;
 
+    transform: rotate(180deg);
+
+    white-space: nowrap;
 }
 
 
-/* BACK BODY */
+/*
+|--------------------------------------------------------------------------
+| BACK BODY
+|--------------------------------------------------------------------------
+*/
 
 .kta-back-body {
+    position: absolute;
 
-    position: relative;
+    left: 0;
+    top: 11mm;
 
-    height: calc(100% - 84px);
+    width: 100%;
+    height: calc(100% - 11mm);
 
     overflow: hidden;
 }
 
 
-/* DOT PATTERN */
+/*
+|--------------------------------------------------------------------------
+| DOT PATTERN
+|--------------------------------------------------------------------------
+*/
 
-.kta-dot-pattern {
-
+.kta-back-dots {
     position: absolute;
 
     inset: 0;
 
-    background-image:
+    opacity: .55;
 
+    background-image:
         radial-gradient(
             circle,
-            rgba(255,255,255,.65) 0 5px,
-            transparent 6px
+            rgba(255,244,205,.95) 0,
+            rgba(255,244,205,.95) 1.3mm,
+            transparent 1.4mm
         );
 
-    background-size: 31px 31px;
+    background-size: 7mm 7mm;
 
-    opacity: .65;
+    z-index: 1;
 }
 
 
-/* PHOTO */
+/*
+|--------------------------------------------------------------------------
+| PHOTO
+|--------------------------------------------------------------------------
+*/
 
 .kta-back-photo {
-
     position: absolute;
 
-    left: 31px;
+    left: 4mm;
+    top: 8mm;
 
-    top: 105px;
+    width: 20mm;
+    height: 27mm;
 
-    width: 170px;
+    border: 0.25mm solid rgba(75,75,75,.55);
 
-    height: 200px;
-
-    border: 1px solid rgba(80,80,80,.45);
-
-    background: rgba(255,255,255,.05);
+    background: rgba(255,255,255,.08);
 
     overflow: hidden;
 
-    z-index: 3;
+    z-index: 5;
 }
 
-
 .kta-back-photo img {
+    display: block;
 
     width: 100%;
     height: 100%;
@@ -571,159 +688,139 @@
 }
 
 
-/* RIBBON */
+/*
+|--------------------------------------------------------------------------
+| DIAGONAL RIBBONS
+|--------------------------------------------------------------------------
+*/
 
-.kta-ribbon {
-
+.kta-back-ribbons {
     position: absolute;
 
-    right: -4px;
+    right: -1mm;
+    top: 7mm;
 
-    top: 42px;
-
-    width: 100px;
-
-    height: 270px;
+    width: 17mm;
+    height: 38mm;
 
     overflow: hidden;
 
-    z-index: 4;
+    z-index: 6;
 }
 
-
-.ribbon {
-
+.kta-back-ribbon {
     position: absolute;
 
-    right: -25px;
+    right: -5mm;
 
-    width: 135px;
+    width: 23mm;
+    height: 10mm;
 
-    height: 65px;
+    background: #b8df18;
 
-    background: #b7df19;
+    border-top: 2.1mm solid #f39aaa;
+    border-bottom: 2.1mm solid #f39aaa;
 
     transform: rotate(36deg);
-
-    border-top: 12px solid #f7a2ae;
-
-    border-bottom: 12px solid #f7a2ae;
 }
-
 
 .ribbon-1 {
     top: 0;
 }
 
 .ribbon-2 {
-    top: 82px;
+    top: 12mm;
 }
 
 .ribbon-3 {
-    top: 164px;
+    top: 24mm;
 }
 
 
-/* BACK TEXT */
+/*
+|--------------------------------------------------------------------------
+| BACK TEXT
+|--------------------------------------------------------------------------
+|
+| Dibuat terbalik 180 derajat seperti desain asli.
+|--------------------------------------------------------------------------
+*/
 
 .kta-back-text {
-
     position: absolute;
 
-    left: 18px;
+    left: 5mm;
+    bottom: 6mm;
 
-    right: 18px;
+    width: 42mm;
 
-    bottom: 28px;
-
-    z-index: 5;
+    text-align: left;
 
     transform: rotate(180deg);
 
-    text-align: center;
+    transform-origin: center center;
+
+    z-index: 15;
 }
 
-
-.back-member-title {
-
-    font-size: 24px;
+.kta-back-title {
+    font-size: 4mm;
+    line-height: 4.4mm;
 
     font-weight: 700;
 
-    margin-bottom: 4px;
+    margin-bottom: 0.7mm;
 }
 
-
-.back-description {
-
-    font-size: 10px;
+.kta-back-description {
+    font-size: 1.55mm;
+    line-height: 2mm;
 
     font-weight: 700;
-
-    line-height: 13px;
 }
 
 
-.back-logo {
+/*
+|--------------------------------------------------------------------------
+| SPARTA LOGO
+|--------------------------------------------------------------------------
+*/
 
+.kta-back-sparta {
     position: absolute;
 
-    right: 5px;
+    right: 3mm;
+    bottom: 3mm;
 
-    bottom: -15px;
+    width: 8mm;
+    height: 8mm;
 
-    width: 65px;
+    z-index: 20;
 
-    height: 65px;
+    transform: rotate(180deg);
 }
 
+.kta-back-sparta img {
+    display: block;
 
-.back-logo img {
-
-    width: 100%;
-    height: 100%;
+    width: 8mm;
+    height: 8mm;
 
     object-fit: contain;
 }
 
 
-/* =========================================================
-   PRINT
-   ========================================================= */
+/*
+|--------------------------------------------------------------------------
+| PRINT
+|--------------------------------------------------------------------------
+*/
 
 @media print {
 
-    @page {
-
-        size: A4 portrait;
-
-        margin: 0;
-    }
-
-
-    body {
-
-        margin: 0 !important;
-
-        padding: 0 !important;
-
-        background: #fff !important;
-    }
-
-
     .kta-card {
-
-        box-shadow: none !important;
-
-        border-radius: 0 !important;
-    }
-
-
-    .no-print {
-
-        display: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
 }
-
-</style>

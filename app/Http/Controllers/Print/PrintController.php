@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Print;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\KtaBackground;
 use App\Models\Member;
 use App\Models\ManagementPeriod;
 use App\Models\PrintBatch;
@@ -93,10 +94,14 @@ class PrintController extends Controller
             ];
         });
 
+        // Ambil background aktif
+        $background = KtaBackground::getActive();
+
         return view('print.preview', [
             'members' => $ktaData,
             'memberIds' => $request->member_ids,
             'count' => count($members),
+            'background' => $background,
         ]);
     }
 
@@ -169,11 +174,15 @@ class PrintController extends Controller
             ];
         });
 
+        // Ambil background aktif
+        $background = KtaBackground::getActive();
+
         return view('print.show', [
             'batch' => $batch,
             'members' => $ktaData,
             'ketua' => $ketua,
             'sekretaris' => $sekretaris,
+            'background' => $background,
         ]);
     }
 
@@ -210,6 +219,9 @@ class PrintController extends Controller
             ];
         });
 
+        // Ambil background aktif
+        $background = KtaBackground::getActive();
+
         $pdf = Pdf::loadView('print.batch-pdf', [
             'members' => $ktaData,
             'batch' => $batch,
@@ -217,6 +229,7 @@ class PrintController extends Controller
             'sekretaris' => $sekretaris,
             'side' => $side,
             'duplexMode' => $duplexMode,
+            'background' => $background,
         ]);
 
         // A4 Portrait — 210x297mm — 2 kolom × 5 baris = 10 KTA/page

@@ -11,6 +11,7 @@ use App\Http\Controllers\Member\KtaController;
 use App\Http\Controllers\Member\MemberController;
 use App\Http\Controllers\Print\PrintController;
 use App\Http\Controllers\Region\RegionController;
+use App\Http\Controllers\Setting\KtaBackgroundController;
 use App\Http\Controllers\User\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -73,6 +74,14 @@ Route::middleware('auth')->group(function () {
         Route::get('print/{batch}', [PrintController::class, 'show'])->name('print.show');
         Route::get('print/{batch}/pdf', [PrintController::class, 'downloadPdf'])->name('print.pdf');
         Route::delete('print/{batch}', [PrintController::class, 'destroy'])->name('print.destroy');
+    });
+
+    // Settings - KTA Background
+    Route::middleware('permission:cetak')->group(function () {
+        Route::get('settings/kta-background', [KtaBackgroundController::class, 'index'])->name('settings.kta-background.index');
+        Route::post('settings/kta-background', [KtaBackgroundController::class, 'store'])->name('settings.kta-background.store');
+        Route::post('settings/kta-background/{background}/set-active', [KtaBackgroundController::class, 'setActive'])->name('settings.kta-background.set-active');
+        Route::delete('settings/kta-background/{background}', [KtaBackgroundController::class, 'destroy'])->name('settings.kta-background.destroy');
     });
 
     // Management Periods

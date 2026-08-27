@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
+use App\Models\KtaBackground;
 use App\Models\Member;
 use App\Models\ManagementPeriod;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -65,7 +66,11 @@ class KtaController extends Controller
                 : null,
         ];
 
-        return view('members.kta-preview', $ktaData);
+        $background = KtaBackground::getActive();
+
+        return view('members.kta-preview', array_merge($ktaData, [
+            'background' => $background,
+        ]));
     }
 
     public function download(Request $request, Member $member): Response
@@ -94,8 +99,12 @@ class KtaController extends Controller
                 : null,
         ];
 
-        $pdf = Pdf::loadView('members.kta-pdf', $ktaData);
-        $pdf->setPaper('a4', 'landscape');
+        $background = KtaBackground::getActive();
+
+        $pdf = Pdf::loadView('members.kta-pdf', array_merge($ktaData, [
+            'background' => $background,
+        ]));
+        $pdf->setPaper('a4', 'portrait');
 
         $filename = 'KTA-' . $member->nik . '-' . now()->format('Ymd') . '.pdf';
 

@@ -7,50 +7,49 @@ class PrintOrder
     /**
      * Reorder cells for the back side of a duplex print job.
      *
-     * FRONT (10 KTA per page, 2 columns × 5 rows, left-to-right top-to-bottom):
-     *   [1] [2]
-     *   [3] [4]
-     *   [5] [6]
-     *   [7] [8]
-     *   [9] [10]
+     * Layout: 2 cols × N rows per page (e.g. 3 rows for 3 KTA/page)
+     * Each row = [FRONT, BACK] pair
      *
-     * When the paper is flipped on the LONG edge (top↔bottom, vertical flip):
-     *   [10] [9]      ← top of back, which is bottom of front when flipped
-     *   [8]  [7]
-     *   [6]  [5]
-     *   [4]  [3]
-     *   [2]  [1]
+     * FRONT order (top-to-bottom):
+     *   Row 0: [FRONT-0] [BACK-0]
+     *   Row 1: [FRONT-1] [BACK-1]
+     *   Row 2: [FRONT-2] [BACK-2]
      *
-     * When the paper is flipped on the SHORT edge (left↔right, horizontal flip):
-     *   [2] [1]
-     *   [4] [3]
-     *   [6] [5]
-     *   [8] [7]
-     *   [10] [9]
+     * For BACK side printing with duplex:
      *
-     * Both reorderings keep the same top-to-bottom row order; only the
-     * within-row direction changes.
+     * long-edge (default): reverse the row order so that when the
+     *   paper is flipped along the top edge, each FRONT lines up with its BACK.
+     *   [FRONT-2][BACK-2] → [FRONT-1][BACK-1] → [FRONT-0][BACK-0]
      *
-     * @param  array  $cells      Array of KTA data (length ≤ 10).
-     * @param  string $duplexMode 'long-edge' or 'short-edge'.
+     * short-edge: reverse within each pair so that BACK-0 comes before BACK-1,
+     *   simulating a flip along the left edge.
+     *   [BACK-0][FRONT-0] → [BACK-1][FRONT-1] → [BACK-2][FRONT-2]
+     *
+     * @param  array  $cells     Array of KTA data (each a ktaData array).
+     * @param  string $mode      'long-edge' or 'short-edge'.
+     * @param  int    $cols      Number of columns per row (default 2: FRONT|BACK).
      * @return array
      */
-    public static function reorderForDuplex(array $cells, string $duplexMode = 'long-edge'): array
+    public static function reorderForDuplex(array $cells, string $mode = 'long-edge', int $cols = 2): array
     {
-        // Pad to full 10 slots with null so positions are predictable
-        $padded = array_pad($cells, 10, null);
-
-        if ($duplexMode === 'short-edge') {
-            // Reverse each row (within-row horizontal flip)
-            $rows = array_chunk($padded, 2);
-            foreach ($rows as &$row) {
-                $row = array_reverse($row);
-            }
-            return array_merge(...$rows);
+        if (empty($cells)) {
+            return [];
         }
 
-        // Default: long-edge (full reverse — both row order AND within-row order)
-        // Because flipping on long edge mirrors vertically AND horizontally
-        return array_reverse($padded);
+        if ($mode === 'short-edge') {
+            // Horizontal flip: reverse within each row
+            // [A, B] → [B, A], [C, D] → [D, C], ...
+            $rows = array_chunk($cells, $cols);
+            $result = [];
+            foreach ($rows as $row) {
+                $padded = array_pad($row, $cols, null);
+                $result[] = array_reverse($padded);
+            }
+            return array_merge(...$result);
+        }
+
+        // long-edge (default): vertical flip — reverse row order
+        // [A, B, C, D, E, F] → [F, E, D, C, B, A]
+        return array_reverse($cells);
     }
 }

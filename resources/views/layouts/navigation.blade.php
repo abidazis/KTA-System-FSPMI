@@ -15,6 +15,19 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    @can('anggota-view')
+                    <x-nav-link :href="route('members.index')" :active="request()->routeIs('members.*')">
+                        {{ __('Anggota') }}
+                    </x-nav-link>
+                    @endcan
+                    @can('cetak')
+                    <x-nav-link :href="route('print.index')" :active="request()->routeIs('print.*')">
+                        {{ __('Cetak KTA') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('settings.kta-background.index')" :active="request()->routeIs('settings.kta-background.*')">
+                        {{ __('Background KTA') }}
+                    </x-nav-link>
+                    @endcan
                 </div>
             </div>
 
@@ -70,6 +83,19 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+            @can('anggota-view')
+            <x-responsive-nav-link :href="route('members.index')" :active="request()->routeIs('members.*')">
+                {{ __('Anggota') }}
+            </x-responsive-nav-link>
+            @endcan
+            @can('cetak')
+            <x-responsive-nav-link :href="route('print.index')" :active="request()->routeIs('print.*')">
+                {{ __('Cetak KTA') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('settings.kta-background.index')" :active="request()->routeIs('settings.kta-background.*')">
+                {{ __('Background KTA') }}
+            </x-responsive-nav-link>
+            @endcan
         </div>
 
         <!-- Responsive Settings Options -->

@@ -1,150 +1,493 @@
 <!DOCTYPE html>
 <html>
 <head>
+
     <meta charset="UTF-8">
-    <title>Batch {{ $batch->batch_number }} - {{ strtoupper($side) }}</title>
+
+    <title>
+        Batch {{ $batch->batch_number }} - KTA FSPMI
+    </title>
+
     <style>
+
         @page {
-            size: 210mm 297mm;
+            size: A4 portrait;
             margin: 0;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        html,
         body {
-            font-family: Arial, Helvetica, sans-serif;
+            width: 210mm;
+            height: 297mm;
+
+            margin: 0;
+            padding: 0;
+
             background: #fff;
+
+            font-family: Arial, Helvetica, sans-serif;
+
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | A4 PAGE
+        |--------------------------------------------------------------------------
+        */
+
         .page {
-            width: 210mm;
-            padding: 0;
             position: relative;
+
+            width: 210mm;
+            height: 297mm;
+
+            overflow: hidden;
+
             page-break-after: always;
         }
 
-        .page:last-of-type { page-break-after: auto; }
+        .page:last-child {
+            page-break-after: auto;
+        }
 
-        /* Grid TABEL 2x5 = 10 KTA per halaman.
-           Lebar grid = 2 × 85.6 + 1 × 4 = 175.2 mm
-           Margin horizontal = (210 - 175.2) / 2 = 17.4 mm
-           Tinggi grid = 5 × 54 + 4 × 2 = 278 mm
-           Margin vertikal = (297 - 278) / 2 = 9.5 mm
+
+        /*
+        |--------------------------------------------------------------------------
+        | 3 KTA PAIRS PER PAGE
+        |--------------------------------------------------------------------------
+        |
+        | Layout (PORTRAIT A4 - cards in portrait):
+        |
+        | ┌──────┬──────┐
+        | │F m1  │B m1  │   Each cell: 54mm x 85.6mm (portrait, matches card)
+        | ├──────┼──────┤
+        | │F m2  │B m2  │
+        | ├──────┼──────┤
+        | │F m3  │B m3  │
+        | └──────┴──────┘
+        |
+        | Page: A4 portrait (210mm x 297mm)
+        | Total card width: 54 + 54 = 108mm (with gap)
+        | Row height: 85.6mm
+        | 3 rows: 3 x 85.6 = 256.8mm + 2 x gap (4mm)
+        |--------------------------------------------------------------------------
         */
-        .grid {
-            width: 175.2mm;
-            height: 278mm;
-            margin: 9.5mm 17.4mm;
-            border-collapse: collapse;
-            border-spacing: 0;
+
+        .kta-page-grid {
+
+            position: absolute;
+
+            /* Center horizontally: (210mm - 108mm) / 2 - half gap = 49mm */
+            left: 49mm;
+
+            /* Center vertically: (297mm - 260mm) / 2 = 18.5mm */
+            top: 18.5mm;
+
+            width: 112mm;
+
+            height: 261mm;
+
+            display: table;
+
             table-layout: fixed;
+
+            border-collapse: separate;
+            border-spacing: 4mm 0;
         }
 
-        .grid td {
-            width: 85.6mm;
-            height: 54mm;
+
+        /*
+        |--------------------------------------------------------------------------
+        | ROW
+        |--------------------------------------------------------------------------
+        */
+
+        .kta-pair-row {
+
+            display: table-row;
+
+            width: 112mm;
+
+            height: 85.6mm;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PAIR CELL
+        |--------------------------------------------------------------------------
+        */
+
+        .kta-pair-cell {
+
+            display: table-cell;
+
+            width: 54mm;
+
+            height: 85.6mm;
+
             padding: 0;
+
             vertical-align: middle;
+
             text-align: center;
-            background: #fff;
         }
 
-        .grid tr { height: 56mm; }      /* 54 + 2 row gap */
-        .grid tr:last-child { height: 54mm; }
 
-        /* Slot wrapper: rotate 90° sehingga portrait design (55x85.6) jadi landscape (85.6x55) */
+        /*
+        |--------------------------------------------------------------------------
+        | CARD SLOT
+        |--------------------------------------------------------------------------
+        |
+        | Slot is the actual card container, same as card dimensions.
+        | Card is portrait: 54mm x 85.6mm. NO rotation needed.
+        |--------------------------------------------------------------------------
+        */
+
         .kta-slot {
-            width: 85.6mm;
-            height: 54mm;
+
             position: relative;
+
+            width: 54mm;
+
+            height: 85.6mm;
+
+            margin: 0;
+
+            padding: 0;
+
             overflow: hidden;
         }
 
-        /* Container rotated 90° ke kanan dengan center origin */
-        .kta-slot-inner {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 54mm;
-            height: 85.6mm;
-            margin-left: -27mm;
-            margin-top: -42.8mm;
-            transform: rotate(90deg);
-            transform-origin: center center;
+
+        /*
+        |--------------------------------------------------------------------------
+        | FRONT / BACK (no left positioning needed, table-cell handles it)
+        |--------------------------------------------------------------------------
+        */
+
+        .kta-slot-front {
+            /* Default */
         }
 
-        .empty-slot {
-            width: 85.6mm;
-            height: 54mm;
-            display: inline-block;
-            border: 0.3pt dashed #cbd5e1;
+
+        .kta-slot-back {
+            /* Default */
         }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SLOT INNER (just the card itself - same dimensions)
+        |--------------------------------------------------------------------------
+        */
+
+        .kta-slot-inner {
+
+            position: relative;
+
+            width: 54mm;
+
+            height: 85.6mm;
+
+            overflow: hidden;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | REMOVE TABLE ARTIFACTS
+        |--------------------------------------------------------------------------
+        */
+
+        table {
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PAGE LABEL
+        |--------------------------------------------------------------------------
+        */
 
         .page-label {
             position: absolute;
-            top: 2mm;
-            right: 3mm;
-            font-size: 2.2mm;
-            color: #94a3b8;
-            letter-spacing: 0.05em;
+
+            right: 4mm;
+            bottom: 3mm;
+
+            font-size: 2mm;
+
+            color: #999;
+
+            display: none;
         }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PRINT
+        |--------------------------------------------------------------------------
+        */
+
+        @media print {
+
+            html,
+            body {
+                width: 210mm;
+                height: 297mm;
+            }
+
+            .page {
+                width: 210mm;
+                height: 297mm;
+
+                page-break-after: always;
+            }
+
+            .page:last-child {
+                page-break-after: auto;
+            }
+
+            .kta-page-grid {
+                page-break-inside: avoid;
+            }
+
+            .kta-pair-cell {
+                page-break-inside: avoid;
+            }
+
+            .kta-slot-inner {
+                page-break-inside: avoid;
+            }
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | KTA CARD STYLES (PORTRAIT card, rotated inside landscape slot)
+        |--------------------------------------------------------------------------
+        */
+
+        * { box-sizing: border-box; }
+
+        .kta-card {
+            position: relative;
+            width: 54mm;
+            height: 85.6mm;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, Helvetica, sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .kta-bg-image {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 54mm;
+            height: 85.6mm;
+            z-index: 0;
+        }
+
+        .kta-data-layer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 54mm;
+            height: 85.6mm;
+            z-index: 1;
+        }
+
+        .kta-field {
+            position: absolute;
+            font-weight: 500;
+            color: #000;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .kta-field-alamat {
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+
+        .kta-field-small {
+            font-weight: 400;
+        }
+
+        .kta-field-center {
+            text-align: center;
+        }
+
+        .kta-signature {
+            position: absolute;
+            object-fit: contain;
+            opacity: .95;
+        }
+
+        .kta-seal {
+            position: absolute;
+            object-fit: contain;
+            opacity: .95;
+        }
+
+        .kta-photo {
+            position: absolute;
+            overflow: hidden;
+            border: 0.25mm solid rgba(75,75,75,.55);
+        }
+
+        .kta-photo img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        @media print {
+
+            .kta-card {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            html,
+            body {
+                width: 210mm;
+                height: 297mm;
+            }
+
+            .page {
+                width: 210mm;
+                height: 297mm;
+
+                page-break-after: always;
+            }
+
+            .page:last-child {
+                page-break-after: auto;
+            }
+
+            .kta-page-grid {
+                page-break-inside: avoid;
+            }
+
+            .kta-pair-cell {
+                page-break-inside: avoid;
+            }
+
+            .kta-slot-inner {
+                page-break-inside: avoid;
+            }
+
+        }
+
     </style>
 
-    @include('print.partials.kta-card-style')
-    @include('print.partials.kta-card-pdf-style')
 </head>
 <body>
-    @php
-        $pages = $members->chunk(10);
-    @endphp
 
-    @foreach($pages as $pageIndex => $pageMembers)
-        @php
-            $cells = $pageMembers->values()->all();
+@php
+    /*
+    |--------------------------------------------------------------------------
+    | 3 MEMBER PER PAGE
+    |--------------------------------------------------------------------------
+    */
+    $pages = $members->chunk(3);
 
-            // Duplex ordering untuk back side
-            if ($side === 'back') {
-                $cells = \App\Support\PrintOrder::reorderForDuplex(
-                    $cells,
-                    $duplexMode ?? 'long-edge'
-                );
-            }
-        @endphp
+    // Pass isPdf flag ke partial
+    $isPdf = true;
 
-        <div class="page">
-            <table class="grid" cellspacing="0" cellpadding="0">
-                @for($r = 0; $r < 5; $r++)
-                    <tr>
-                        @for($c = 0; $c < 2; $c++)
-                            @php
-                                $idx = ($r * 2) + $c;
-                                $kta = $cells[$idx] ?? null;
-                            @endphp
-                            <td>
-                                @if($kta)
-                                    <div class="kta-slot">
-                                        <div class="kta-slot-inner">
-                                            @php
-                                                $member = $kta['member'];
-                                            @endphp
-                                            @include('print.partials.kta-card-pdf')
-                                        </div>
-                                    </div>
-                                @else
-                                    <div class="empty-slot"></div>
-                                @endif
-                            </td>
-                        @endfor
-                    </tr>
-                @endfor
-            </table>
+    // Determine which sides to render based on $side parameter
+    $sides = ($side ?? 'front') === 'back' ? ['back'] : ['front'];
+@endphp
 
-            <div class="page-label">
-                {{ strtoupper($side) }} &middot; {{ $batch->batch_number }} &middot; Hal {{ $pageIndex + 1 }} / {{ count($pages) }}
-            </div>
+
+@foreach($pages as $pageIndex => $pageMembers)
+
+    <div class="page">
+
+        <table class="kta-page-grid">
+
+            <tbody>
+
+            @foreach($pageMembers as $kta)
+
+                @php
+                    $member = $kta['member'];
+                    $ketua = $kta['ketua'];
+                    $sekretaris = $kta['sekretaris'];
+                    $ttd_ketua_path = $kta['ttd_ketua_path'] ?? null;
+                    $ttd_sekretaris_path = $kta['ttd_sekretaris_path'] ?? null;
+                @endphp
+
+
+                <tr class="kta-pair-row">
+
+                    @if(in_array('front', $sides))
+                    {{-- FRONT - KIRI --}}
+                    <td class="kta-pair-cell">
+                        <div class="kta-slot kta-slot-front">
+                            <div class="kta-slot-inner">
+                                @php $side = 'front'; @endphp
+                                @include('print.partials.kta-card-v2')
+                            </div>
+                        </div>
+                    </td>
+                    @endif
+
+                    @if(in_array('back', $sides))
+                    {{-- BACK - KANAN --}}
+                    <td class="kta-pair-cell">
+                        <div class="kta-slot kta-slot-back">
+                            <div class="kta-slot-inner">
+                                @php $side = 'back'; @endphp
+                                @include('print.partials.kta-card-v2')
+                            </div>
+                        </div>
+                    </td>
+                    @endif
+
+                </tr>
+
+            @endforeach
+
+            {{--
+                Bila halaman terakhir kurang dari 3 KTA,
+                tidak perlu membuat slot kosong.
+            --}}
+
+            </tbody>
+
+        </table>
+
+
+        <div class="page-label">
+            KTA FSPMI
+            &middot;
+            {{ $batch->batch_number }}
+            &middot;
+            Halaman {{ $pageIndex + 1 }} / {{ count($pages) }}
         </div>
-    @endforeach
+
+    </div>
+
+@endforeach
+
 </body>
 </html>

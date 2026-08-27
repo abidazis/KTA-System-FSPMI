@@ -6,7 +6,7 @@
 @section('content')
 <div class="card">
     <div class="card-header">
-        <h3>Pilih Anggota (5 KTA per Halaman A4)</h3>
+        <h3>Pilih Anggota (3 KTA per Halaman A4)</h3>
         <span id="selected-count" style="font-size:0.9rem;color:#64748b;">0 dipilih</span>
     </div>
 
@@ -24,7 +24,9 @@
         @csrf
         <div style="margin-bottom:1rem;padding:1rem;background:#f1f5f9;border-radius:0.5rem;">
             <p style="font-size:0.9rem;color:#475569;margin-bottom:0.5rem;">
-                Pilih anggota yang akan dicetak. Maksimal 100 anggota per batch. 5 KTA per halaman A4 (depan &amp; belakang).
+                Pilih anggota yang akan dicetak. Maksimal 100 anggota per batch.
+                Setiap halaman A4 berisi 3 KTA, dengan sisi DEPAN di sebelah kiri
+                dan sisi BELAKANG di sebelah kanan.
             </p>
             <div style="display:flex;gap:0.5rem;align-items:center;">
                 <input type="checkbox" id="select-all">
