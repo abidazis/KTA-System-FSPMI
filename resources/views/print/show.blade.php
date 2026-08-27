@@ -9,12 +9,13 @@
         <h3>Detail Batch</h3>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
 
-            <a
-                href="{{ route('print.pdf', $batch) }}"
-                class="btn btn-sm btn-success"
-            >
-                <i class="bi bi-download me-1"></i>
-                Download PDF KTA
+            <a href="{{ route('print.pdf', ['batch' => $batch, 'side' => 'front']) }}" class="btn btn-sm btn-success">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                PDF Depan
+            </a>
+            <a href="{{ route('print.pdf', ['batch' => $batch, 'side' => 'back']) }}" class="btn btn-sm btn-success">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                PDF Belakang
             </a>
 
             <form
@@ -37,39 +38,30 @@
         </div>
     </div>
 
-    <div style="background:#fef3c7;padding:1rem;border-radius:0.5rem;margin-bottom:1.5rem;">
+    <div style="background:#dbeafe;padding:1rem;border-radius:0.5rem;margin-bottom:1.5rem;">
 
-        <strong>Format PDF KTA:</strong>
+        <strong>Petunjuk Cetak:</strong>
 
         <ol style="margin:0.5rem 0 0 1.5rem;">
 
             <li>
-                Satu halaman A4 berisi maksimal
-                <strong>3 KTA</strong>.
+                Download <strong>PDF Depan</strong> terlebih dahulu, lalu cetak.
             </li>
 
             <li>
-                Setiap KTA terdiri dari
-                <strong>FRONT di sebelah kiri</strong>
-                dan
-                <strong>BACK di sebelah kanan</strong>.
+                Setelah selesai, download & cetak <strong>PDF Belakang</strong>.
             </li>
 
             <li>
-                Ukuran setiap sisi KTA:
-                <strong>85,6 × 54 mm</strong>.
+                Cetak dengan ukuran <strong>Actual Size / 100%</strong>.
             </li>
 
             <li>
-                Cetak PDF dengan ukuran
-                <strong>Actual Size / 100%</strong>.
+                Balik kertas dan masukkan lagi ke printer untuk sisi belakang.
             </li>
 
             <li>
-                Jangan menggunakan
-                <strong>Fit to Page</strong>
-                atau
-                <strong>Scale to Fit</strong>.
+                Gunakan <strong>duplex (long-edge)</strong> jika printer mendukung otomatis.
             </li>
 
         </ol>
