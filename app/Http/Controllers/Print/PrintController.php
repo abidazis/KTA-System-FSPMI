@@ -194,12 +194,6 @@ class PrintController extends Controller
         $ketua = $officials->firstWhere('jabatan', 'Ketua Umum');
         $sekretaris = $officials->firstWhere('jabatan', 'Sekretaris Umum');
 
-        // Query parameter: ?side=front|back (default front)
-        $side = $request->input('side', 'front');
-        if (!in_array($side, ['front', 'back'], true)) {
-            $side = 'front';
-        }
-
         // Query parameter: ?duplex=long-edge|short-edge (default long-edge)
         $duplexMode = $request->input('duplex', 'long-edge');
         if (!in_array($duplexMode, ['long-edge', 'short-edge'], true)) {
@@ -227,17 +221,16 @@ class PrintController extends Controller
             'batch' => $batch,
             'ketua' => $ketua,
             'sekretaris' => $sekretaris,
-            'side' => $side,
             'duplexMode' => $duplexMode,
             'background' => $background,
         ]);
 
-        // A4 Portrait — 210x297mm — 2 kolom × 5 baris = 10 KTA/page
-        $pdf->setPaper('a4', 'portrait');
+        // A4 Landscape — 297x210mm — 5 KTA per page (3 top + 2 bottom)
+        $pdf->setPaper('a4', 'landscape');
 
-        $filename = $batch->batch_number . '-' . strtoupper($side) . '.pdf';
+        $filename = $batch->batch_number . '-KTA.pdf';
 
-        AuditLog::log('download_print_batch_pdf', $batch, null, ['side' => $side, 'duplex' => $duplexMode]);
+        AuditLog::log('download_print_batch_pdf', $batch, null, ['duplex' => $duplexMode]);
 
         return response($pdf->output(), 200, [
             'Content-Type' => 'application/pdf',

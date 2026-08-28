@@ -4,46 +4,48 @@
 <style>
 /*
 |--------------------------------------------------------------------------
-| PREVIEW PAGE - 3 KTA PER PAGE
-| Layout: A4 portrait, 2 cols x 3 rows
+| PREVIEW PAGE - 4 KTA PER PAGE (A4 LANDSCAPE)
+| Layout: A4 landscape
+| Row 1: 4 KTA DEPAN berjejer horizontal
+| Row 2: 4 KTA BELAKANG berjejer horizontal
 |--------------------------------------------------------------------------
 */
-.preview-wrap{background:#fff;padding:1.5rem;margin-bottom:2rem;}
-.preview-label{font-size:0.8rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;}
-.preview-label::before{content:'';display:inline-block;width:12px;height:12px;border-radius:2px;}
-.preview-label.front-label::before{background:#3b82f6;}
-.preview-label.back-label::before{background:#ef4444;}
-.preview-page{width:21cm;min-height:29.7cm;margin:0 auto 2rem auto;position:relative;background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.12);padding:1.5cm;border-radius:4px;}
 
-/* Grid: 2 cols (front|back) x 3 rows = 6 cards per page */
-/* Card: portrait 54mm x 85.6mm. Each cell needs 54mm x 85.6mm */
-.preview-grid{width:11.2cm;height:auto;display:table;border-collapse:separate;border-spacing:0.4cm 0;table-layout:fixed;}
-.preview-grid-row{display:table-row;width:11.2cm;height:8.56cm;}
-.preview-grid-cell{display:table-cell;width:5.4cm;height:8.56cm;padding:0;vertical-align:middle;text-align:center;}
-
-/* Card wrapper: portrait slot 54mm x 85.6mm */
-.kta-card-wrapper{position:relative;width:5.4cm;height:8.56cm;overflow:hidden;margin:0 auto;}
-
-/* Inner: same as wrapper (no rotation) */
-.kta-card-wrapper .kta-slot-inner{
-    position:relative;
-    width:54mm;
-    height:85.6mm;
+.preview-container {
+    background: #fff;
+    padding: 1rem;
+    margin-bottom: 2rem;
 }
 
-/* ============================================================
-   KTA CARD STYLES (must match batch-pdf)
-   ============================================================ */
+.info-banner {
+    background: #dbeafe;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+}
 
-* { box-sizing: border-box; }
+.page-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.preview-page {
+    width: 29.7cm;
+    height: 21cm;
+    position: relative;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    border-radius: 4px;
+    overflow: visible;
+}
 
 .kta-card {
     position: relative;
-    width: 54mm;
-    height: 85.6mm;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
+    width: 5.4cm;
+    height: 8.56cm;
+    overflow: visible;
     font-family: Arial, Helvetica, sans-serif;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -53,8 +55,8 @@
     position: absolute;
     left: 0;
     top: 0;
-    width: 54mm;
-    height: 85.6mm;
+    width: 5.4cm;
+    height: 8.56cm;
     z-index: 0;
 }
 
@@ -62,8 +64,8 @@
     position: absolute;
     left: 0;
     top: 0;
-    width: 54mm;
-    height: 85.6mm;
+    width: 5.4cm;
+    height: 8.56cm;
     z-index: 1;
 }
 
@@ -104,7 +106,6 @@
 .kta-photo {
     position: absolute;
     overflow: hidden;
-    border: 0.25mm solid rgba(75,75,75,.55);
 }
 
 .kta-photo img {
@@ -114,9 +115,13 @@
     object-fit: cover;
 }
 
-.page-separator{border-top:2px dashed #e2e8f0;margin:2rem 0;}
-.info-banner{background:#fef3c7;padding:1rem;border-radius:0.5rem;margin-bottom:1.5rem;font-size:0.875rem;}
-.info-banner ul{margin:0.5rem 0 0 1.5rem;}
+.page-label {
+    position: absolute;
+    bottom: 0.3cm;
+    right: 0.5cm;
+    font-size: 0.22cm;
+    color: #94a3b8;
+}
 </style>
 @endprepend
 
@@ -133,119 +138,65 @@
     </div>
 
     <div class="info-banner">
-        <strong>Petunjuk:</strong>
-        <ul>
-            <li>Halaman <span style="background:#3b82f6;color:#fff;padding:0 4px;font-weight:700;">DEPAN</span> = sisi pertama (FRONT)</li>
-            <li>Halaman <span style="background:#ef4444;color:#fff;padding:0 4px;font-weight:700;">BELAKANG</span> = sisi sebaliknya (BACK)</li>
-            <li>Setiap halaman berisi 3 KTA (FRONT di kiri, BACK di kanan, 3 baris)</li>
-            <li>Cetak DEPAN dulu, lalu BALIK kertas untuk BELAKANG (mode duplex)</li>
+        <strong>Format Cetak:</strong>
+        <ul style="margin:0.5rem 0 0 1.5rem;">
+            <li>A4 Landscape — <strong>4 KTA per halaman</strong> (4 depan + 4 belakang)</li>
+            <li>Baris atas: <strong>DEPAN</strong> · Baris bawah: <strong>BELAKANG</strong></li>
+            <li>Cetak dengan ukuran <strong>Actual Size / 100%</strong></li>
         </ul>
     </div>
 
     @php
-        $pages = $members->chunk(3);
+        $isPdf = false;
     @endphp
 
-    {{-- =========================================================
-         HALAMAN DEPAN
-    ========================================================= --}}
-    <div class="preview-wrap">
-        <div class="preview-label front-label">DEPAN &mdash; {{ $pages->count() }} halaman</div>
-
-        @foreach($pages as $pageIndex => $pageMembers)
+    {{-- 4 KTA per page: row 1 front + row 2 back --}}
+    @foreach($members->chunk(4) as $pageIndex => $pageMembers)
+        <div class="page-wrapper">
             <div class="preview-page">
-                <table class="preview-grid" cellpadding="0" cellspacing="0">
-                    <tbody>
-                        @foreach($pageMembers as $kta)
-                            <tr class="preview-grid-row">
-                                @php
-                                    $member = $kta['member'];
-                                    $ketua = $kta['ketua'];
-                                    $sekretaris = $kta['sekretaris'];
-                                    $ttd_ketua_path = $kta['ttd_ketua_path'] ?? null;
-                                    $ttd_sekretaris_path = $kta['ttd_sekretaris_path'] ?? null;
-                                    $side = 'front';
-                                    $isPdf = false;
-                                @endphp
-                                {{-- FRONT --}}
-                                <td class="preview-grid-cell">
-                                    <div class="kta-card-wrapper">
-                                        <div class="kta-slot-inner">
-                                            @include('print.partials.kta-card-v2')
-                                        </div>
-                                    </div>
-                                </td>
-                                {{-- BACK --}}
-                                <td class="preview-grid-cell">
-                                    <div class="kta-card-wrapper">
-                                        <div class="kta-slot-inner">
-                                            @php $side = 'back'; @endphp
-                                            @include('print.partials.kta-card-v2')
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-                <div class="page-label" style="position:absolute;bottom:0.2cm;right:0.3cm;font-size:0.22cm;color:#94a3b8;">
-                    Hal {{ $pageIndex + 1 }} / {{ $pages->count() }}
-                </div>
+
+                {{-- ROW 1: 4 KTA DEPAN berjejer horizontal --}}
+                @foreach([0, 1, 2, 3] as $i)
+                    @if(isset($pageMembers[$i]))
+                        @php
+                            $kta = $pageMembers[$i];
+                            $member = $kta['member'];
+                            $ketua = $kta['ketua'];
+                            $sekretaris = $kta['sekretaris'];
+                            $ttd_ketua_path = $kta['ttd_ketua_path'] ?? null;
+                            $ttd_sekretaris_path = $kta['ttd_sekretaris_path'] ?? null;
+                            $foto_path = $kta['foto_path'] ?? null;
+                            $side = 'front';
+                        @endphp
+                        <div style="position:absolute; left:{{ 1.5 + $i * 6.9 }}cm; top:1.5cm;">
+                            @include('print.partials.kta-card-v2')
+                        </div>
+                    @endif
+                @endforeach
+
+                {{-- ROW 2: 4 KTA BELAKANG berjejer horizontal --}}
+                @foreach([0, 1, 2, 3] as $i)
+                    @if(isset($pageMembers[$i]))
+                        @php
+                            $kta = $pageMembers[$i];
+                            $member = $kta['member'];
+                            $ketua = $kta['ketua'];
+                            $sekretaris = $kta['sekretaris'];
+                            $ttd_ketua_path = $kta['ttd_ketua_path'] ?? null;
+                            $ttd_sekretaris_path = $kta['ttd_sekretaris_path'] ?? null;
+                            $foto_path = $kta['foto_path'] ?? null;
+                            $side = 'back';
+                        @endphp
+                        <div style="position:absolute; left:{{ 1.5 + $i * 6.9 }}cm; top:11cm;">
+                            @include('print.partials.kta-card-v2')
+                        </div>
+                    @endif
+                @endforeach
+
+                <div class="page-label">Halaman {{ $pageIndex + 1 }}</div>
             </div>
-        @endforeach
-    </div>
-
-    <div class="page-separator"></div>
-
-    {{-- =========================================================
-         HALAMAN BELAKANG
-         (reverse order: long-edge duplex flip)
-    ========================================================= --}}
-    <div class="preview-wrap">
-        <div class="preview-label back-label">BELAKANG &mdash; {{ $pages->count() }} halaman</div>
-
-        @foreach($pages as $pageIndex => $pageMembers)
-            <div class="preview-page">
-                <table class="preview-grid" cellpadding="0" cellspacing="0">
-                    <tbody>
-                        @foreach($pageMembers->reverse() as $kta)
-                            <tr class="preview-grid-row">
-                                @php
-                                    $member = $kta['member'];
-                                    $ketua = $kta['ketua'];
-                                    $sekretaris = $kta['sekretaris'];
-                                    $ttd_ketua_path = $kta['ttd_ketua_path'] ?? null;
-                                    $ttd_sekretaris_path = $kta['ttd_sekretaris_path'] ?? null;
-                                    $side = 'front';
-                                    $isPdf = false;
-                                @endphp
-                                {{-- FRONT --}}
-                                <td class="preview-grid-cell">
-                                    <div class="kta-card-wrapper">
-                                        <div class="kta-slot-inner">
-                                            @include('print.partials.kta-card-v2')
-                                        </div>
-                                    </div>
-                                </td>
-                                {{-- BACK --}}
-                                <td class="preview-grid-cell">
-                                    <div class="kta-card-wrapper">
-                                        <div class="kta-slot-inner">
-                                            @php $side = 'back'; @endphp
-                                            @include('print.partials.kta-card-v2')
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-                <div class="page-label" style="position:absolute;bottom:0.2cm;right:0.3cm;font-size:0.22cm;color:#94a3b8;">
-                    Hal {{ $pageIndex + 1 }} / {{ $pages->count() }}
-                </div>
-            </div>
-        @endforeach
-    </div>
+        </div>
+    @endforeach
 
     <form action="{{ route('print.store') }}" method="POST">
         @csrf

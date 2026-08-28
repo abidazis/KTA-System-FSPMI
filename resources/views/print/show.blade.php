@@ -9,13 +9,9 @@
         <h3>Detail Batch</h3>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
 
-            <a href="{{ route('print.pdf', ['batch' => $batch, 'side' => 'front']) }}" class="btn btn-sm btn-success">
+            <a href="{{ route('print.pdf', ['batch' => $batch]) }}" class="btn btn-sm btn-success">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                PDF Depan
-            </a>
-            <a href="{{ route('print.pdf', ['batch' => $batch, 'side' => 'back']) }}" class="btn btn-sm btn-success">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                PDF Belakang
+                Download PDF KTA
             </a>
 
             <form
@@ -45,11 +41,11 @@
         <ol style="margin:0.5rem 0 0 1.5rem;">
 
             <li>
-                Download <strong>PDF Depan</strong> terlebih dahulu, lalu cetak.
+                PDF menggunakan format <strong>A4 Landscape</strong> dengan <strong>4 KTA per halaman</strong> (2 atas + 2 bawah).
             </li>
 
             <li>
-                Setelah selesai, download & cetak <strong>PDF Belakang</strong>.
+                Baris atas = <strong>DEPAN (foto)</strong>, Baris bawah = <strong>BELAKANG (data)</strong>.
             </li>
 
             <li>
@@ -57,11 +53,7 @@
             </li>
 
             <li>
-                Balik kertas dan masukkan lagi ke printer untuk sisi belakang.
-            </li>
-
-            <li>
-                Gunakan <strong>duplex (long-edge)</strong> jika printer mendukung otomatis.
+                Cetak baris atas dulu, lalu balik kertas untuk baris bawah.
             </li>
 
         </ol>
