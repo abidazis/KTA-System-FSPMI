@@ -110,53 +110,64 @@
     |--------------------------------------------------------------------------
     |
     | FRONT (sisi foto):
-    | - Foto: di kiri card (x=5-28, y=20-60)
-    | - Nama: overlay background (x=30, y=52)
-    | - NIK: overlay background (x=30, y=60)
+    | - Foto: di sisi kiri card (x=5-29, y=15-47)
+    | - Nama: di sisi kanan foto, di bawah (x=30, y=52)
+    | - NIK: di kanan foto, di bawah Nama (x=30, y=58)
     |
-    | BACK (sisi data):
-    | - TTL: x=27, y=30
-    | - Alamat: x=27, y=36
-    | - JK: x=27, y=47
-    | - Agama: x=43, y=47
-    | - Berlaku: x=27, y=53
-    | - Tanggal TTD: x=5, y=63
-    | - TTD Sekertaris: x=5, y=66
-    | - Nama Sekertaris: x=5, y=75
-    | - TTD Ketua: x=33, y=66
-    | - Nama Ketua: x=33, y=75
+    | BACK (sisi data) - Label di kiri, Value di kanan:
+    | - NIK: label x=5, value x=22
+    | - NAMA: label x=5, value x=22
+    | - TEMPAT/TGL LAHIR: label x=5, value x=22
+    | - ALAMAT: label x=5, value x=22
+    | - JENIS KELAMIN: label x=5, value x=28 (baris sama dg Agama)
+    | - AGAMA: label x=27, value x=35 (baris sama dg JK)
+    | - BERLAKU HINGGA: label x=5, value x=22
+    | - Tanggal TTD: x=5, y=60
+    | - TTD Sekretaris: x=5, y=63, Nama Sekertaris: x=5, y=73
+    | - TTD Ketua: x=29, y=63, Nama Ketua: x=29, y=73
     |
     */
 
     $positions = [
         'front' => [
             // Foto - di sisi kiri card
-            'foto'          => ['left' => 5, 'top' => 18, 'width' => 24, 'height' => 32],
-            // Nama - overlay di background
-            'nama'          => ['left' => 30, 'top' => 50, 'font_size' => 2.5, 'width' => 23],
-            // NIK - overlay di background
-            'nik'           => ['left' => 30, 'top' => 58, 'font_size' => 2.5, 'width' => 23],
+            'foto'          => ['left' => 5, 'top' => 18, 'width' => 23, 'height' => 36],
+            // Nama - di sisi kanan foto, di bawah
+            'nama'          => ['left' => 30, 'top' => 60, 'font_size' => 2.2, 'width' => 23],
+            // NIK - di kanan foto, di bawah Nama
+            'nik'           => ['left' => 30, 'top' => 66, 'font_size' => 2.2, 'width' => 23],
         ],
         'back' => [
-            // TTL - Tempat/Tgl Lahir
-            'ttl'           => ['left' => 27, 'top' => 30, 'font_size' => 2.2, 'width' => 26],
-            // Alamat
-            'alamat'        => ['left' => 27, 'top' => 36, 'font_size' => 1.9, 'width' => 26, 'height' => 9],
-            // Jenis Kelamin
-            'jk'            => ['left' => 27, 'top' => 47, 'font_size' => 2.2],
-            // Agama
-            'agama'         => ['left' => 43, 'top' => 47, 'font_size' => 2.2, 'width' => 10],
-            // Berlaku Hingga
-            'berlaku'       => ['left' => 27, 'top' => 53, 'font_size' => 2.2],
+            // NIK - label di kiri, value di kanan
+            'nik_label'     => ['left' => 5, 'top' => 18, 'font_size' => 1.7, 'width' => 16],
+            'nik'           => ['left' => 22, 'top' => 18, 'font_size' => 1.7, 'width' => 30],
+            // NAMA
+            'nama_label'    => ['left' => 5, 'top' => 23, 'font_size' => 1.7, 'width' => 16],
+            'nama'          => ['left' => 22, 'top' => 23, 'font_size' => 1.7, 'width' => 30],
+            // TEMPAT/TANGGAL LAHIR
+            'ttl_label'     => ['left' => 5, 'top' => 28, 'font_size' => 1.7, 'width' => 16],
+            'ttl'           => ['left' => 22, 'top' => 28, 'font_size' => 1.7, 'width' => 30],
+            // ALAMAT
+            'alamat_label' => ['left' => 5, 'top' => 33, 'font_size' => 1.7, 'width' => 16],
+            'alamat'        => ['left' => 22, 'top' => 33, 'font_size' => 1.5, 'width' => 30, 'height' => 9],
+            // JENIS KELAMIN - di kiri
+            'jk_label'     => ['left' => 5, 'top' => 44, 'font_size' => 1.7, 'width' => 16],
+            'jk'           => ['left' => 22, 'top' => 44, 'font_size' => 1.7, 'width' => 30],
+            // AGAMA - baris sendiri
+            'agama_label'  => ['left' => 5, 'top' => 49, 'font_size' => 1.7, 'width' => 16],
+            'agama'        => ['left' => 22, 'top' => 49, 'font_size' => 1.7, 'width' => 30],
+            // BERLAKU HINGGA
+            'berlaku_label' => ['left' => 5, 'top' => 54, 'font_size' => 1.7, 'width' => 16],
+            'berlaku'       => ['left' => 22, 'top' => 54, 'font_size' => 1.7, 'width' => 30],
 
             // Tanggal TTD
-            'tanggal_ttd'   => ['left' => 5, 'top' => 63, 'font_size' => 1.8, 'width' => 22],
+            'tanggal_ttd'   => ['left' => 5, 'top' => 62, 'font_size' => 1.5, 'width' => 22],
             // TTD Sekretaris
-            'ttd_sekretaris'  => ['left' => 5, 'top' => 66, 'width' => 16, 'height' => 8],
-            'nama_sekretaris' => ['left' => 5, 'top' => 75, 'font_size' => 1.5, 'width' => 22],
+            'ttd_sekretaris'  => ['left' => 5, 'top' => 65, 'width' => 16, 'height' => 8],
+            'nama_sekretaris' => ['left' => 3, 'top' => 76, 'font_size' => 1.3, 'width' => 22],
             // TTD Ketua
-            'ttd_ketua'     => ['left' => 33, 'top' => 66, 'width' => 16, 'height' => 8],
-            'nama_ketua'    => ['left' => 33, 'top' => 75, 'font_size' => 1.5, 'width' => 22],
+            'ttd_ketua'     => ['left' => 29, 'top' => 65, 'width' => 16, 'height' => 8],
+            'nama_ketua'    => ['left' => 27, 'top' => 76, 'font_size' => 1.3, 'width' => 22],
         ],
     ];
 
@@ -231,7 +242,51 @@
     {{-- DATA OVERLAY --}}
     <div class="kta-data-layer">
 
+        {{-- NIK --}}
+        @if(isset($fieldPositions['nik_label']))
+            <div class="kta-field kta-field-label"
+                 style="left:{{ $fieldPositions['nik_label']['left'] }}mm;
+                        top:{{ $fieldPositions['nik_label']['top'] }}mm;
+                        font-size:{{ $fieldPositions['nik_label']['font_size'] }}mm;">
+                NIK
+            </div>
+        @endif
+        @if(isset($fieldPositions['nik']))
+            <div class="kta-field"
+                 style="left:{{ $fieldPositions['nik']['left'] }}mm;
+                        top:{{ $fieldPositions['nik']['top'] }}mm;
+                        font-size:{{ $fieldPositions['nik']['font_size'] }}mm;">
+                {{ $member->nik ?? '-' }}
+            </div>
+        @endif
+
+        {{-- NAMA --}}
+        @if(isset($fieldPositions['nama_label']))
+            <div class="kta-field kta-field-label"
+                 style="left:{{ $fieldPositions['nama_label']['left'] }}mm;
+                        top:{{ $fieldPositions['nama_label']['top'] }}mm;
+                        font-size:{{ $fieldPositions['nama_label']['font_size'] }}mm;">
+                NAMA
+            </div>
+        @endif
+        @if(isset($fieldPositions['nama']))
+            <div class="kta-field"
+                 style="left:{{ $fieldPositions['nama']['left'] }}mm;
+                        top:{{ $fieldPositions['nama']['top'] }}mm;
+                        font-size:{{ $fieldPositions['nama']['font_size'] }}mm;">
+                {{ strtoupper($member->nama ?? '-') }}
+            </div>
+        @endif
+
         {{-- TEMPAT/TGL LAHIR --}}
+        @if(isset($fieldPositions['ttl_label']))
+            <div class="kta-field kta-field-label"
+                 style="left:{{ $fieldPositions['ttl_label']['left'] }}mm;
+                        top:{{ $fieldPositions['ttl_label']['top'] }}mm;
+                        font-size:{{ $fieldPositions['ttl_label']['font_size'] }}mm;">
+                Tempat/Tgl Lahir
+            </div>
+        @endif
         @if(isset($fieldPositions['ttl']))
             <div class="kta-field"
                  style="left:{{ $fieldPositions['ttl']['left'] }}mm;
@@ -242,17 +297,33 @@
         @endif
 
         {{-- ALAMAT --}}
+        @if(isset($fieldPositions['alamat_label']))
+            <div class="kta-field kta-field-label"
+                 style="left:{{ $fieldPositions['alamat_label']['left'] }}mm;
+                        top:{{ $fieldPositions['alamat_label']['top'] }}mm;
+                        font-size:{{ $fieldPositions['alamat_label']['font_size'] }}mm;">
+                Alamat
+            </div>
+        @endif
         @if(isset($fieldPositions['alamat']))
             <div class="kta-field kta-field-alamat"
                  style="left:{{ $fieldPositions['alamat']['left'] }}mm;
                         top:{{ $fieldPositions['alamat']['top'] }}mm;
                         font-size:{{ $fieldPositions['alamat']['font_size'] }}mm;
-                        width:{{ $fieldPositions['alamat']['width'] ?? 26 }}mm;">
+                        width:{{ $fieldPositions['alamat']['width'] ?? 30 }}mm;">
                 {{ $member->alamat ?? '-' }}
             </div>
         @endif
 
         {{-- JENIS KELAMIN --}}
+        @if(isset($fieldPositions['jk_label']))
+            <div class="kta-field kta-field-label"
+                 style="left:{{ $fieldPositions['jk_label']['left'] }}mm;
+                        top:{{ $fieldPositions['jk_label']['top'] }}mm;
+                        font-size:{{ $fieldPositions['jk_label']['font_size'] }}mm;">
+                Jenis Kelamin
+            </div>
+        @endif
         @if(isset($fieldPositions['jk']))
             <div class="kta-field"
                  style="left:{{ $fieldPositions['jk']['left'] }}mm;
@@ -263,6 +334,14 @@
         @endif
 
         {{-- AGAMA --}}
+        @if(isset($fieldPositions['agama_label']))
+            <div class="kta-field kta-field-label"
+                 style="left:{{ $fieldPositions['agama_label']['left'] }}mm;
+                        top:{{ $fieldPositions['agama_label']['top'] }}mm;
+                        font-size:{{ $fieldPositions['agama_label']['font_size'] }}mm;">
+                Agama
+            </div>
+        @endif
         @if(isset($fieldPositions['agama']))
             <div class="kta-field"
                  style="left:{{ $fieldPositions['agama']['left'] }}mm;
@@ -273,6 +352,14 @@
         @endif
 
         {{-- BERLAKU HINGGA --}}
+        @if(isset($fieldPositions['berlaku_label']))
+            <div class="kta-field kta-field-label"
+                 style="left:{{ $fieldPositions['berlaku_label']['left'] }}mm;
+                        top:{{ $fieldPositions['berlaku_label']['top'] }}mm;
+                        font-size:{{ $fieldPositions['berlaku_label']['font_size'] }}mm;">
+                Berlaku Hingga
+            </div>
+        @endif
         @if(isset($fieldPositions['berlaku']))
             <div class="kta-field"
                  style="left:{{ $fieldPositions['berlaku']['left'] }}mm;

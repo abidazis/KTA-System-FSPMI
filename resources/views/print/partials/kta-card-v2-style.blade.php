@@ -79,7 +79,7 @@
 .kta-field {
     position: absolute;
 
-    font-weight: 500;
+    font-weight: 700;
 
     color: #000;
 
@@ -95,6 +95,11 @@
 
 .kta-field-small {
     font-weight: 400;
+}
+
+.kta-field-label {
+    font-weight: 700;
+    color: #000;
 }
 
 .kta-field-center {

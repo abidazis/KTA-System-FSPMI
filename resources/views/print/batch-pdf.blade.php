@@ -90,6 +90,11 @@
             text-align: center;
         }
 
+        .kta-field-label {
+            font-weight: 700;
+            color: #333;
+        }
+
         .kta-signature {
             position: absolute;
             object-fit: contain;
