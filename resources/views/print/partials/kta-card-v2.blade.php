@@ -138,40 +138,45 @@
             'nik'           => ['left' => 30, 'top' => 61, 'font_size' => 2.8, 'width' => 23],
         ],
         'back' => [
+            // Data Perusahaan - header section
+            'perusahaan_label' => ['left' => 5, 'top' => 8, 'font_size' => 1.8, 'width' => 16],
+            'perusahaan' => ['left' => 5, 'top' => 11, 'font_size' => 2.0, 'width' => 45],
+            'alamat_perusahaan' => ['left' => 5, 'top' => 14.5, 'font_size' => 1.6, 'width' => 45],
+
             // NIK - label di kiri, value di kanan
-            'nik_label'     => ['left' => 5, 'top' => 10, 'font_size' => 2.0, 'width' => 16],
-            'nik'           => ['left' => 22, 'top' => 10, 'font_size' => 2.0, 'width' => 30],
+            'nik_label'     => ['left' => 5, 'top' => 20, 'font_size' => 1.8, 'width' => 16],
+            'nik'           => ['left' => 22, 'top' => 20, 'font_size' => 1.8, 'width' => 30],
             // NAMA
-            'nama_label'    => ['left' => 5, 'top' => 15, 'font_size' => 2.0, 'width' => 16],
-            'nama'          => ['left' => 22, 'top' => 15, 'font_size' => 2.0, 'width' => 30],
+            'nama_label'    => ['left' => 5, 'top' => 25, 'font_size' => 1.8, 'width' => 16],
+            'nama'          => ['left' => 22, 'top' => 25, 'font_size' => 1.8, 'width' => 30],
             // TEMPAT/TANGGAL LAHIR
-            'ttl_label'     => ['left' => 5, 'top' => 20, 'font_size' => 2.0, 'width' => 16],
-            'ttl'           => ['left' => 22, 'top' => 20, 'font_size' => 2.0, 'width' => 30],
+            'ttl_label'     => ['left' => 5, 'top' => 30, 'font_size' => 1.8, 'width' => 16],
+            'ttl'           => ['left' => 22, 'top' => 30, 'font_size' => 1.8, 'width' => 30],
             // ALAMAT
-            'alamat_label' => ['left' => 5, 'top' => 25, 'font_size' => 2.0, 'width' => 16],
-            'alamat'        => ['left' => 22, 'top' => 25, 'font_size' => 1.8, 'width' => 30, 'height' => 9],
+            'alamat_label' => ['left' => 5, 'top' => 35, 'font_size' => 1.8, 'width' => 16],
+            'alamat'        => ['left' => 22, 'top' => 35, 'font_size' => 1.6, 'width' => 30, 'height' => 9],
             // JENIS KELAMIN
-            'jk_label'     => ['left' => 5, 'top' => 33, 'font_size' => 2.0, 'width' => 16],
-            'jk'           => ['left' => 22, 'top' => 33, 'font_size' => 2.0, 'width' => 30],
+            'jk_label'     => ['left' => 5, 'top' => 43, 'font_size' => 1.8, 'width' => 16],
+            'jk'           => ['left' => 22, 'top' => 43, 'font_size' => 1.8, 'width' => 30],
             // AGAMA - baris sendiri
-            'agama_label'  => ['left' => 5, 'top' => 38, 'font_size' => 2.0, 'width' => 16],
-            'agama'        => ['left' => 22, 'top' => 38, 'font_size' => 2.0, 'width' => 30],
+            'agama_label'  => ['left' => 5, 'top' => 48, 'font_size' => 1.8, 'width' => 16],
+            'agama'        => ['left' => 22, 'top' => 48, 'font_size' => 1.8, 'width' => 30],
             // BERLAKU HINGGA
-            'berlaku_label' => ['left' => 5, 'top' => 43, 'font_size' => 2.0, 'width' => 16],
-            'berlaku'       => ['left' => 22, 'top' => 43, 'font_size' => 2.0, 'width' => 30],
+            'berlaku_label' => ['left' => 5, 'top' => 53, 'font_size' => 1.8, 'width' => 16],
+            'berlaku'       => ['left' => 22, 'top' => 53, 'font_size' => 1.8, 'width' => 30],
 
             // Tanggal TTD
-            'tanggal_ttd'   => ['left' => 5, 'top' => 51, 'font_size' => 1.8, 'width' => 22],
+            'tanggal_ttd'   => ['left' => 5, 'top' => 61, 'font_size' => 1.5, 'width' => 22],
 
             // PIMPINAN PUSAT
-            'pimpinan_pusat' => ['left' => 5, 'top' => 55, 'font_size' => 1.3, 'width' => 45],
+            'pimpinan_pusat' => ['left' => 5, 'top' => 64, 'font_size' => 1.2, 'width' => 45],
 
             // TTD Sekretaris
-            'ttd_sekretaris'  => ['left' => 5, 'top' => 62, 'width' => 16, 'height' => 8],
-            'nama_sekretaris' => ['left' => 5, 'top' => 72, 'font_size' => 1.4, 'width' => 16],
+            'ttd_sekretaris'  => ['left' => 5, 'top' => 71, 'width' => 16, 'height' => 7],
+            'nama_sekretaris' => ['left' => 5, 'top' => 80, 'font_size' => 1.2, 'width' => 16],
             // TTD Ketua
-            'ttd_ketua'     => ['left' => 30, 'top' => 62, 'width' => 16, 'height' => 8],
-            'nama_ketua'    => ['left' => 30, 'top' => 72, 'font_size' => 1.4, 'width' => 16],
+            'ttd_ketua'     => ['left' => 30, 'top' => 71, 'width' => 16, 'height' => 7],
+            'nama_ketua'    => ['left' => 30, 'top' => 80, 'font_size' => 1.2, 'width' => 16],
         ],
     ];
 
@@ -247,6 +252,37 @@
 
     {{-- DATA OVERLAY --}}
     <div class="kta-data-layer">
+
+        {{-- DATA PERUSAHAAN --}}
+        @if(isset($fieldPositions['perusahaan_label']))
+            <div class="kta-field kta-field-label"
+                 style="left:{{ $fieldPositions['perusahaan_label']['left'] }}mm;
+                        top:{{ $fieldPositions['perusahaan_label']['top'] }}mm;
+                        font-size:{{ $fieldPositions['perusahaan_label']['font_size'] }}mm;
+                        font-weight:700;">
+                Perusahaan
+            </div>
+        @endif
+        @if(isset($fieldPositions['perusahaan']))
+            <div class="kta-field"
+                 style="left:{{ $fieldPositions['perusahaan']['left'] }}mm;
+                        top:{{ $fieldPositions['perusahaan']['top'] }}mm;
+                        font-size:{{ $fieldPositions['perusahaan']['font_size'] }}mm;
+                        font-weight:700;
+                        width:{{ $fieldPositions['perusahaan']['width'] }}mm;">
+                {{ $member->company?->name ?? '-' }}
+            </div>
+        @endif
+        @if(isset($fieldPositions['alamat_perusahaan']))
+            <div class="kta-field"
+                 style="left:{{ $fieldPositions['alamat_perusahaan']['left'] }}mm;
+                        top:{{ $fieldPositions['alamat_perusahaan']['top'] }}mm;
+                        font-size:{{ $fieldPositions['alamat_perusahaan']['font_size'] }}mm;
+                        font-weight:700;
+                        width:{{ $fieldPositions['alamat_perusahaan']['width'] }}mm;">
+                {{ $member->company?->full_address ?? '-' }}
+            </div>
+        @endif
 
         {{-- NIK --}}
         @if(isset($fieldPositions['nik_label']))

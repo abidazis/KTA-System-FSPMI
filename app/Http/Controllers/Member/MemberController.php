@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\Company;
 use App\Models\Member;
 use App\Models\Province;
 use App\Models\Regency;
@@ -83,10 +84,12 @@ class MemberController extends Controller
     {
         $provinces = Province::orderBy('name')->get();
         $religions = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu'];
+        $companies = Company::where('is_active', true)->orderBy('name')->get();
 
         return view('members.create', [
             'provinces' => $provinces,
             'religions' => $religions,
+            'companies' => $companies,
         ]);
     }
 
@@ -105,6 +108,7 @@ class MemberController extends Controller
             'agama' => ['required', 'string', 'max:50'],
             'berlaku_hingga' => ['required', 'date', 'after:today'],
             'tanggal_pembuatan' => ['required', 'date'],
+            'company_id' => ['required', 'exists:companies,id'],
             'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
 
@@ -142,6 +146,7 @@ class MemberController extends Controller
         $regencies = Regency::where('province_id', $member->province_id)->orderBy('name')->get();
         $districts = District::where('regency_id', $member->regency_id)->orderBy('name')->get();
         $religions = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu'];
+        $companies = Company::where('is_active', true)->orderBy('name')->get();
 
         return view('members.edit', [
             'member' => $member,
@@ -149,6 +154,7 @@ class MemberController extends Controller
             'regencies' => $regencies,
             'districts' => $districts,
             'religions' => $religions,
+            'companies' => $companies,
         ]);
     }
 
@@ -169,7 +175,8 @@ class MemberController extends Controller
             'agama' => ['required', 'string', 'max:50'],
             'berlaku_hingga' => ['required', 'date'],
             'tanggal_pembuatan' => ['required', 'date'],
-            'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'company_id' => ['required', 'exists:companies,id'],
+            'foto' => ['nullable', 'Image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
 
         if ($request->hasFile('foto')) {

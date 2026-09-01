@@ -42,6 +42,8 @@ class KtaController extends Controller
 
     public function preview(Request $request, Member $member): View
     {
+        $member->load('company');
+
         $period = ManagementPeriod::where('status', 'active')->first();
         $officials = $period ? $period->activeOfficials()->get() : collect();
 
@@ -75,6 +77,8 @@ class KtaController extends Controller
 
     public function download(Request $request, Member $member): Response
     {
+        $member->load('company');
+
         $period = ManagementPeriod::where('status', 'active')->first();
         $officials = $period ? $period->activeOfficials()->get() : collect();
 

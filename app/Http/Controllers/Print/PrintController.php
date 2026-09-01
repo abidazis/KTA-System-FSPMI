@@ -38,7 +38,7 @@ class PrintController extends Controller
 
     public function create(Request $request): View
     {
-        $query = Member::with(['province', 'regency', 'district'])
+        $query = Member::with(['province', 'regency', 'district', 'company'])
             ->whereNotNull('foto_path')
             ->whereIn('status', ['ready', 'generated', 'printed', 'active']);
 
@@ -65,7 +65,7 @@ class PrintController extends Controller
             'member_ids' => ['required', 'array', 'min:1', 'max:100'],
         ]);
 
-        $members = Member::with(['province', 'regency', 'district'])
+        $members = Member::with(['province', 'regency', 'district', 'company'])
             ->whereIn('id', $request->member_ids)
             ->get();
 
@@ -155,7 +155,7 @@ class PrintController extends Controller
 
     public function show(PrintBatch $batch): View
     {
-        $batch->load(['period', 'printer', 'members']);
+        $batch->load(['period', 'printer', 'members.company']);
 
         $officials = $batch->period->activeOfficials()->get();
         $ketua = $officials->firstWhere('jabatan', 'Ketua Umum');
@@ -188,7 +188,7 @@ class PrintController extends Controller
 
     public function downloadPdf(Request $request, PrintBatch $batch): \Symfony\Component\HttpFoundation\Response
     {
-        $batch->load(['period', 'printer', 'members']);
+        $batch->load(['period', 'printer', 'members.company']);
 
         $officials = $batch->period->activeOfficials()->get();
         $ketua = $officials->firstWhere('jabatan', 'Ketua Umum');

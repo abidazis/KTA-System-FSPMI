@@ -89,6 +89,16 @@
                 </select>
                 @error('agama') <span class="error">{{ $message }}</span> @enderror
             </div>
+            <div class="form-group">
+                <label for="company_id">Perusahaan *</label>
+                <select id="company_id" name="company_id" required>
+                    <option value="">-- Pilih Perusahaan --</option>
+                    @foreach($companies as $company)
+                    <option value="{{ $company->id }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>{{ $company->name }}</option>
+                    @endforeach
+                </select>
+                @error('company_id') <span class="error">{{ $message }}</span> @enderror
+            </div>
         </div>
 
         <div class="form-row">

@@ -89,6 +89,15 @@
                     @endforeach
                 </select>
             </div>
+            <div class="form-group">
+                <label for="company_id">Perusahaan *</label>
+                <select id="company_id" name="company_id" required>
+                    <option value="">-- Pilih --</option>
+                    @foreach($companies as $company)
+                    <option value="{{ $company->id }}" {{ $member->company_id == $company->id ? 'selected' : '' }}>{{ $company->name }}</option>
+                    @endforeach
+                </select>
+            </div>
         </div>
 
         <div class="form-row">

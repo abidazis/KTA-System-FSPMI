@@ -28,6 +28,7 @@ class Member extends Model
         'tanggal_pembuatan',
         'foto_path',
         'status',
+        'company_id',
         'created_by',
     ];
 
@@ -58,6 +59,11 @@ class Member extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     public function printBatches(): BelongsToMany

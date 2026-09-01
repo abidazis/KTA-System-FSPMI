@@ -11,6 +11,7 @@ use App\Http\Controllers\Member\KtaController;
 use App\Http\Controllers\Member\MemberController;
 use App\Http\Controllers\Print\PrintController;
 use App\Http\Controllers\Region\RegionController;
+use App\Http\Controllers\Setting\CompanyController;
 use App\Http\Controllers\Setting\KtaBackgroundController;
 use App\Http\Controllers\User\UserController;
 use Illuminate\Support\Facades\Route;
@@ -82,6 +83,14 @@ Route::middleware('auth')->group(function () {
         Route::post('settings/kta-background', [KtaBackgroundController::class, 'store'])->name('settings.kta-background.store');
         Route::post('settings/kta-background/{background}/set-active', [KtaBackgroundController::class, 'setActive'])->name('settings.kta-background.set-active');
         Route::delete('settings/kta-background/{background}', [KtaBackgroundController::class, 'destroy'])->name('settings.kta-background.destroy');
+
+        // Master Perusahaan
+        Route::get('settings/companies', [CompanyController::class, 'index'])->name('settings.companies.index');
+        Route::get('settings/companies/create', [CompanyController::class, 'create'])->name('settings.companies.create');
+        Route::post('settings/companies', [CompanyController::class, 'store'])->name('settings.companies.store');
+        Route::get('settings/companies/{company}', [CompanyController::class, 'edit'])->name('settings.companies.edit');
+        Route::put('settings/companies/{company}', [CompanyController::class, 'update'])->name('settings.companies.update');
+        Route::delete('settings/companies/{company}', [CompanyController::class, 'destroy'])->name('settings.companies.destroy');
     });
 
     // Management Periods
