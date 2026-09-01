@@ -90,9 +90,16 @@
             text-align: center;
         }
 
+        .kta-field-center br {
+            display: block;
+            content: "";
+            margin-top: 1px;
+        }
+
         .kta-field-label {
             font-weight: 700;
-            color: #333;
+            color: #000;
+            text-align: right;
         }
 
         .kta-signature {
