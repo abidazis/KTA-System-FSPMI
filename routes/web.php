@@ -52,11 +52,11 @@ Route::middleware('auth')->group(function () {
         Route::get('members/{member}/kta/preview', [KtaController::class, 'preview'])->name('members.kta.preview');
         Route::post('members/{member}/kta/generate', [KtaController::class, 'generate'])->name('members.kta.generate');
         Route::get('members/{member}/kta/download', [KtaController::class, 'download'])->name('members.kta.download');
-
-        // AJAX
-        Route::get('api/regencies', [MemberController::class, 'getRegencies'])->name('api.regencies');
-        Route::get('api/districts', [MemberController::class, 'getDistricts'])->name('api.districts');
     });
+
+    // AJAX - Wilayah (di luar permission agar dropdown berfungsi di semua halaman)
+    Route::get('api/regencies', [MemberController::class, 'getRegencies'])->name('api.regencies');
+    Route::get('api/districts', [MemberController::class, 'getDistricts'])->name('api.districts');
 
     // Import
     Route::middleware('permission:import')->group(function () {

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Sistem KTA Federasi')</title>
-    <script src="{{ asset('js/app.js') }}" defer></script>
-    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <link href="{{ asset('build/assets/app-CTqeGnd-.css') }}" rel="stylesheet">
+    <script src="{{ asset('build/assets/app-DpdE7_Sh.js') }}" defer></script>
     <style>
         :root {
             --primary: #1e40af;
@@ -127,6 +127,10 @@
             <a href="{{ route('settings.kta-background.index') }}" class="{{ request()->routeIs('settings.kta-background.*') ? 'active' : '' }}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 <span>Background KTA</span>
+            </a>
+            <a href="{{ route('settings.companies.index') }}" class="{{ request()->routeIs('settings.companies.*') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                <span>Master Perusahaan</span>
             </a>
             @endcan
             @can('pengurus')

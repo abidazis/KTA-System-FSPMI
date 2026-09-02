@@ -9,8 +9,8 @@ use App\Models\Member;
 use App\Models\Province;
 use App\Models\Regency;
 use App\Models\District;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -86,10 +86,26 @@ class MemberController extends Controller
         $religions = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu'];
         $companies = Company::where('is_active', true)->orderBy('name')->get();
 
+        // Pre-load regencies and districts if coming from validation error
+        $regencies = collect();
+        $districts = collect();
+
+        if (old('regency_id')) {
+            $regencies = Regency::where('province_id', old('province_id'))
+                ->orderBy('name')->get();
+        }
+
+        if (old('district_id')) {
+            $districts = District::where('regency_id', old('regency_id'))
+                ->orderBy('name')->get();
+        }
+
         return view('members.create', [
             'provinces' => $provinces,
             'religions' => $religions,
             'companies' => $companies,
+            'regencies' => $regencies,
+            'districts' => $districts,
         ]);
     }
 
@@ -217,7 +233,7 @@ class MemberController extends Controller
             ->with('success', 'Anggota berhasil dihapus.');
     }
 
-    public function getRegencies(Request $request): Response
+    public function getRegencies(Request $request): JsonResponse
     {
         $regencies = Regency::where('province_id', $request->province_id)
             ->orderBy('name')
@@ -226,7 +242,7 @@ class MemberController extends Controller
         return response()->json($regencies);
     }
 
-    public function getDistricts(Request $request): Response
+    public function getDistricts(Request $request): JsonResponse
     {
         $districts = District::where('regency_id', $request->regency_id)
             ->orderBy('name')

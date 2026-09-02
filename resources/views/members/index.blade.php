@@ -51,6 +51,22 @@
             </select>
         </div>
         <div class="form-group">
+            <select name="agama">
+                <option value="">Semua Agama</option>
+                @foreach(['Islam','Kristen','Katolik','Hindu','Buddha','Konghucu'] as $agama)
+                <option value="{{ $agama }}" {{ request('agama') == $agama ? 'selected' : '' }}>{{ $agama }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="form-group">
+            <select name="masa_berlaku">
+                <option value="">Semua Masa Berlaku</option>
+                <option value="active" {{ request('masa_berlaku') == 'active' ? 'selected' : '' }}>Aktif (>30 hari)</option>
+                <option value="expiring" {{ request('masa_berlaku') == 'expiring' ? 'selected' : '' }}>Segera Expired (<30 hari)</option>
+                <option value="expired" {{ request('masa_berlaku') == 'expired' ? 'selected' : '' }}>Expired</option>
+            </select>
+        </div>
+        <div class="form-group">
             <button type="submit" class="btn btn-sm btn-primary">Filter</button>
             <a href="{{ route('members.index') }}" class="btn btn-sm btn-outline">Reset</a>
         </div>
@@ -78,6 +94,7 @@
                     <th width="40"></th>
                     <th>NIK</th>
                     <th>Nama</th>
+                    <th>Kabupaten/Kota</th>
                     <th>Kecamatan</th>
                     <th>Jenis Kelamin</th>
                     <th>Status</th>
@@ -93,6 +110,7 @@
                     </td>
                     <td><a href="{{ route('members.show', $member) }}">{{ $member->nik }}</a></td>
                     <td>{{ $member->nama }}</td>
+                    <td>{{ $member->regency?->name ?? '-' }}</td>
                     <td>{{ $member->district?->name ?? '-' }}</td>
                     <td>{{ $member->jenis_kelamin }}</td>
                     <td><span class="badge badge-{{ $member->status }}">{{ ucfirst($member->status) }}</span></td>
@@ -105,7 +123,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="empty-state">
+                    <td colspan="9" class="empty-state">
                         <p>Belum ada data anggota.</p>
                         <a href="{{ route('members.create') }}" class="btn btn-primary" style="margin-top:1rem;">Tambah Anggota</a>
                     </td>
@@ -117,27 +135,4 @@
         {{ $members->withQueryString()->links() }}
     </form>
 </div>
-
-@push('scripts')
-<script>
-document.getElementById('select-all').addEventListener('change', function() {
-    document.querySelectorAll('.member-checkbox').forEach(cb => cb.checked = this.checked);
-    updateBulkActions();
-});
-
-document.querySelectorAll('.member-checkbox').forEach(cb => cb.addEventListener('change', updateBulkActions));
-
-function updateBulkActions() {
-    const checked = document.querySelectorAll('.member-checkbox:checked');
-    const bulkActions = document.getElementById('bulk-actions');
-    const count = document.getElementById('selected-count');
-    if (checked.length > 0) {
-        bulkActions.style.display = 'inline-flex';
-        count.textContent = checked.length + ' dipilih';
-    } else {
-        bulkActions.style.display = 'none';
-    }
-}
-</script>
-@endpush
 @endsection

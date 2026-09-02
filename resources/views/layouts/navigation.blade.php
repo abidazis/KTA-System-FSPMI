@@ -27,6 +27,9 @@
                     <x-nav-link :href="route('settings.kta-background.index')" :active="request()->routeIs('settings.kta-background.*')">
                         {{ __('Background KTA') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('settings.companies.index')" :active="request()->routeIs('settings.companies.*')">
+                        {{ __('Master Perusahaan') }}
+                    </x-nav-link>
                     @endcan
                 </div>
             </div>
@@ -94,6 +97,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('settings.kta-background.index')" :active="request()->routeIs('settings.kta-background.*')">
                 {{ __('Background KTA') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('settings.companies.index')" :active="request()->routeIs('settings.companies.*')">
+                {{ __('Master Perusahaan') }}
             </x-responsive-nav-link>
             @endcan
         </div>

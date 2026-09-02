@@ -10,7 +10,7 @@
         <a href="{{ route('members.index') }}" class="btn btn-sm btn-outline">Kembali</a>
     </div>
 
-    <form action="{{ route('members.store') }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ route('members.store') }}" method="POST" enctype="multipart/form-data" id="member-form">
         @csrf
 
         <div class="form-row">
@@ -47,24 +47,34 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label for="province_id">Provinsi</label>
-                <select id="province_id" name="province_id">
+                <label for="province_id">Provinsi *</label>
+                <select id="province_id" name="province_id" required>
                     <option value="">-- Pilih Provinsi --</option>
                     @foreach($provinces as $province)
-                    <option value="{{ $province->id }}" {{ old('province_id') == $province->id ? 'selected' : '' }}>{{ $province->name }}</option>
+                    <option value="{{ $province->id }}">{{ $province->name }}</option>
                     @endforeach
                 </select>
             </div>
             <div class="form-group">
                 <label for="regency_id">Kabupaten/Kota</label>
-                <select id="regency_id" name="regency_id">
+                <select id="regency_id" name="regency_id" disabled>
                     <option value="">-- Pilih Kabupaten/Kota --</option>
+                    @if(old('regency_id'))
+                        @foreach($regencies as $regency)
+                        <option value="{{ $regency->id }}" selected>{{ $regency->name }}</option>
+                        @endforeach
+                    @endif
                 </select>
             </div>
             <div class="form-group">
                 <label for="district_id">Kecamatan</label>
-                <select id="district_id" name="district_id">
+                <select id="district_id" name="district_id" disabled>
                     <option value="">-- Pilih Kecamatan --</option>
+                    @if(old('district_id'))
+                        @foreach($districts as $district)
+                        <option value="{{ $district->id }}" selected>{{ $district->name }}</option>
+                        @endforeach
+                    @endif
                 </select>
             </div>
         </div>
@@ -116,7 +126,7 @@
 
         <div class="form-group">
             <label for="foto">Foto Anggota</label>
-            <input type="file" id="foto" name="foto" accept="image/jpeg,image/png" onchange="previewImage(this)">
+            <input type="file" id="foto" name="foto" accept="image/jpeg,image/png">
             <small style="color:#64748b;">Format: JPG, PNG. Maks: 2MB</small>
             <div id="photo-preview" style="margin-top:1rem;"></div>
             @error('foto') <span class="error">{{ $message }}</span> @enderror
@@ -128,42 +138,4 @@
         </div>
     </form>
 </div>
-
-@push('scripts')
-<script>
-function previewImage(input) {
-    const preview = document.getElementById('photo-preview');
-    preview.innerHTML = '';
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            preview.innerHTML = '<img src="'+e.target.result+'" style="max-width:200px;border-radius:0.5rem;">';
-        };
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
-document.getElementById('province_id').addEventListener('change', function() {
-    const regencySelect = document.getElementById('regency_id');
-    regencySelect.innerHTML = '<option value="">Memuat...</option>';
-    fetch('/api/regencies?province_id='+this.value)
-        .then(r => r.json())
-        .then(data => {
-            regencySelect.innerHTML = '<option value="">-- Pilih Kabupaten/Kota --</option>';
-            data.forEach(r => regencySelect.innerHTML += '<option value="'+r.id+'">'+r.name+'</option>');
-        });
-});
-
-document.getElementById('regency_id').addEventListener('change', function() {
-    const districtSelect = document.getElementById('district_id');
-    districtSelect.innerHTML = '<option value="">Memuat...</option>';
-    fetch('/api/districts?regency_id='+this.value)
-        .then(r => r.json())
-        .then(data => {
-            districtSelect.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
-            data.forEach(d => districtSelect.innerHTML += '<option value="'+d.id+'">'+d.name+'</option>');
-        });
-});
-</script>
-@endpush
 @endsection

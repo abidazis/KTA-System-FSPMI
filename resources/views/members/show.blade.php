@@ -57,6 +57,10 @@
                     <td style="padding:0.5rem 0;">{{ $member->agama }}</td>
                 </tr>
                 <tr>
+                    <td style="padding:0.5rem 0;color:#64748b;">Perusahaan</td>
+                    <td style="padding:0.5rem 0;">{{ $member->company?->name ?? '-' }}</td>
+                </tr>
+                <tr>
                     <td style="padding:0.5rem 0;color:#64748b;">Alamat</td>
                     <td style="padding:0.5rem 0;">{{ $member->alamat }}</td>
                 </tr>
