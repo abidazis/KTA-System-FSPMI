@@ -58,13 +58,13 @@ class KtaController extends Controller
             'tanggal_cetak' => now()->format('d F Y'),
             'logo_path' => public_path('images/logo-kta.png'),
             'ttd_ketua_path' => $ketua && $ketua->signature_path
-                ? storage_path('app/' . $ketua->signature_path)
+                ? storage_path('app/private/' . $ketua->signature_path)
                 : null,
             'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path
-                ? storage_path('app/' . $sekretaris->signature_path)
+                ? storage_path('app/private/' . $sekretaris->signature_path)
                 : null,
             'foto_path' => $member->foto_path
-                ? storage_path('app/' . $member->foto_path)
+                ? storage_path('app/private/' . $member->foto_path)
                 : null,
         ];
 
@@ -93,13 +93,13 @@ class KtaController extends Controller
             'tanggal_cetak' => now()->format('d F Y'),
             'is_pdf' => true,
             'foto_path' => $member->foto_path
-                ? storage_path('app/' . $member->foto_path)
+                ? storage_path('app/private/' . $member->foto_path)
                 : null,
             'ttd_ketua_path' => $ketua && $ketua->signature_path
-                ? storage_path('app/' . $ketua->signature_path)
+                ? storage_path('app/private/' . $ketua->signature_path)
                 : null,
             'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path
-                ? storage_path('app/' . $sekretaris->signature_path)
+                ? storage_path('app/private/' . $sekretaris->signature_path)
                 : null,
         ];
 

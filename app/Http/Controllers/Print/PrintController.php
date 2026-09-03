@@ -88,9 +88,9 @@ class PrintController extends Controller
                 'sekretaris' => $sekretaris,
                 'period' => $period,
                 'tanggal_cetak' => now()->format('d F Y'),
-                'foto_path' => $member->foto_path ? storage_path('app/' . $member->foto_path) : null,
-                'ttd_ketua_path' => $ketua && $ketua->signature_path ? storage_path('app/' . $ketua->signature_path) : null,
-                'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path ? storage_path('app/' . $sekretaris->signature_path) : null,
+                'foto_path' => $member->foto_path ? storage_path('app/private/' . $member->foto_path) : null,
+                'ttd_ketua_path' => $ketua && $ketua->signature_path ? storage_path('app/private/' . $ketua->signature_path) : null,
+                'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path ? storage_path('app/private/' . $sekretaris->signature_path) : null,
             ];
         });
 
@@ -168,9 +168,9 @@ class PrintController extends Controller
                 'sekretaris' => $sekretaris,
                 'period' => $batch->period,
                 'tanggal_cetak' => $batch->tanggal_cetak->format('d F Y'),
-                'foto_path' => $member->foto_path ? storage_path('app/' . $member->foto_path) : null,
-                'ttd_ketua_path' => $ketua && $ketua->signature_path ? storage_path('app/' . $ketua->signature_path) : null,
-                'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path ? storage_path('app/' . $sekretaris->signature_path) : null,
+                'foto_path' => $member->foto_path ? storage_path('app/private/' . $member->foto_path) : null,
+                'ttd_ketua_path' => $ketua && $ketua->signature_path ? storage_path('app/private/' . $ketua->signature_path) : null,
+                'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path ? storage_path('app/private/' . $sekretaris->signature_path) : null,
             ];
         });
 
@@ -207,9 +207,9 @@ class PrintController extends Controller
                 'sekretaris' => $sekretaris,
                 'period' => $batch->period,
                 'tanggal_cetak' => $batch->tanggal_cetak->format('d F Y'),
-                'foto_path' => $member->foto_path ? storage_path('app/' . $member->foto_path) : null,
-                'ttd_ketua_path' => $ketua && $ketua->signature_path ? storage_path('app/' . $ketua->signature_path) : null,
-                'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path ? storage_path('app/' . $sekretaris->signature_path) : null,
+                'foto_path' => $member->foto_path ? storage_path('app/private/' . $member->foto_path) : null,
+                'ttd_ketua_path' => $ketua && $ketua->signature_path ? storage_path('app/private/' . $ketua->signature_path) : null,
+                'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path ? storage_path('app/private/' . $sekretaris->signature_path) : null,
             ];
         });
 

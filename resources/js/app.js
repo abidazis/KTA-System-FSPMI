@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initWilayahDropdowns();
     initBulkActions();
     initPhotoPreview();
+    initInlineStatusChange();
 });
 
 function initWilayahDropdowns() {
@@ -216,6 +217,45 @@ function initBulkActions() {
             }
         }
     }
+
+    // Toggle status dropdown based on action
+    var bulkActionSelect = document.getElementById('bulk-action-select');
+    var newStatusSelect = document.getElementById('new-status-select');
+    var bulkSubmitBtn = document.getElementById('bulk-submit-btn');
+
+    if (bulkActionSelect && newStatusSelect && bulkSubmitBtn) {
+        bulkActionSelect.addEventListener('change', function() {
+            if (this.value === 'update_status') {
+                newStatusSelect.style.display = 'inline-block';
+            } else {
+                newStatusSelect.style.display = 'none';
+            }
+        });
+
+        bulkSubmitBtn.addEventListener('click', function(e) {
+            var action = bulkActionSelect.value;
+            if (!action) {
+                e.preventDefault();
+                alert('Pilih aksi terlebih dahulu!');
+                return false;
+            }
+            if (action === 'update_status') {
+                var newStatus = newStatusSelect.value;
+                if (!newStatus) {
+                    e.preventDefault();
+                    alert('Pilih status baru!');
+                    return false;
+                }
+            }
+            if (action === 'delete') {
+                if (!confirm('Yakin ingin menghapus ' + document.querySelectorAll('.member-checkbox:checked').length + ' anggota?')) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
 }
 
 function initPhotoPreview() {
@@ -235,6 +275,59 @@ function initPhotoPreview() {
             reader.readAsDataURL(this.files[0]);
         }
     });
+}
+
+// Inline status change for members table
+function initInlineStatusChange() {
+    document.querySelectorAll('.status-select').forEach(function(select) {
+        select.addEventListener('change', function() {
+            var memberId = this.getAttribute('data-member-id');
+            var newStatus = this.value;
+            var selectElement = this;
+
+            if (!confirm('Ubah status anggota ini menjadi "' + newStatus + '"?')) {
+                // Revert to previous value
+                return;
+            }
+
+            // Send AJAX request
+            ajaxPost('/members/' + memberId + '/status', { status: newStatus },
+                function(response) {
+                    // Show success feedback
+                    selectElement.style.borderColor = '#059669';
+                    selectElement.style.backgroundColor = '#d1fae5';
+                    setTimeout(function() {
+                        selectElement.style.borderColor = '';
+                        selectElement.style.backgroundColor = '';
+                    }, 1000);
+                },
+                function(error) {
+                    alert('Gagal mengubah status: ' + error);
+                    // Could revert select value here
+                }
+            );
+        });
+    });
+}
+
+function ajaxPost(url, data, onSuccess, onError) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
+    xhr.withCredentials = true;
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('X-CSRF-TOKEN', getCsrfToken());
+    xhr.setRequestHeader('X-HTTP-Method-Override', 'PATCH');
+    xhr.onload = function() {
+        if (xhr.status === 200 || xhr.status === 302) {
+            onSuccess(JSON.parse(xhr.responseText) || {});
+        } else {
+            onError('HTTP ' + xhr.status);
+        }
+    };
+    xhr.onerror = function() {
+        onError('Network error');
+    };
+    xhr.send(JSON.stringify(data));
 }
 
 // Debug function - exposed globally

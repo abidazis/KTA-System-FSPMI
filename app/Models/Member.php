@@ -85,7 +85,7 @@ class Member extends Model
 
     public function hasPhoto(): bool
     {
-        return !empty($this->foto_path) && file_exists(storage_path('app/' . $this->foto_path));
+        return !empty($this->foto_path) && file_exists(storage_path('app/private/' . $this->foto_path));
     }
 
     public function scopeActive($query)

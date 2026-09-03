@@ -80,11 +80,21 @@
             </label>
             <div id="bulk-actions" style="display:none;">
                 <span id="selected-count">0 dipilih</span>
-                <select name="action" style="margin-left:0.5rem;padding:0.4rem;">
+                <select name="action" id="bulk-action-select" style="margin-left:0.5rem;padding:0.4rem;">
                     <option value="">-- Aksi --</option>
+                    <option value="update_status">Ubah Status</option>
                     <option value="delete">Hapus</option>
                 </select>
-                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus anggota terpilih?')">Proses</button>
+                <select name="new_status" id="new-status-select" style="margin-left:0.5rem;padding:0.4rem;display:none;">
+                    <option value="">-- Status --</option>
+                    <option value="draft">Draft</option>
+                    <option value="ready">Ready</option>
+                    <option value="generated">Generated</option>
+                    <option value="printed">Printed</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+                <button type="submit" class="btn btn-sm btn-danger" id="bulk-submit-btn">Proses</button>
             </div>
         </div>
 
@@ -113,11 +123,26 @@
                     <td>{{ $member->regency?->name ?? '-' }}</td>
                     <td>{{ $member->district?->name ?? '-' }}</td>
                     <td>{{ $member->jenis_kelamin }}</td>
-                    <td><span class="badge badge-{{ $member->status }}">{{ ucfirst($member->status) }}</span></td>
+                    <td>
+                        <select name="status" class="status-select" data-member-id="{{ $member->id }}" style="padding:0.3rem;border-radius:0.25rem;border:1px solid #d1d5db;font-size:0.8rem;">
+                            <option value="draft" {{ $member->status == 'draft' ? 'selected' : '' }}>Draft</option>
+                            <option value="ready" {{ $member->status == 'ready' ? 'selected' : '' }}>Ready</option>
+                            <option value="generated" {{ $member->status == 'generated' ? 'selected' : '' }}>Generated</option>
+                            <option value="printed" {{ $member->status == 'printed' ? 'selected' : '' }}>Printed</option>
+                            <option value="active" {{ $member->status == 'active' ? 'selected' : '' }}>Active</option>
+                            <option value="inactive" {{ $member->status == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                        </select>
+                    </td>
                     <td>{{ $member->berlaku_hingga->format('d/m/Y') }}</td>
                     <td>
                         <div class="actions">
-                            <a href="{{ route('members.show', $member) }}" class="btn btn-sm btn-outline">Detail</a>
+                            <a href="{{ route('members.show', $member) }}" class="btn btn-sm btn-outline" title="Detail">Detail</a>
+                            <a href="{{ route('members.edit', $member) }}" class="btn btn-sm btn-primary" title="Edit">Edit</a>
+                            <form method="POST" action="{{ route('members.destroy', $member) }}" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus anggota ini?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-danger" title="Hapus">Hapus</button>
+                            </form>
                         </div>
                     </td>
                 </tr>

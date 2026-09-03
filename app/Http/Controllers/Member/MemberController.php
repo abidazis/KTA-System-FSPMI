@@ -251,6 +251,24 @@ class MemberController extends Controller
         return response()->json($districts);
     }
 
+    public function updateStatus(Request $request, Member $member): JsonResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'in:draft,ready,generated,printed,active,inactive'],
+        ]);
+
+        $oldStatus = $member->status;
+        $member->update(['status' => $validated['status']]);
+
+        AuditLog::log('update_member_status', $member, ['status' => $oldStatus], ['status' => $validated['status']]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status berhasil diubah',
+            'status' => $member->status,
+        ]);
+    }
+
     public function bulkAction(Request $request): \Illuminate\Http\RedirectResponse
     {
         $validated = $request->validate([

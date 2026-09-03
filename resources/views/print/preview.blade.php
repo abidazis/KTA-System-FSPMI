@@ -115,6 +115,28 @@
     object-fit: cover;
 }
 
+/*
+|--------------------------------------------------------------------------
+| AUTO-FIT untuk NAMA & NIK yang panjang (front side)
+|--------------------------------------------------------------------------
+*/
+.kta-field-autofit {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+    transform-origin: left center;
+    line-height: 1;
+}
+
+.kta-field-autofit-center {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+    transform-origin: center center;
+    line-height: 1;
+    text-align: center;
+}
+
 .page-label {
     position: absolute;
     bottom: 0.3cm;
@@ -123,6 +145,33 @@
     color: #94a3b8;
 }
 </style>
+@endprepend
+
+@prepend('scripts')
+<script>
+(function () {
+    function fitField(el) {
+        if (!el || !el.scrollWidth || !el.clientWidth) return;
+        var overflow = el.scrollWidth - el.clientWidth;
+        if (overflow > 0.5) {
+            var ratio = el.clientWidth / el.scrollWidth;
+            if (ratio < 0.6) ratio = 0.6;
+            el.style.transform = 'scaleX(' + ratio.toFixed(3) + ')';
+        }
+    }
+    function fitAll() {
+        var nodes = document.querySelectorAll('[data-autofit="true"]');
+        for (var i = 0; i < nodes.length; i++) fitField(nodes[i]);
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fitAll);
+    } else {
+        fitAll();
+    }
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll);
+    window.addEventListener('load', fitAll);
+})();
+</script>
 @endprepend
 
 @section('title', 'Preview Batch Cetak')

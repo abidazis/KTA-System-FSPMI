@@ -2,29 +2,13 @@
      KTA FSPMI - BACKGROUND IMAGE + DATA OVERLAY
 
      Physical size: PORTRAIT 54mm x 85.6mm
-     Background images are portrait (54mm x 85.6mm) - matches card natively
-
-     FRONT (SISI FOTO) = $side === 'front'
-       - Background: kta-backgrounds/front_image
-       - Contains: foto, nama, nik (overlay on background design)
-
-     BACK (SISI DATA) = $side === 'back'
-       - Background: kta-backgrounds/back_image
-       - Contains: semua data + tanda tangan (TTL, Alamat, JK, Agama, dll)
-
-     $side = front / back
-     $background = KtaBackground instance or null
 ================================================================ --}}
 
 @php
     $side = $side ?? 'front';
     $isPdf = $isPdf ?? false;
 
-    /*
-    |--------------------------------------------------------------------------
-    | IMAGE HELPER - base64 for all (works in browser AND DomPDF)
-    |--------------------------------------------------------------------------
-    */
+    /* IMAGE HELPER */
     $imageSrc = function ($path) {
         if (!$path || !file_exists($path)) {
             return null;
@@ -33,11 +17,7 @@
         return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($path));
     };
 
-    /*
-    |--------------------------------------------------------------------------
-    | BACKGROUND IMAGE
-    |--------------------------------------------------------------------------
-    */
+    /* BACKGROUND IMAGE */
     $bgImagePath = null;
     $bgSrc = null;
     if ($background) {
@@ -51,24 +31,16 @@
         }
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | MEMBER DATA
-    |--------------------------------------------------------------------------
-    */
+    /* MEMBER DATA */
     $tanggalLahir = !empty($member->tanggal_lahir)
-        ? \Carbon\Carbon::parse($member->tanggal_lahir)->format('d/m/Y')
+        ? \Carbon\Carbon::parse($member->tanggal_lahir)->format('d-m-Y')
         : '-';
 
     $berlakuHingga = !empty($member->berlaku_hingga)
-        ? \Carbon\Carbon::parse($member->berlaku_hingga)->format('d/m/Y')
+        ? \Carbon\Carbon::parse($member->berlaku_hingga)->format('d F Y')
         : '-';
 
-    /*
-    |--------------------------------------------------------------------------
-    | SIGNATURE
-    |--------------------------------------------------------------------------
-    */
+    /* SIGNATURE */
     $ttdSekretaris = null;
     if (!empty($ttd_sekretaris_path) && file_exists($ttd_sekretaris_path)) {
         $ttdSekretaris = $imageSrc($ttd_sekretaris_path);
@@ -79,349 +51,231 @@
         $ttdKetua = $imageSrc($ttd_ketua_path);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | MEMBER PHOTO
-    |--------------------------------------------------------------------------
-    | Photo path bisa dari:
-    | 1. $foto_path (absolute path, dari controller)
-    | 2. $member->foto_path (relative, perlu ditambahkan storage_path)
-    |--------------------------------------------------------------------------
-    */
+    /* MEMBER PHOTO */
     $fotoSrc = null;
-
-    // Coba dari $foto_path dulu (absolute path dari controller)
     if (!empty($foto_path) && file_exists($foto_path)) {
         $fotoSrc = $imageSrc($foto_path);
     }
-
-    // Fallback: construct dari $member->foto_path
     if (!$fotoSrc && !empty($member->foto_path)) {
-        $absoluteFoto = storage_path('app/' . $member->foto_path);
+        $absoluteFoto = storage_path('app/private/' . $member->foto_path);
         if (file_exists($absoluteFoto)) {
             $fotoSrc = $imageSrc($absoluteFoto);
         }
     }
 
+    /* TEXT WRAP HELPER - pecah string jadi baris dengan <br> untuk DomPDF */
+    $wrapText = function ($text, $charsPerLine = 45) {
+        if (empty($text)) return '-';
+        $wrapped = wordwrap($text, $charsPerLine, "|||BREAK|||", false);
+        $lines = explode("|||BREAK|||", $wrapped);
+        return implode('<br>', $lines);
+    };
+
     /*
     |--------------------------------------------------------------------------
     | FIELD POSITIONS (mm from top-left of PORTRAIT card: 54mm x 85.6mm)
-    | Unit: mm (milimeter) - sesuai ukuran fisik KTA
+    | DIKALIBRASI ULANG UNTUK PRESISI KETAT (Interval Rapat)
     |--------------------------------------------------------------------------
-    |
-    | FRONT (sisi foto):
-    | - Foto: di sisi kiri card (x=5-29, y=15-47)
-    | - Nama: di sisi kanan foto, di bawah (x=30, y=52)
-    | - NIK: di kanan foto, di bawah Nama (x=30, y=58)
-    |
-    | BACK (sisi data) - Label di kiri, Value di kanan:
-    | - NIK: label x=5, value x=22
-    | - NAMA: label x=5, value x=22
-    | - TEMPAT/TGL LAHIR: label x=5, value x=22
-    | - ALAMAT: label x=5, value x=22
-    | - JENIS KELAMIN: label x=5, value x=28 (baris sama dg Agama)
-    | - AGAMA: label x=27, value x=35 (baris sama dg JK)
-    | - BERLAKU HINGGA: label x=5, value x=22
-    | - Tanggal TTD: x=5, y=60
-    | - TTD Sekretaris: x=5, y=63, Nama Sekertaris: x=5, y=73
-    | - TTD Ketua: x=29, y=63, Nama Ketua: x=29, y=73
-    |
     */
 
     $positions = [
         'front' => [
-            // Foto - di sisi kiri card
-            'foto'          => ['left' => 5, 'top' => 10, 'width' => 23, 'height' => 40],
-            // Nama - di sisi kanan foto, di bawah (lebih besar & bold)
-            'nama'          => ['left' => 30, 'top' => 56, 'font_size' => 2.8, 'width' => 23],
-            // NIK - di kanan foto, di bawah Nama (lebih rapat)
-            'nik'           => ['left' => 30, 'top' => 61, 'font_size' => 2.8, 'width' => 23],
+            // Foto sedikit lebih pas di frame kuning
+            'foto'          => ['left' => 26.5, 'top' => 30.5, 'width' => 22.5, 'height' => 30.5],
+            // Nama & NIK (Lebar disamakan dengan foto agar center presisi)
+            'nama'          => ['left' => 25.5, 'top' => 62, 'font_size' => 1.8, 'width' => 24.5],
+            'nik'           => ['left' => 25.5, 'top' => 64, 'font_size' => 1.9, 'width' => 24.5],
         ],
         'back' => [
-            // Data Perusahaan - header section
-            'perusahaan_label' => ['left' => 5, 'top' => 8, 'font_size' => 1.8, 'width' => 16],
-            'perusahaan' => ['left' => 5, 'top' => 11, 'font_size' => 2.0, 'width' => 45],
-            'alamat_perusahaan' => ['left' => 5, 'top' => 14.5, 'font_size' => 1.6, 'width' => 45],
+            // Nama PT dinaikkan karena teks PUK SPAMK sudah nempel di background
+            'perusahaan'       => ['left' => 0, 'top' => 8, 'font_size' => 1.8, 'width' => 54],
+            // Alamat perusahaan - auto-wrap via PHP, no height restriction
+            'alamat_perusahaan'=> ['left' => 4, 'top' => 11, 'font_size' => 1.5, 'width' => 46],
 
-            // NIK - label di kiri, value di kanan
-            'nik_label'     => ['left' => 5, 'top' => 20, 'font_size' => 1.8, 'width' => 16],
-            'nik'           => ['left' => 22, 'top' => 20, 'font_size' => 1.8, 'width' => 30],
-            // NAMA
-            'nama_label'    => ['left' => 5, 'top' => 25, 'font_size' => 1.8, 'width' => 16],
-            'nama'          => ['left' => 22, 'top' => 25, 'font_size' => 1.8, 'width' => 30],
-            // TEMPAT/TANGGAL LAHIR
-            'ttl_label'     => ['left' => 5, 'top' => 30, 'font_size' => 1.8, 'width' => 16],
-            'ttl'           => ['left' => 22, 'top' => 30, 'font_size' => 1.8, 'width' => 30],
-            // ALAMAT
-            'alamat_label' => ['left' => 5, 'top' => 35, 'font_size' => 1.8, 'width' => 16],
-            'alamat'        => ['left' => 22, 'top' => 35, 'font_size' => 1.6, 'width' => 30, 'height' => 9],
-            // JENIS KELAMIN
-            'jk_label'     => ['left' => 5, 'top' => 43, 'font_size' => 1.8, 'width' => 16],
-            'jk'           => ['left' => 22, 'top' => 43, 'font_size' => 1.8, 'width' => 30],
-            // AGAMA - baris sendiri
-            'agama_label'  => ['left' => 5, 'top' => 48, 'font_size' => 1.8, 'width' => 16],
-            'agama'        => ['left' => 22, 'top' => 48, 'font_size' => 1.8, 'width' => 30],
-            // BERLAKU HINGGA
-            'berlaku_label' => ['left' => 5, 'top' => 53, 'font_size' => 1.8, 'width' => 16],
-            'berlaku'       => ['left' => 22, 'top' => 53, 'font_size' => 1.8, 'width' => 30],
+            // Data Anggota - Interval ditekan ke 3.2mm per baris agar rapat
+            'nik_label'     => ['left' => 3, 'top' => 20, 'font_size' => 1.75, 'width' => 14],
+            'nik'           => ['left' => 17, 'top' => 20, 'font_size' => 1.75, 'width' => 34],
 
-            // Tanggal TTD
-            'tanggal_ttd'   => ['left' => 5, 'top' => 61, 'font_size' => 1.5, 'width' => 22],
+            'nama_label'    => ['left' => 3, 'top' => 23.2, 'font_size' => 1.75, 'width' => 14],
+            'nama'          => ['left' => 17, 'top' => 23.2, 'font_size' => 1.75, 'width' => 34],
 
-            // PIMPINAN PUSAT
-            'pimpinan_pusat' => ['left' => 5, 'top' => 64, 'font_size' => 1.2, 'width' => 45],
+            'ttl_label'     => ['left' => 3, 'top' => 26.4, 'font_size' => 1.75, 'width' => 14],
+            'ttl'           => ['left' => 17, 'top' => 26.4, 'font_size' => 1.75, 'width' => 34],
 
-            // TTD Sekretaris
-            'ttd_sekretaris'  => ['left' => 5, 'top' => 71, 'width' => 16, 'height' => 7],
-            'nama_sekretaris' => ['left' => 5, 'top' => 80, 'font_size' => 1.2, 'width' => 16],
-            // TTD Ketua
-            'ttd_ketua'     => ['left' => 30, 'top' => 71, 'width' => 16, 'height' => 7],
-            'nama_ketua'    => ['left' => 30, 'top' => 80, 'font_size' => 1.2, 'width' => 16],
+            'alamat_label'  => ['left' => 3, 'top' => 29.6, 'font_size' => 1.75, 'width' => 14],
+            // Alamat auto-wrap, font disamain dengan field lain (1.75mm)
+            'alamat'        => ['left' => 17, 'top' => 29.6, 'font_size' => 1.75, 'width' => 34, 'height' => 8],
+
+            // Jarak khusus (gap) antara Alamat ke Jenis Kelamin (Sesuai KTA Asli)
+            'jk_label'      => ['left' => 3, 'top' => 36, 'font_size' => 1.75, 'width' => 14],
+            'jk'            => ['left' => 17, 'top' => 36, 'font_size' => 1.75, 'width' => 34],
+
+            'agama_label'   => ['left' => 3, 'top' => 39, 'font_size' => 1.75, 'width' => 14],
+            'agama'         => ['left' => 17, 'top' => 39, 'font_size' => 1.75, 'width' => 34],
+
+            'berlaku_label' => ['left' => 3, 'top' => 42, 'font_size' => 1.75, 'width' => 14],
+            'berlaku'       => ['left' => 17, 'top' => 42, 'font_size' => 1.75, 'width' => 34],
+
+            // Footer (Tanggal, Pimpinan Pusat, TTD) - Posisinya dinaikkan sedikit agar tidak mentok bawah
+            'tanggal_ttd'   => ['left' => 0, 'top' => 50, 'font_size' => 1.75, 'width' => 54],
+            'pimpinan_pusat' => ['left' => 2, 'top' => 53, 'font_size' => 1.75, 'width' => 50],
+
+            'label_sekretaris'=> ['left' => 2, 'top' => 61, 'font_size' => 1.75, 'width' => 24],
+            'ttd_sekretaris'  => ['left' => 6, 'top' => 64, 'width' => 16, 'height' => 8],
+            'nama_sekretaris' => ['left' => 2, 'top' => 73, 'font_size' => 1.75, 'width' => 24],
+
+            'label_ketua'     => ['left' => 28, 'top' => 61, 'font_size' => 1.75, 'width' => 24],
+            'ttd_ketua'       => ['left' => 32, 'top' => 64, 'width' => 16, 'height' => 8],
+            'nama_ketua'      => ['left' => 28, 'top' => 73, 'font_size' => 1.75, 'width' => 24],
         ],
     ];
 
     $fieldPositions = $positions[$side] ?? [];
 @endphp
 
-
 @if($side === 'front')
 {{-- ================================================================
      FRONT - SISI FOTO
 ================================================================ --}}
-
-<div class="kta-card kta-front">
-
-    {{-- BACKGROUND (sisi foto: kuning dengan pola kotak) --}}
+<div class="kta-card kta-front" style="font-family: Arial, Helvetica, sans-serif;">
     @if($bgSrc)
         <img class="kta-bg-image" src="{{ $bgSrc }}" alt="">
     @endif
 
-    {{-- DATA OVERLAY --}}
     <div class="kta-data-layer">
-
         {{-- FOTO ANGGOTA --}}
         @if(isset($fieldPositions['foto']) && $fotoSrc)
             <div class="kta-photo"
                  style="left:{{ $fieldPositions['foto']['left'] }}mm;
                         top:{{ $fieldPositions['foto']['top'] }}mm;
-                        width:{{ $fieldPositions['foto']['width'] ?? 22 }}mm;
-                        height:{{ $fieldPositions['foto']['height'] ?? 30 }}mm;">
-                <img src="{{ $fotoSrc }}" alt="Foto">
+                        width:{{ $fieldPositions['foto']['width'] }}mm;
+                        height:{{ $fieldPositions['foto']['height'] }}mm;
+                        position:absolute;">
+                <img src="{{ $fotoSrc }}" alt="Foto" style="width:100%; height:100%; object-fit:cover; border-radius:1mm;">
             </div>
         @endif
 
-        {{-- NAMA (overlay di background) --}}
+        {{-- NAMA (Word-wrap aktif untuk nama panjang) --}}
         @if(isset($fieldPositions['nama']))
             <div class="kta-field"
                  style="left:{{ $fieldPositions['nama']['left'] }}mm;
                         top:{{ $fieldPositions['nama']['top'] }}mm;
                         font-size:{{ $fieldPositions['nama']['font_size'] }}mm;
-                        font-weight:700;
-                        width:{{ $fieldPositions['nama']['width'] ?? 25 }}mm;">
+                        font-weight:bold;
+                        text-align:center;
+                        width:{{ $fieldPositions['nama']['width'] }}mm;
+                        line-height: 1.0; 
+                        word-wrap: break-word;
+                        letter-spacing: -0.1mm;">
                 {{ strtoupper($member->nama ?? '-') }}
             </div>
         @endif
 
-        {{-- NIK (overlay di background) --}}
+        {{-- NIK --}}
         @if(isset($fieldPositions['nik']))
             <div class="kta-field"
                  style="left:{{ $fieldPositions['nik']['left'] }}mm;
                         top:{{ $fieldPositions['nik']['top'] }}mm;
                         font-size:{{ $fieldPositions['nik']['font_size'] }}mm;
-                        font-weight:700;
-                        width:{{ $fieldPositions['nik']['width'] ?? 25 }}mm;">
+                        font-weight:bold;
+                        text-align:center;
+                        width:{{ $fieldPositions['nik']['width'] }}mm;
+                        line-height: 1.0;">
                 {{ $member->nik ?? '-' }}
             </div>
         @endif
-
     </div>
-
 </div>
 
 @else
 {{-- ================================================================
      BACK - SISI DATA + TANDA TANGAN
 ================================================================ --}}
-
-<div class="kta-card kta-back">
-
-    {{-- BACKGROUND (sisi data: pink/oranye) --}}
+<div class="kta-card kta-back" style="font-family: Arial, Helvetica, sans-serif;">
     @if($bgSrc)
         <img class="kta-bg-image" src="{{ $bgSrc }}" alt="">
     @endif
 
-    {{-- DATA OVERLAY --}}
     <div class="kta-data-layer">
-
-        {{-- DATA PERUSAHAAN --}}
-        @if(isset($fieldPositions['perusahaan_label']))
-            <div class="kta-field kta-field-label"
-                 style="left:{{ $fieldPositions['perusahaan_label']['left'] }}mm;
-                        top:{{ $fieldPositions['perusahaan_label']['top'] }}mm;
-                        font-size:{{ $fieldPositions['perusahaan_label']['font_size'] }}mm;
-                        font-weight:700;">
-                Perusahaan
-            </div>
-        @endif
+        
+        {{-- NAMA PERUSAHAAN (PUK SPAMK sudah dihapus, sisa ini saja) --}}
         @if(isset($fieldPositions['perusahaan']))
-            <div class="kta-field"
+            <div class="kta-field kta-field-center"
                  style="left:{{ $fieldPositions['perusahaan']['left'] }}mm;
                         top:{{ $fieldPositions['perusahaan']['top'] }}mm;
                         font-size:{{ $fieldPositions['perusahaan']['font_size'] }}mm;
-                        font-weight:700;
-                        width:{{ $fieldPositions['perusahaan']['width'] }}mm;">
-                {{ $member->company?->name ?? '-' }}
+                        width:{{ $fieldPositions['perusahaan']['width'] }}mm;
+                        color:#4B0082; font-weight:900;">
+                {{ strtoupper($member->company?->name ?? '-') }}
             </div>
         @endif
+
+        {{-- ALAMAT PERUSAHAAN (Auto-wrap via PHP, center text, no height restriction) --}}
         @if(isset($fieldPositions['alamat_perusahaan']))
-            <div class="kta-field"
+            <div class="kta-field kta-field-alamat-perusahaan"
                  style="left:{{ $fieldPositions['alamat_perusahaan']['left'] }}mm;
                         top:{{ $fieldPositions['alamat_perusahaan']['top'] }}mm;
                         font-size:{{ $fieldPositions['alamat_perusahaan']['font_size'] }}mm;
-                        font-weight:700;
-                        width:{{ $fieldPositions['alamat_perusahaan']['width'] }}mm;">
-                {{ $member->company?->full_address ?? '-' }}
+                        width:{{ $fieldPositions['alamat_perusahaan']['width'] }}mm;
+                        color:#4B0082; font-weight:bold;
+                        line-height: 1.2; text-align:center;">
+                {!! $wrapText($member->company?->full_address ?? '-', 42) !!}
             </div>
         @endif
 
-        {{-- NIK --}}
-        @if(isset($fieldPositions['nik_label']))
-            <div class="kta-field kta-field-label"
-                 style="left:{{ $fieldPositions['nik_label']['left'] }}mm;
-                        top:{{ $fieldPositions['nik_label']['top'] }}mm;
-                        font-size:{{ $fieldPositions['nik_label']['font_size'] }}mm;
-                        font-weight:700;">
-                NIK
-            </div>
-        @endif
-        @if(isset($fieldPositions['nik']))
-            <div class="kta-field"
-                 style="left:{{ $fieldPositions['nik']['left'] }}mm;
-                        top:{{ $fieldPositions['nik']['top'] }}mm;
-                        font-size:{{ $fieldPositions['nik']['font_size'] }}mm;
-                        font-weight:700;">
-                {{ $member->nik ?? '-' }}
-            </div>
-        @endif
+        {{-- FIELDS DATA ANGGOTA --}}
+        @php
+            $fields = [
+                ['label' => 'NIK', 'val_key' => 'nik', 'value' => $member->nik ?? '-'],
+                ['label' => 'NAMA', 'val_key' => 'nama', 'value' => strtoupper($member->nama ?? '-')],
+                ['label' => 'Tempat/Tgl Lahir', 'val_key' => 'ttl', 'value' => strtoupper($member->tempat_lahir ?? '-') . ' ' . $tanggalLahir],
+                ['label' => 'Alamat', 'val_key' => 'alamat', 'value' => $member->alamat ?? '-'],
+                ['label' => 'Jenis Kelamin', 'val_key' => 'jk', 'value' => $member->jenis_kelamin ?? '-'],
+                ['label' => 'Agama', 'val_key' => 'agama', 'value' => $member->agama ?? '-'],
+                ['label' => 'Berlaku Hingga', 'val_key' => 'berlaku', 'value' => $berlakuHingga]
+            ];
+        @endphp
 
-        {{-- NAMA --}}
-        @if(isset($fieldPositions['nama_label']))
-            <div class="kta-field kta-field-label"
-                 style="left:{{ $fieldPositions['nama_label']['left'] }}mm;
-                        top:{{ $fieldPositions['nama_label']['top'] }}mm;
-                        font-size:{{ $fieldPositions['nama_label']['font_size'] }}mm;
-                        font-weight:700;">
-                NAMA
-            </div>
-        @endif
-        @if(isset($fieldPositions['nama']))
-            <div class="kta-field"
-                 style="left:{{ $fieldPositions['nama']['left'] }}mm;
-                        top:{{ $fieldPositions['nama']['top'] }}mm;
-                        font-size:{{ $fieldPositions['nama']['font_size'] }}mm;
-                        font-weight:700;">
-                {{ strtoupper($member->nama ?? '-') }}
-            </div>
-        @endif
+        @foreach($fields as $f)
+            @if(isset($fieldPositions[$f['val_key'].'_label']))
+                <div class="kta-field"
+                     style="left:{{ $fieldPositions[$f['val_key'].'_label']['left'] }}mm;
+                            top:{{ $fieldPositions[$f['val_key'].'_label']['top'] }}mm;
+                            font-size:{{ $fieldPositions[$f['val_key'].'_label']['font_size'] }}mm;
+                            font-weight:bold; color:#000;">
+                    {{ $f['label'] }}
+                </div>
+            @endif
+            @if(isset($fieldPositions[$f['val_key']]))
+                @php
+                    $extraClass = $f['val_key'] === 'alamat' ? ' kta-field-alamat' : '';
+                    // Wrap alamat dengan PHP untuk DomPDF compatibility
+                    $displayValue = $f['val_key'] === 'alamat'
+                        ? $wrapText($f['value'], 30)
+                        : $f['value'];
+                @endphp
+                <div class="kta-field{{ $extraClass }}"
+                     style="left:{{ $fieldPositions[$f['val_key']]['left'] }}mm;
+                            top:{{ $fieldPositions[$f['val_key']]['top'] }}mm;
+                            font-size:{{ $fieldPositions[$f['val_key']]['font_size'] }}mm;
+                            font-weight:bold; color:#000;
+                            width:{{ $fieldPositions[$f['val_key']]['width'] }}mm;
+                            @if(isset($fieldPositions[$f['val_key']]['height']) && $f['val_key'] !== 'alamat') height:{{ $fieldPositions[$f['val_key']]['height'] }}mm; overflow:hidden; line-height: 1.2; @endif
+                            @if($f['val_key'] === 'alamat') line-height: 1.2; @endif">
+                    : {!! $displayValue !!}
+                </div>
+            @endif
+        @endforeach
 
-        {{-- TEMPAT/TGL LAHIR --}}
-        @if(isset($fieldPositions['ttl_label']))
-            <div class="kta-field kta-field-label"
-                 style="left:{{ $fieldPositions['ttl_label']['left'] }}mm;
-                        top:{{ $fieldPositions['ttl_label']['top'] }}mm;
-                        font-size:{{ $fieldPositions['ttl_label']['font_size'] }}mm;
-                        font-weight:700;">
-                Tempat/Tgl Lahir
-            </div>
-        @endif
-        @if(isset($fieldPositions['ttl']))
-            <div class="kta-field"
-                 style="left:{{ $fieldPositions['ttl']['left'] }}mm;
-                        top:{{ $fieldPositions['ttl']['top'] }}mm;
-                        font-size:{{ $fieldPositions['ttl']['font_size'] }}mm;
-                        font-weight:700;">
-                {{ $member->tempat_lahir ?? '-' }}, {{ $tanggalLahir }}
-            </div>
-        @endif
-
-        {{-- ALAMAT --}}
-        @if(isset($fieldPositions['alamat_label']))
-            <div class="kta-field kta-field-label"
-                 style="left:{{ $fieldPositions['alamat_label']['left'] }}mm;
-                        top:{{ $fieldPositions['alamat_label']['top'] }}mm;
-                        font-size:{{ $fieldPositions['alamat_label']['font_size'] }}mm;
-                        font-weight:700;">
-                Alamat
-            </div>
-        @endif
-        @if(isset($fieldPositions['alamat']))
-            <div class="kta-field kta-field-alamat"
-                 style="left:{{ $fieldPositions['alamat']['left'] }}mm;
-                        top:{{ $fieldPositions['alamat']['top'] }}mm;
-                        font-size:{{ $fieldPositions['alamat']['font_size'] }}mm;
-                        font-weight:700;
-                        width:{{ $fieldPositions['alamat']['width'] ?? 30 }}mm;">
-                {{ $member->alamat ?? '-' }}
-            </div>
-        @endif
-
-        {{-- JENIS KELAMIN --}}
-        @if(isset($fieldPositions['jk_label']))
-            <div class="kta-field kta-field-label"
-                 style="left:{{ $fieldPositions['jk_label']['left'] }}mm;
-                        top:{{ $fieldPositions['jk_label']['top'] }}mm;
-                        font-size:{{ $fieldPositions['jk_label']['font_size'] }}mm;
-                        font-weight:700;">
-                Jenis Kelamin
-            </div>
-        @endif
-        @if(isset($fieldPositions['jk']))
-            <div class="kta-field"
-                 style="left:{{ $fieldPositions['jk']['left'] }}mm;
-                        top:{{ $fieldPositions['jk']['top'] }}mm;
-                        font-size:{{ $fieldPositions['jk']['font_size'] }}mm;
-                        font-weight:700;">
-                {{ $member->jenis_kelamin ?? '-' }}
-            </div>
-        @endif
-
-        {{-- AGAMA --}}
-        @if(isset($fieldPositions['agama_label']))
-            <div class="kta-field kta-field-label"
-                 style="left:{{ $fieldPositions['agama_label']['left'] }}mm;
-                        top:{{ $fieldPositions['agama_label']['top'] }}mm;
-                        font-size:{{ $fieldPositions['agama_label']['font_size'] }}mm;
-                        font-weight:700;">
-                Agama
-            </div>
-        @endif
-        @if(isset($fieldPositions['agama']))
-            <div class="kta-field"
-                 style="left:{{ $fieldPositions['agama']['left'] }}mm;
-                        top:{{ $fieldPositions['agama']['top'] }}mm;
-                        font-size:{{ $fieldPositions['agama']['font_size'] }}mm;
-                        font-weight:700;">
-                {{ $member->agama ?? '-' }}
-            </div>
-        @endif
-
-        {{-- BERLAKU HINGGA --}}
-        @if(isset($fieldPositions['berlaku_label']))
-            <div class="kta-field kta-field-label"
-                 style="left:{{ $fieldPositions['berlaku_label']['left'] }}mm;
-                        top:{{ $fieldPositions['berlaku_label']['top'] }}mm;
-                        font-size:{{ $fieldPositions['berlaku_label']['font_size'] }}mm;
-                        font-weight:700;">
-                Berlaku Hingga
-            </div>
-        @endif
-        @if(isset($fieldPositions['berlaku']))
-            <div class="kta-field"
-                 style="left:{{ $fieldPositions['berlaku']['left'] }}mm;
-                        top:{{ $fieldPositions['berlaku']['top'] }}mm;
-                        font-size:{{ $fieldPositions['berlaku']['font_size'] }}mm;
-                        font-weight:700;">
-                {{ $berlakuHingga }}
+        {{-- Tanggal TTD --}}
+        @if(isset($fieldPositions['tanggal_ttd']))
+            <div class="kta-field kta-field-center"
+                 style="left:{{ $fieldPositions['tanggal_ttd']['left'] }}mm;
+                        top:{{ $fieldPositions['tanggal_ttd']['top'] }}mm;
+                        font-size:{{ $fieldPositions['tanggal_ttd']['font_size'] }}mm;
+                        font-weight:bold; color:#000;
+                        width:{{ $fieldPositions['tanggal_ttd']['width'] }}mm;">
+                Jakarta, {{ \Carbon\Carbon::now()->format('d F Y') }}
             </div>
         @endif
 
@@ -431,7 +285,7 @@
                  style="left:{{ $fieldPositions['pimpinan_pusat']['left'] }}mm;
                         top:{{ $fieldPositions['pimpinan_pusat']['top'] }}mm;
                         font-size:{{ $fieldPositions['pimpinan_pusat']['font_size'] }}mm;
-                        font-weight:700;
+                        font-weight:bold; color:#000; line-height:1.1;
                         width:{{ $fieldPositions['pimpinan_pusat']['width'] }}mm;">
                 PIMPINAN PUSAT<br>
                 SERIKAT PEKERJA AUTOMOTIF MESIN DAN KOMPONEN<br>
@@ -439,66 +293,46 @@
             </div>
         @endif
 
-        {{-- TANDA TANGAN --}}
-        {{-- Tanggal --}}
-        @if(isset($fieldPositions['tanggal_ttd']))
-            <div class="kta-field kta-field-small"
-                 style="left:{{ $fieldPositions['tanggal_ttd']['left'] }}mm;
-                        top:{{ $fieldPositions['tanggal_ttd']['top'] }}mm;
-                        font-size:{{ $fieldPositions['tanggal_ttd']['font_size'] }}mm;
-                        font-weight:700;">
-                Jakarta,
+        {{-- TTD SEKRETARIS UMUM --}}
+        @if(isset($fieldPositions['label_sekretaris']))
+            <div class="kta-field kta-field-center" style="left:{{ $fieldPositions['label_sekretaris']['left'] }}mm; top:{{ $fieldPositions['label_sekretaris']['top'] }}mm; font-size:{{ $fieldPositions['label_sekretaris']['font_size'] }}mm; font-weight:bold; width:{{ $fieldPositions['label_sekretaris']['width'] }}mm;">
+                Sekretaris Umum
             </div>
         @endif
-
-        {{-- TTD Sekretaris --}}
         @if(isset($fieldPositions['ttd_sekretaris']) && $ttdSekretaris)
             <img class="kta-signature"
                  style="left:{{ $fieldPositions['ttd_sekretaris']['left'] }}mm;
                         top:{{ $fieldPositions['ttd_sekretaris']['top'] }}mm;
-                        width:{{ $fieldPositions['ttd_sekretaris']['width'] ?? 16 }}mm;
-                        height:{{ $fieldPositions['ttd_sekretaris']['height'] ?? 7 }}mm;"
+                        width:{{ $fieldPositions['ttd_sekretaris']['width'] }}mm;
+                        height:{{ $fieldPositions['ttd_sekretaris']['height'] }}mm; position:absolute;"
                  src="{{ $ttdSekretaris }}" alt="TTD Sekretaris">
         @endif
-
-        {{-- Nama Sekretaris + Label --}}
         @if(isset($fieldPositions['nama_sekretaris']))
-            <div class="kta-field kta-field-small kta-field-center"
-                 style="left:{{ $fieldPositions['nama_sekretaris']['left'] }}mm;
-                        top:{{ $fieldPositions['nama_sekretaris']['top'] }}mm;
-                        font-size:{{ $fieldPositions['nama_sekretaris']['font_size'] }}mm;
-                        font-weight:700;
-                        width:{{ $fieldPositions['nama_sekretaris']['width'] }}mm;">
-                SEKRETARIS UMUM<br>
-                ( {{ $sekretaris?->nama ?? '........................' }} )
+            <div class="kta-field kta-field-center" style="left:{{ $fieldPositions['nama_sekretaris']['left'] }}mm; top:{{ $fieldPositions['nama_sekretaris']['top'] }}mm; font-size:{{ $fieldPositions['nama_sekretaris']['font_size'] }}mm; font-weight:bold; width:{{ $fieldPositions['nama_sekretaris']['width'] }}mm;">
+                ( {{ $sekretaris?->nama ?? 'Slamet Fitriono' }} )
             </div>
         @endif
 
-        {{-- TTD Ketua --}}
+        {{-- TTD KETUA UMUM --}}
+        @if(isset($fieldPositions['label_ketua']))
+            <div class="kta-field kta-field-center" style="left:{{ $fieldPositions['label_ketua']['left'] }}mm; top:{{ $fieldPositions['label_ketua']['top'] }}mm; font-size:{{ $fieldPositions['label_ketua']['font_size'] }}mm; font-weight:bold; width:{{ $fieldPositions['label_ketua']['width'] }}mm;">
+                Ketua Umum
+            </div>
+        @endif
         @if(isset($fieldPositions['ttd_ketua']) && $ttdKetua)
             <img class="kta-signature"
                  style="left:{{ $fieldPositions['ttd_ketua']['left'] }}mm;
                         top:{{ $fieldPositions['ttd_ketua']['top'] }}mm;
-                        width:{{ $fieldPositions['ttd_ketua']['width'] ?? 16 }}mm;
-                        height:{{ $fieldPositions['ttd_ketua']['height'] ?? 7 }}mm;"
+                        width:{{ $fieldPositions['ttd_ketua']['width'] }}mm;
+                        height:{{ $fieldPositions['ttd_ketua']['height'] }}mm; position:absolute;"
                  src="{{ $ttdKetua }}" alt="TTD Ketua">
         @endif
-
-        {{-- Nama Ketua + Label --}}
         @if(isset($fieldPositions['nama_ketua']))
-            <div class="kta-field kta-field-small kta-field-center"
-                 style="left:{{ $fieldPositions['nama_ketua']['left'] }}mm;
-                        top:{{ $fieldPositions['nama_ketua']['top'] }}mm;
-                        font-size:{{ $fieldPositions['nama_ketua']['font_size'] }}mm;
-                        font-weight:700;
-                        width:{{ $fieldPositions['nama_ketua']['width'] }}mm;">
-                KETUA UMUM<br>
-                ( {{ $ketua?->nama ?? '........................' }} )
+            <div class="kta-field kta-field-center" style="left:{{ $fieldPositions['nama_ketua']['left'] }}mm; top:{{ $fieldPositions['nama_ketua']['top'] }}mm; font-size:{{ $fieldPositions['nama_ketua']['font_size'] }}mm; font-weight:bold; width:{{ $fieldPositions['nama_ketua']['width'] }}mm;">
+                ( {{ $ketua?->nama ?? 'Heriyanto' }} )
             </div>
         @endif
 
     </div>
-
 </div>
-
 @endif

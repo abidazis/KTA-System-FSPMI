@@ -52,6 +52,9 @@ Route::middleware('auth')->group(function () {
         Route::get('members/{member}/kta/preview', [KtaController::class, 'preview'])->name('members.kta.preview');
         Route::post('members/{member}/kta/generate', [KtaController::class, 'generate'])->name('members.kta.generate');
         Route::get('members/{member}/kta/download', [KtaController::class, 'download'])->name('members.kta.download');
+
+        // Inline Status Update
+        Route::patch('members/{member}/status', [MemberController::class, 'updateStatus'])->name('members.status.update');
     });
 
     // AJAX - Wilayah (di luar permission agar dropdown berfungsi di semua halaman)

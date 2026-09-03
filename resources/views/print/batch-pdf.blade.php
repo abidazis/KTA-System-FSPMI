@@ -126,6 +126,24 @@
             object-fit: cover;
         }
 
+        /* Auto-fit (no-JS fallback): smaller default font di template sudah cukup untuk 16 digit NIK */
+        .kta-field-autofit {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: clip;
+            transform-origin: left center;
+            line-height: 1;
+        }
+
+        .kta-field-autofit-center {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: clip;
+            transform-origin: center center;
+            line-height: 1;
+            text-align: center;
+        }
+
         @media print {
             .kta-card {
                 -webkit-print-color-adjust: exact !important;
