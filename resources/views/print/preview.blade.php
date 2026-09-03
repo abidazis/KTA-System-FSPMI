@@ -215,6 +215,7 @@
                             $ttd_ketua_path = $kta['ttd_ketua_path'] ?? null;
                             $ttd_sekretaris_path = $kta['ttd_sekretaris_path'] ?? null;
                             $foto_path = $kta['foto_path'] ?? null;
+                            $stempel_path = $kta['stempel_path'] ?? null;
                             $side = 'front';
                         @endphp
                         <div style="position:absolute; left:{{ 1.5 + $i * 6.9 }}cm; top:1.5cm;">
@@ -234,6 +235,7 @@
                             $ttd_ketua_path = $kta['ttd_ketua_path'] ?? null;
                             $ttd_sekretaris_path = $kta['ttd_sekretaris_path'] ?? null;
                             $foto_path = $kta['foto_path'] ?? null;
+                            $stempel_path = $kta['stempel_path'] ?? null;
                             $side = 'back';
                         @endphp
                         <div style="position:absolute; left:{{ 1.5 + $i * 6.9 }}cm; top:11cm;">

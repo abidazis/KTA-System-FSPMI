@@ -66,6 +66,9 @@ class KtaController extends Controller
             'foto_path' => $member->foto_path
                 ? storage_path('app/private/' . $member->foto_path)
                 : null,
+            'stempel_path' => $period && $period->stempel_path
+                ? storage_path('app/private/' . $period->stempel_path)
+                : null,
         ];
 
         $background = KtaBackground::getActive();
@@ -100,6 +103,9 @@ class KtaController extends Controller
                 : null,
             'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path
                 ? storage_path('app/private/' . $sekretaris->signature_path)
+                : null,
+            'stempel_path' => $period && $period->stempel_path
+                ? storage_path('app/private/' . $period->stempel_path)
                 : null,
         ];
 

@@ -156,6 +156,7 @@
                     $isPdf = false;
                     $ttd_ketua_path = $ttd_ketua_path ?? null;
                     $ttd_sekretaris_path = $ttd_sekretaris_path ?? null;
+                    $stempel_path = $stempel_path ?? null;
                 @endphp
                 @include('print.partials.kta-card-v2')
             </div>
@@ -170,6 +171,7 @@
                     $isPdf = false;
                     $ttd_ketua_path = $ttd_ketua_path ?? null;
                     $ttd_sekretaris_path = $ttd_sekretaris_path ?? null;
+                    $stempel_path = $stempel_path ?? null;
                 @endphp
                 @include('print.partials.kta-card-v2')
             </div>

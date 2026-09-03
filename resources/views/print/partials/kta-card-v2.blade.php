@@ -51,6 +51,12 @@
         $ttdKetua = $imageSrc($ttd_ketua_path);
     }
 
+    /* STEMPEL */
+    $stempel = null;
+    if (!empty($stempel_path) && file_exists($stempel_path)) {
+        $stempel = $imageSrc($stempel_path);
+    }
+
     /* MEMBER PHOTO */
     $fotoSrc = null;
     if (!empty($foto_path) && file_exists($foto_path)) {
@@ -127,6 +133,9 @@
             'label_ketua'     => ['left' => 28, 'top' => 61, 'font_size' => 1.75, 'width' => 24],
             'ttd_ketua'       => ['left' => 32, 'top' => 64, 'width' => 16, 'height' => 8],
             'nama_ketua'      => ['left' => 28, 'top' => 73, 'font_size' => 1.75, 'width' => 24],
+
+            // Stempel organisasi - diletakkan di antara kedua tanda tangan
+            'stempel'         => ['left' => 19, 'top' => 62, 'width' => 16, 'height' => 12],
         ],
     ];
 
@@ -331,6 +340,16 @@
             <div class="kta-field kta-field-center" style="left:{{ $fieldPositions['nama_ketua']['left'] }}mm; top:{{ $fieldPositions['nama_ketua']['top'] }}mm; font-size:{{ $fieldPositions['nama_ketua']['font_size'] }}mm; font-weight:bold; width:{{ $fieldPositions['nama_ketua']['width'] }}mm;">
                 ( {{ $ketua?->nama ?? 'Heriyanto' }} )
             </div>
+        @endif
+
+        {{-- STEMPEL ORGANISASI --}}
+        @if(isset($fieldPositions['stempel']) && $stempel)
+            <img class="kta-seal"
+                 style="left:{{ $fieldPositions['stempel']['left'] }}mm;
+                        top:{{ $fieldPositions['stempel']['top'] }}mm;
+                        width:{{ $fieldPositions['stempel']['width'] }}mm;
+                        height:{{ $fieldPositions['stempel']['height'] }}mm; position:absolute;"
+                 src="{{ $stempel }}" alt="Stempel">
         @endif
 
     </div>

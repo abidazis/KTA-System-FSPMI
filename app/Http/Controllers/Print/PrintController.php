@@ -91,6 +91,7 @@ class PrintController extends Controller
                 'foto_path' => $member->foto_path ? storage_path('app/private/' . $member->foto_path) : null,
                 'ttd_ketua_path' => $ketua && $ketua->signature_path ? storage_path('app/private/' . $ketua->signature_path) : null,
                 'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path ? storage_path('app/private/' . $sekretaris->signature_path) : null,
+                'stempel_path' => $period->stempel_path ? storage_path('app/private/' . $period->stempel_path) : null,
             ];
         });
 
@@ -171,6 +172,7 @@ class PrintController extends Controller
                 'foto_path' => $member->foto_path ? storage_path('app/private/' . $member->foto_path) : null,
                 'ttd_ketua_path' => $ketua && $ketua->signature_path ? storage_path('app/private/' . $ketua->signature_path) : null,
                 'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path ? storage_path('app/private/' . $sekretaris->signature_path) : null,
+                'stempel_path' => $batch->period->stempel_path ? storage_path('app/private/' . $batch->period->stempel_path) : null,
             ];
         });
 
@@ -210,6 +212,7 @@ class PrintController extends Controller
                 'foto_path' => $member->foto_path ? storage_path('app/private/' . $member->foto_path) : null,
                 'ttd_ketua_path' => $ketua && $ketua->signature_path ? storage_path('app/private/' . $ketua->signature_path) : null,
                 'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path ? storage_path('app/private/' . $sekretaris->signature_path) : null,
+                'stempel_path' => $batch->period->stempel_path ? storage_path('app/private/' . $batch->period->stempel_path) : null,
             ];
         });
 
@@ -221,6 +224,7 @@ class PrintController extends Controller
             'batch' => $batch,
             'ketua' => $ketua,
             'sekretaris' => $sekretaris,
+            'stempel_path' => $batch->period->stempel_path ? storage_path('app/private/' . $batch->period->stempel_path) : null,
             'duplexMode' => $duplexMode,
             'background' => $background,
         ]);

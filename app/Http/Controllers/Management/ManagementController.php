@@ -27,11 +27,17 @@ class ManagementController extends Controller
             'nama_periode' => ['required', 'string', 'max:100'],
             'tanggal_mulai' => ['required', 'date'],
             'tanggal_selesai' => ['required', 'date', 'after:tanggal_mulai'],
+            'stempel' => ['nullable', 'image', 'mimes:png', 'max:512'],
         ]);
 
         if ($request->has('set_active')) {
             ManagementPeriod::where('status', 'active')->update(['status' => 'inactive']);
             $validated['status'] = 'active';
+        }
+
+        if ($request->hasFile('stempel')) {
+            $path = $request->file('stempel')->store('stempel', 'local');
+            $validated['stempel_path'] = $path;
         }
 
         $period = ManagementPeriod::create($validated);
@@ -58,7 +64,16 @@ class ManagementController extends Controller
             'nama_periode' => ['required', 'string', 'max:100'],
             'tanggal_mulai' => ['required', 'date'],
             'tanggal_selesai' => ['required', 'date', 'after:tanggal_mulai'],
+            'stempel' => ['nullable', 'image', 'mimes:png', 'max:512'],
         ]);
+
+        if ($request->hasFile('stempel')) {
+            if ($period->stempel_path) {
+                Storage::disk('local')->delete($period->stempel_path);
+            }
+            $path = $request->file('stempel')->store('stempel', 'local');
+            $validated['stempel_path'] = $path;
+        }
 
         $period->update($validated);
 
@@ -67,6 +82,25 @@ class ManagementController extends Controller
         return redirect()
             ->route('management.show', $period)
             ->with('success', 'Periode kepengurusan berhasil diperbarui.');
+    }
+
+    public function updateStempel(Request $request, ManagementPeriod $period): \Illuminate\Http\RedirectResponse
+    {
+        $request->validate([
+            'stempel' => ['required', 'image', 'mimes:png', 'max:512'],
+        ]);
+
+        if ($period->stempel_path) {
+            Storage::disk('local')->delete($period->stempel_path);
+        }
+        $path = $request->file('stempel')->store('stempel', 'local');
+        $period->update(['stempel_path' => $path]);
+
+        AuditLog::log('update_stempel_period', $period);
+
+        return redirect()
+            ->route('management.show', $period)
+            ->with('success', 'Stempel berhasil diupload.');
     }
 
     public function setActive(ManagementPeriod $period): \Illuminate\Http\RedirectResponse
@@ -96,6 +130,10 @@ class ManagementController extends Controller
             if ($official->signature_path) {
                 Storage::disk('local')->delete($official->signature_path);
             }
+        }
+
+        if ($period->stempel_path) {
+            Storage::disk('local')->delete($period->stempel_path);
         }
 
         $period->delete();
@@ -182,6 +220,25 @@ class ManagementController extends Controller
         return redirect()
             ->route('management.show', $period)
             ->with('success', 'Pengurus berhasil diperbarui.');
+    }
+
+    public function updateSignature(Request $request, ManagementPeriod $period, ManagementOfficial $official): \Illuminate\Http\RedirectResponse
+    {
+        $request->validate([
+            'signature' => ['required', 'image', 'mimes:png', 'max:512'],
+        ]);
+
+        if ($official->signature_path) {
+            Storage::disk('local')->delete($official->signature_path);
+        }
+        $path = $request->file('signature')->store('members/signatures', 'local');
+        $official->update(['signature_path' => $path]);
+
+        AuditLog::log('update_signature_official', $official);
+
+        return redirect()
+            ->route('management.show', $period)
+            ->with('success', 'Tanda tangan berhasil diupload.');
     }
 
     public function destroyOfficial(ManagementPeriod $period, ManagementOfficial $official): \Illuminate\Http\RedirectResponse

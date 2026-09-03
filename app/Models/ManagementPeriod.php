@@ -15,6 +15,7 @@ class ManagementPeriod extends Model
         'tanggal_mulai',
         'tanggal_selesai',
         'status',
+        'stempel_path',
     ];
 
     protected function casts(): array

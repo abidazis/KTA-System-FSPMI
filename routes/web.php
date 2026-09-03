@@ -102,12 +102,14 @@ Route::middleware('auth')->group(function () {
         Route::post('management', [ManagementController::class, 'store'])->name('management.store');
         Route::get('management/{period}', [ManagementController::class, 'show'])->name('management.show');
         Route::put('management/{period}', [ManagementController::class, 'update'])->name('management.update');
+        Route::put('management/{period}/stempel', [ManagementController::class, 'updateStempel'])->name('management.stempel');
         Route::post('management/{period}/set-active', [ManagementController::class, 'setActive'])->name('management.set-active');
         Route::delete('management/{period}', [ManagementController::class, 'destroy'])->name('management.destroy');
 
         // Officials
         Route::post('management/{period}/officials', [ManagementController::class, 'storeOfficial'])->name('management.officials.store');
         Route::put('management/{period}/officials/{official}', [ManagementController::class, 'updateOfficial'])->name('management.officials.update');
+        Route::put('management/{period}/officials/{official}/signature', [ManagementController::class, 'updateSignature'])->name('management.officials.signature');
         Route::delete('management/{period}/officials/{official}', [ManagementController::class, 'destroyOfficial'])->name('management.officials.destroy');
     });
 

@@ -12,7 +12,7 @@
 
     <div id="add-period-form" style="display:none;margin-bottom:2rem;padding:1.5rem;background:#f8fafc;border-radius:0.5rem;">
         <h4 style="margin-bottom:1rem;">Tambah Periode Baru</h4>
-        <form action="{{ route('management.store') }}" method="POST">
+        <form action="{{ route('management.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="form-row">
                 <div class="form-group">
@@ -27,6 +27,11 @@
                     <label for="tanggal_selesai">Tanggal Selesai</label>
                     <input type="date" id="tanggal_selesai" name="tanggal_selesai" required>
                 </div>
+            </div>
+            <div class="form-group">
+                <label for="stempel">Stempel Organisasi (PNG)</label>
+                <input type="file" id="stempel" name="stempel" accept="image/png">
+                <small>Format: PNG. Maks: 512KB</small>
             </div>
             <div class="form-group">
                 <label style="display:flex;align-items:center;gap:0.5rem;">
