@@ -6,48 +6,48 @@
 @section('content')
 <div class="card">
     <div class="card-header">
-        <h3>Form Data Anggota</h3>
-        <a href="{{ route('members.index') }}" class="btn btn-sm btn-outline">Kembali</a>
+        <h3> Form Data Anggota</h3>
+        <a href="{{ route('members.index') }}" class="btn btn-outline">← Kembali</a>
     </div>
 
     <form action="{{ route('members.store') }}" method="POST" enctype="multipart/form-data" id="member-form">
         @csrf
 
-        <div class="form-row">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
             <div class="form-group">
-                <label for="nik">NIK *</label>
-                <input type="text" id="nik" name="nik" value="{{ old('nik') }}" required>
+                <label for="nik"> NIK (Nomor Induk Kependudukan) *</label>
+                <input type="text" id="nik" name="nik" value="{{ old('nik') }}" required placeholder="16 digit NIK" maxlength="16">
                 @error('nik') <span class="error">{{ $message }}</span> @enderror
             </div>
             <div class="form-group">
-                <label for="nama">Nama Lengkap *</label>
-                <input type="text" id="nama" name="nama" value="{{ old('nama') }}" required>
+                <label for="nama"> Nama Lengkap *</label>
+                <input type="text" id="nama" name="nama" value="{{ old('nama') }}" required placeholder="Nama sesuai KTP">
                 @error('nama') <span class="error">{{ $message }}</span> @enderror
             </div>
         </div>
 
-        <div class="form-row">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
             <div class="form-group">
-                <label for="tempat_lahir">Tempat Lahir *</label>
-                <input type="text" id="tempat_lahir" name="tempat_lahir" value="{{ old('tempat_lahir') }}" required>
+                <label for="tempat_lahir"> Tempat Lahir *</label>
+                <input type="text" id="tempat_lahir" name="tempat_lahir" value="{{ old('tempat_lahir') }}" required placeholder="Kota kelahiran">
                 @error('tempat_lahir') <span class="error">{{ $message }}</span> @enderror
             </div>
             <div class="form-group">
-                <label for="tanggal_lahir">Tanggal Lahir *</label>
+                <label for="tanggal_lahir"> Tanggal Lahir *</label>
                 <input type="date" id="tanggal_lahir" name="tanggal_lahir" value="{{ old('tanggal_lahir') }}" required>
                 @error('tanggal_lahir') <span class="error">{{ $message }}</span> @enderror
             </div>
         </div>
 
         <div class="form-group">
-            <label for="alamat">Alamat *</label>
-            <textarea id="alamat" name="alamat" rows="2" required>{{ old('alamat') }}</textarea>
+            <label for="alamat"> Alamat Lengkap *</label>
+            <textarea id="alamat" name="alamat" rows="2" required placeholder="Alamat sesuai KTP">{{ old('alamat') }}</textarea>
             @error('alamat') <span class="error">{{ $message }}</span> @enderror
         </div>
 
-        <div class="form-row">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;">
             <div class="form-group">
-                <label for="province_id">Provinsi *</label>
+                <label for="province_id"> Provinsi *</label>
                 <select id="province_id" name="province_id" required>
                     <option value="">-- Pilih Provinsi --</option>
                     @foreach($provinces as $province)
@@ -56,7 +56,7 @@
                 </select>
             </div>
             <div class="form-group">
-                <label for="regency_id">Kabupaten/Kota</label>
+                <label for="regency_id"> Kabupaten/Kota</label>
                 <select id="regency_id" name="regency_id" disabled>
                     <option value="">-- Pilih Kabupaten/Kota --</option>
                     @if(old('regency_id'))
@@ -67,7 +67,10 @@
                 </select>
             </div>
             <div class="form-group">
-                <label for="district_id">Kecamatan</label>
+                <label for="district_id">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                            Kecamatan
+                        </label>
                 <select id="district_id" name="district_id" disabled>
                     <option value="">-- Pilih Kecamatan --</option>
                     @if(old('district_id'))
@@ -79,9 +82,9 @@
             </div>
         </div>
 
-        <div class="form-row">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;">
             <div class="form-group">
-                <label for="jenis_kelamin">Jenis Kelamin *</label>
+                <label for="jenis_kelamin">⚧ Jenis Kelamin *</label>
                 <select id="jenis_kelamin" name="jenis_kelamin" required>
                     <option value="">-- Pilih --</option>
                     <option value="Laki-laki" {{ old('jenis_kelamin') == 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
@@ -90,7 +93,7 @@
                 @error('jenis_kelamin') <span class="error">{{ $message }}</span> @enderror
             </div>
             <div class="form-group">
-                <label for="agama">Agama *</label>
+                <label for="agama"> Agama *</label>
                 <select id="agama" name="agama" required>
                     <option value="">-- Pilih --</option>
                     @foreach($religions as $religion)
@@ -100,7 +103,7 @@
                 @error('agama') <span class="error">{{ $message }}</span> @enderror
             </div>
             <div class="form-group">
-                <label for="company_id">Perusahaan *</label>
+                <label for="company_id"> Perusahaan *</label>
                 <select id="company_id" name="company_id" required>
                     <option value="">-- Pilih Perusahaan --</option>
                     @foreach($companies as $company)
@@ -111,31 +114,85 @@
             </div>
         </div>
 
-        <div class="form-row">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;">
             <div class="form-group">
-                <label for="tanggal_pembuatan">Tanggal Pembuatan KTA *</label>
+                <label for="tanggal_pembuatan"> Tanggal Pembuatan KTA *</label>
                 <input type="date" id="tanggal_pembuatan" name="tanggal_pembuatan" value="{{ old('tanggal_pembuatan', now()->format('Y-m-d')) }}" required>
                 @error('tanggal_pembuatan') <span class="error">{{ $message }}</span> @enderror
             </div>
             <div class="form-group">
-                <label for="berlaku_hingga">Berlaku Hingga *</label>
+                <label for="berlaku_hingga"> Berlaku Hingga *</label>
                 <input type="date" id="berlaku_hingga" name="berlaku_hingga" value="{{ old('berlaku_hingga') }}" required>
                 @error('berlaku_hingga') <span class="error">{{ $message }}</span> @enderror
             </div>
         </div>
 
         <div class="form-group">
-            <label for="foto">Foto Anggota</label>
-            <input type="file" id="foto" name="foto" accept="image/jpeg,image/png">
-            <small style="color:#64748b;">Format: JPG, PNG. Maks: 2MB</small>
+            <label for="foto"> Foto Anggota</label>
+            <input type="file" id="foto" name="foto" accept="image/jpeg,image/png" style="padding:0.5rem;">
+            <small style="color:var(--gray-500);">Format: JPG, PNG. Maks: 2MB. Ukuran disarankan: 300x400 pixel</small>
             <div id="photo-preview" style="margin-top:1rem;"></div>
             @error('foto') <span class="error">{{ $message }}</span> @enderror
         </div>
 
-        <div style="display:flex;gap:1rem;margin-top:1.5rem;">
-            <button type="submit" class="btn btn-primary">Simpan</button>
-            <a href="{{ route('members.index') }}" class="btn btn-outline">Batal</a>
+        <div style="display:flex;gap:0.75rem;margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--gray-200);">
+            <button type="submit" class="btn btn-primary btn-lg"> Simpan Anggota</button>
+            <a href="{{ route('members.index') }}" class="btn btn-outline btn-lg">Batal</a>
         </div>
     </form>
 </div>
+
+<script>
+document.getElementById('province_id').addEventListener('change', function() {
+    const provinceId = this.value;
+    const regencySelect = document.getElementById('regency_id');
+    const districtSelect = document.getElementById('district_id');
+    regencySelect.innerHTML = '<option value="">Memuat...</option>';
+    districtSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
+    districtSelect.disabled = true;
+
+    if (provinceId) {
+        fetch('/api/regencies/' + provinceId)
+            .then(r => r.json())
+            .then(data => {
+                regencySelect.innerHTML = '<option value="">-- Pilih Kabupaten/Kota --</option>';
+                data.forEach(r => regencySelect.innerHTML += `<option value="${r.id}">${r.name}</option>`);
+                regencySelect.disabled = false;
+            });
+    } else {
+        regencySelect.innerHTML = '<option value="">-- Pilih Kabupaten/Kota --</option>';
+        regencySelect.disabled = true;
+    }
+});
+
+document.getElementById('regency_id').addEventListener('change', function() {
+    const regencyId = this.value;
+    const districtSelect = document.getElementById('district_id');
+    districtSelect.innerHTML = '<option value="">Memuat...</option>';
+
+    if (regencyId) {
+        fetch('/api/districts/' + regencyId)
+            .then(r => r.json())
+            .then(data => {
+                districtSelect.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
+                data.forEach(d => districtSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+                districtSelect.disabled = false;
+            });
+    } else {
+        districtSelect.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
+        districtSelect.disabled = true;
+    }
+});
+
+document.getElementById('foto').addEventListener('change', function() {
+    const preview = document.getElementById('photo-preview');
+    if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" style="max-width:200px;border-radius:0.5rem;border:2px solid var(--gray-200);">`;
+        };
+        reader.readAsDataURL(this.files[0]);
+    }
+});
+</script>
 @endsection

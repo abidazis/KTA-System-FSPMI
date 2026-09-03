@@ -7,92 +7,136 @@
 <div class="card">
     <div class="card-header">
         <h3>Data Anggota</h3>
-        <div style="display:flex;gap:0.5rem;">
-            <a href="{{ route('members.kta.preview', $member) }}" class="btn btn-sm btn-success" {{ !$member->hasPhoto() ? 'disabled' : '' }}>Preview KTA</a>
-            <a href="{{ route('members.edit', $member) }}" class="btn btn-sm btn-outline">Edit</a>
+        <div style="display:flex;gap:0.75rem;">
+            <a href="{{ route('members.kta.preview', $member) }}" class="btn btn-success" {{ !$member->hasPhoto() ? 'disabled' : '' }}>
+                Preview KTA
+            </a>
+            <a href="{{ route('members.edit', $member) }}" class="btn btn-primary"> Edit</a>
             <form action="{{ route('members.destroy', $member) }}" method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus anggota ini?')">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                <button type="submit" class="btn btn-danger"> Hapus</button>
             </form>
         </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:2rem;">
-        <div>
+    <div style="display:grid;grid-template-columns:280px 1fr;gap:2rem;">
+        {{-- Photo & Basic Info --}}
+        <div style="text-align:center;">
             @if($member->hasPhoto())
-            <div style="text-align:center;margin-bottom:1.5rem;">
-                <img src="{{ route('storage.local', ['path' => $member->foto_path]) }}" alt="Foto" style="width:150px;height:200px;object-fit:cover;border-radius:0.5rem;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+            <div style="margin-bottom:1.5rem;">
+                <img src="{{ route('storage.local', ['path' => $member->foto_path]) }}" alt="Foto"
+                     style="width:180px;height:240px;object-fit:cover;border-radius:0.75rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);border:3px solid var(--white);">
             </div>
+            @else
+            <div style="width:180px;height:240px;margin:0 auto 1.5rem;background:var(--gray-100);border-radius:0.75rem;display:flex;align-items:center;justify-content:center;color:var(--gray-400);font-size:3rem;">
+                            </div>
             @endif
 
-            <table style="width:100%;">
-                <tr>
-                    <td style="padding:0.5rem 0;color:#64748b;width:40%;">NIK</td>
-                    <td style="padding:0.5rem 0;font-weight:600;">{{ $member->nik }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:0.5rem 0;color:#64748b;">Nama</td>
-                    <td style="padding:0.5rem 0;">{{ $member->nama }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:0.5rem 0;color:#64748b;">Status</td>
-                    <td style="padding:0.5rem 0;"><span class="badge badge-{{ $member->status }}">{{ ucfirst($member->status) }}</span></td>
-                </tr>
-            </table>
+            <div style="background:var(--gray-50);border-radius:0.5rem;padding:1rem;text-align:left;">
+                <div style="margin-bottom:0.75rem;">
+                    <div style="font-size:0.8rem;color:var(--gray-500);">NIK</div>
+                    <div style="font-size:1.1rem;font-weight:600;color:var(--primary);">{{ $member->nik }}</div>
+                </div>
+                <div style="margin-bottom:0.75rem;">
+                    <div style="font-size:0.8rem;color:var(--gray-500);">Nama</div>
+                    <div style="font-size:1rem;font-weight:600;">{{ $member->nama }}</div>
+                </div>
+                <div>
+                    <div style="font-size:0.8rem;color:var(--gray-500);">Status</div>
+                    <span class="badge badge-{{ $member->status }}">{{ ucfirst($member->status) }}</span>
+                </div>
+            </div>
         </div>
 
+        {{-- Detail Info --}}
         <div>
-            <table style="width:100%;">
-                <tr>
-                    <td style="padding:0.5rem 0;color:#64748b;">Tempat, Tgl Lahir</td>
-                    <td style="padding:0.5rem 0;">{{ $member->tempat_lahir }}, {{ $member->tanggal_lahir->format('d/m/Y') }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:0.5rem 0;color:#64748b;">Jenis Kelamin</td>
-                    <td style="padding:0.5rem 0;">{{ $member->jenis_kelamin }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:0.5rem 0;color:#64748b;">Agama</td>
-                    <td style="padding:0.5rem 0;">{{ $member->agama }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:0.5rem 0;color:#64748b;">Perusahaan</td>
-                    <td style="padding:0.5rem 0;">{{ $member->company?->name ?? '-' }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:0.5rem 0;color:#64748b;">Alamat</td>
-                    <td style="padding:0.5rem 0;">{{ $member->alamat }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:0.5rem 0;color:#64748b;">Kecamatan</td>
-                    <td style="padding:0.5rem 0;">{{ $member->district?->name ?? '-' }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:0.5rem 0;color:#64748b;">Kabupaten/Kota</td>
-                    <td style="padding:0.5rem 0;">{{ $member->regency?->name ?? '-' }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:0.5rem 0;color:#64748b;">Provinsi</td>
-                    <td style="padding:0.5rem 0;">{{ $member->province?->name ?? '-' }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:0.5rem 0;color:#64748b;">Tanggal Pembuatan</td>
-                    <td style="padding:0.5rem 0;">{{ $member->tanggal_pembuatan->format('d/m/Y') }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:0.5rem 0;color:#64748b;">Berlaku Hingga</td>
-                    <td style="padding:0.5rem 0;">{{ $member->berlaku_hingga->format('d/m/Y') }}</td>
-                </tr>
-            </table>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;">
+                <div class="card" style="margin-bottom:0;box-shadow:none;border:1px solid var(--gray-200);">
+                    <h4 style="font-size:0.95rem;font-weight:600;margin-bottom:1rem;color:var(--gray-700);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        Data Pribadi
+                    </h4>
+                    <table style="width:100%;">
+                        <tr>
+                            <td style="padding:0.5rem 0;color:var(--gray-500);font-size:0.9rem;">Tempat, Tgl Lahir</td>
+                            <td style="padding:0.5rem 0;font-size:0.95rem;">{{ $member->tempat_lahir }}, {{ $member->tanggal_lahir->format('d/m/Y') }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:0.5rem 0;color:var(--gray-500);font-size:0.9rem;">Jenis Kelamin</td>
+                            <td style="padding:0.5rem 0;font-size:0.95rem;">{{ $member->jenis_kelamin }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:0.5rem 0;color:var(--gray-500);font-size:0.9rem;">Agama</td>
+                            <td style="padding:0.5rem 0;font-size:0.95rem;">{{ $member->agama }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:0.5rem 0;color:var(--gray-500);font-size:0.9rem;">Alamat</td>
+                            <td style="padding:0.5rem 0;font-size:0.95rem;">{{ $member->alamat }}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="card" style="margin-bottom:0;box-shadow:none;border:1px solid var(--gray-200);">
+                    <h4 style="font-size:0.95rem;font-weight:600;margin-bottom:1rem;color:var(--gray-700);">Data Perusahaan & Wilayah</h4>
+                    <table style="width:100%;">
+                        <tr>
+                            <td style="padding:0.5rem 0;color:var(--gray-500);font-size:0.9rem;">Perusahaan</td>
+                            <td style="padding:0.5rem 0;font-size:0.95rem;">{{ $member->company?->name ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:0.5rem 0;color:var(--gray-500);font-size:0.9rem;">Kecamatan</td>
+                            <td style="padding:0.5rem 0;font-size:0.95rem;">{{ $member->district?->name ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:0.5rem 0;color:var(--gray-500);font-size:0.9rem;">Kab/Kota</td>
+                            <td style="padding:0.5rem 0;font-size:0.95rem;">{{ $member->regency?->name ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:0.5rem 0;color:var(--gray-500);font-size:0.9rem;">Provinsi</td>
+                            <td style="padding:0.5rem 0;font-size:0.95rem;">{{ $member->province?->name ?? '-' }}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="card" style="margin-bottom:0;box-shadow:none;border:1px solid var(--gray-200);">
+                    <h4 style="font-size:0.95rem;font-weight:600;margin-bottom:1rem;color:var(--gray-700);">Masa Berlaku</h4>
+                    <table style="width:100%;">
+                        <tr>
+                            <td style="padding:0.5rem 0;color:var(--gray-500);font-size:0.9rem;">Tanggal Pembuatan</td>
+                            <td style="padding:0.5rem 0;font-size:0.95rem;">{{ $member->tanggal_pembuatan->format('d/m/Y') }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:0.5rem 0;color:var(--gray-500);font-size:0.9rem;">Berlaku Hingga</td>
+                            <td style="padding:0.5rem 0;font-size:0.95rem;font-weight:600;">{{ $member->berlaku_hingga->format('d/m/Y') }}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:0.5rem 0;color:var(--gray-500);font-size:0.9rem;">Sisa Hari</td>
+                            <td style="padding:0.5rem 0;font-size:0.95rem;">
+                                @php
+                                    $daysLeft = now()->diffInDays($member->berlaku_hingga, false);
+                                @endphp
+                                @if($daysLeft < 0)
+                                    <span style="color:var(--danger);">Sudah Expired</span>
+                                @elseif($daysLeft <= 30)
+                                    <span style="color:var(--warning);">{{ $daysLeft }} hari</span>
+                                @else
+                                    <span style="color:var(--success);">{{ $daysLeft }} hari</span>
+                                @endif
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
+{{-- Print History --}}
 @if($member->printBatches->count() > 0)
 <div class="card">
     <div class="card-header">
-        <h3>Riwayat Cetak</h3>
+        <h3>Riwayat Cetak KTA</h3>
     </div>
     <table>
         <thead>
@@ -106,7 +150,7 @@
         <tbody>
             @foreach($member->printBatches as $batch)
             <tr>
-                <td>{{ $batch->batch_number }} ({{ ucfirst($batch->type) }})</td>
+                <td><strong style="color:var(--primary);">{{ $batch->batch_number }}</strong> ({{ ucfirst($batch->type) }})</td>
                 <td>{{ $batch->tanggal_cetak->format('d/m/Y') }}</td>
                 <td>{{ $batch->printer?->name ?? '-' }}</td>
                 <td><a href="{{ route('print.show', $batch) }}" class="btn btn-sm btn-outline">Detail</a></td>
@@ -116,4 +160,8 @@
     </table>
 </div>
 @endif
+
+<div style="margin-top:1.5rem;">
+    <a href="{{ route('members.index') }}" class="btn btn-outline">← Kembali ke Daftar</a>
+</div>
 @endsection
