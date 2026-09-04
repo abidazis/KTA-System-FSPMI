@@ -233,18 +233,18 @@ class MemberController extends Controller
             ->with('success', 'Anggota berhasil dihapus.');
     }
 
-    public function getRegencies(Request $request): JsonResponse
+    public function getRegencies($provinceId): JsonResponse
     {
-        $regencies = Regency::where('province_id', $request->province_id)
+        $regencies = Regency::where('province_id', $provinceId)
             ->orderBy('name')
             ->get(['id', 'name']);
 
         return response()->json($regencies);
     }
 
-    public function getDistricts(Request $request): JsonResponse
+    public function getDistricts($regencyId): JsonResponse
     {
-        $districts = District::where('regency_id', $request->regency_id)
+        $districts = District::where('regency_id', $regencyId)
             ->orderBy('name')
             ->get(['id', 'name']);
 

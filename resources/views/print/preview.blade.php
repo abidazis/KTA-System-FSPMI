@@ -255,8 +255,14 @@
         <input type="hidden" name="member_ids[]" value="{{ $id }}">
         @endforeach
         <div style="display:flex;gap:1rem;margin-top:1rem;">
-            <a href="{{ route('print.create') }}" class="btn btn-outline">Pilih Ulang</a>
-            <button type="submit" class="btn btn-primary">Buat Batch Cetak</button>
+            <a href="{{ route('print.create') }}" class="btn btn-outline">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Pilih Ulang
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                Buat Batch Cetak
+            </button>
         </div>
     </form>
 </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistem KTA FSPMI</title>
+    <title>Login - Sistem KTA SPAMK-FSPMI</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -14,9 +14,26 @@
             align-items: center;
             justify-content: center;
             padding: 1rem;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('{{ asset('images/BACKGROUND FSPMI.jpg') }}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.3;
+            z-index: 0;
         }
         .login-box {
-            background: #fff;
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 1rem;
             padding: 2.5rem;
             width: 100%;
@@ -117,6 +134,30 @@
         .forgot a:hover {
             text-decoration: underline;
         }
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-wrapper input {
+            padding-right: 3rem;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 0.75rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #64748b;
+            padding: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+        .toggle-password:hover {
+            color: #1e3a5f;
+        }
         .footer {
             text-align: center;
             margin-top: 2rem;
@@ -130,9 +171,8 @@
 <body>
     <div class="login-box">
         <div class="login-header">
-            <h1>KTA FSPMI</h1>
-            <p class="federation">Federasi Serikat Pekerja Metal Indonesia</p>
-            <p>Sistem Manajemen Kartu Tanda Anggota</p>
+            <p class="federation">Sistem Manajemen Kartu Tanda Anggota</p>
+            <h1>KTA SPAMK-FSPMI</h1>
         </div>
 
         @if ($errors->get('email'))
@@ -152,7 +192,19 @@
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required placeholder="Masukkan password">
+                <div class="password-wrapper">
+                    <input type="password" id="password" name="password" required placeholder="Masukkan password">
+                    <button type="button" class="toggle-password" onclick="togglePassword()" aria-label="Tampilkan password">
+                        <svg id="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        <svg id="eye-off-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                        </svg>
+                    </button>
+                </div>
             </div>
             <div class="remember">
                 <input type="checkbox" name="remember" id="remember">
@@ -165,8 +217,25 @@
         </form>
 
         <div class="footer">
-            &copy; {{ date('Y') }} FSPMI. Hak Cipta Dilindungi.
+            &copy; {{ date('Y') }} SPAMK-FSPMI. Hak Cipta Dilindungi.
         </div>
     </div>
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eye-icon');
+            const eyeOffIcon = document.getElementById('eye-off-icon');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.style.display = 'none';
+                eyeOffIcon.style.display = 'block';
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.style.display = 'block';
+                eyeOffIcon.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>

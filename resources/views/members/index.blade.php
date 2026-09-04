@@ -14,47 +14,37 @@
     </div>
 
     {{-- Filters --}}
-    <form method="GET" class="filters">
-        <div class="form-group">
-            <input type="text" name="search" placeholder="Cari NIK atau Nama..." value="{{ request('search') }}">
-        </div>
-        <div class="form-group">
-            <select name="province_id" id="filter-province">
-                <option value="">Semua Provinsi</option>
-                @foreach($provinces as $province)
-                <option value="{{ $province->id }}" {{ request('province_id') == $province->id ? 'selected' : '' }}>{{ $province->name }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="form-group">
-            <select name="regency_id" id="filter-regency">
-                <option value="">Semua Kab/Kota</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <select name="district_id" id="filter-district">
-                <option value="">Semua Kecamatan</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <select name="jenis_kelamin">
-                <option value="">Semua Gender</option>
-                <option value="Laki-laki" {{ request('jenis_kelamin') == 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
-                <option value="Perempuan" {{ request('jenis_kelamin') == 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <select name="status">
-                <option value="">Semua Status</option>
-                @foreach($statuses as $status)
-                <option value="{{ $status }}" {{ request('status') == $status ? 'selected' : '' }}>{{ ucfirst($status) }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="form-group" style="flex:0;">
-            <button type="submit" class="btn btn-primary"> Filter</button>
-            <a href="{{ route('members.index') }}" class="btn btn-outline">Reset</a>
-        </div>
+    <form method="GET" class="filters" style="gap:0.5rem;padding:0.75rem;">
+        <input type="text" name="search" placeholder="Cari..." value="{{ request('search') }}" style="flex:1;min-width:120px;padding:0.5rem 0.75rem;font-size:0.9rem;">
+        <select name="province_id" id="filter-province" style="padding:0.5rem 0.75rem;font-size:0.9rem;min-width:140px;">
+            <option value="">Semua Provinsi</option>
+            @foreach($provinces as $province)
+            <option value="{{ $province->id }}" {{ request('province_id') == $province->id ? 'selected' : '' }}>{{ $province->name }}</option>
+            @endforeach
+        </select>
+        <select name="regency_id" id="filter-regency" disabled style="padding:0.5rem 0.75rem;font-size:0.9rem;min-width:140px;">
+            <option value="">Kab/Kota</option>
+        </select>
+        <select name="district_id" id="filter-district" disabled style="padding:0.5rem 0.75rem;font-size:0.9rem;min-width:140px;">
+            <option value="">Kecamatan</option>
+        </select>
+        <select name="jenis_kelamin" style="padding:0.5rem 0.75rem;font-size:0.9rem;min-width:100px;">
+            <option value="">Gender</option>
+            <option value="Laki-laki" {{ request('jenis_kelamin') == 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
+            <option value="Perempuan" {{ request('jenis_kelamin') == 'Perempuan' ? 'selected' : '' }}>Perempuan</option>
+        </select>
+        <select name="status" style="padding:0.5rem 0.75rem;font-size:0.9rem;min-width:100px;">
+            <option value="">Status</option>
+            @foreach($statuses as $status)
+            <option value="{{ $status }}" {{ request('status') == $status ? 'selected' : '' }}>{{ ucfirst($status) }}</option>
+            @endforeach
+        </select>
+        <button type="submit" class="btn btn-primary" style="padding:0.5rem 1rem;font-size:0.9rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+        <a href="{{ route('members.index') }}" class="btn btn-outline" style="padding:0.5rem 0.75rem;font-size:0.9rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+        </a>
     </form>
 
     {{-- Bulk Actions --}}
@@ -91,8 +81,7 @@
                     <th width="50"></th>
                     <th>NIK</th>
                     <th>Nama</th>
-                    <th>Kabupaten/Kota</th>
-                    <th>Kecamatan</th>
+                    <th>Domisili</th>
                     <th>Gender</th>
                     <th>Status</th>
                     <th>Berlaku</th>
@@ -107,8 +96,10 @@
                     </td>
                     <td><strong><a href="{{ route('members.show', $member) }}" style="color:var(--primary);text-decoration:none;">{{ $member->nik }}</a></strong></td>
                     <td>{{ $member->nama }}</td>
-                    <td>{{ $member->regency?->name ?? '-' }}</td>
-                    <td>{{ $member->district?->name ?? '-' }}</td>
+                    <td>
+                        <div>{{ $member->district?->name ?? '-' }}</div>
+                        <small style="color:var(--gray-500);">{{ $member->regency?->name ?? '' }}</small>
+                    </td>
                     <td>{{ $member->jenis_kelamin }}</td>
                     <td>
                         <select name="status" class="status-select" data-member-id="{{ $member->id }}" style="padding:0.375rem 0.5rem;border-radius:0.25rem;border:2px solid var(--gray-200);font-size:0.85rem;">
@@ -123,19 +114,25 @@
                     <td>{{ $member->berlaku_hingga->format('d/m/Y') }}</td>
                     <td>
                         <div class="actions">
-                            <a href="{{ route('members.show', $member) }}" class="btn btn-sm btn-outline" title="Detail"></a>
-                            <a href="{{ route('members.edit', $member) }}" class="btn btn-sm btn-primary" title="Edit"></a>
+                            <a href="{{ route('members.show', $member) }}" class="btn btn-sm btn-outline" title="Detail">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            </a>
+                            <a href="{{ route('members.edit', $member) }}" class="btn btn-sm btn-primary" title="Edit">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                            </a>
                             <form method="POST" action="{{ route('members.destroy', $member) }}" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus anggota ini?');">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger" title="Hapus"></button>
+                                <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                </button>
                             </form>
                         </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="9" class="empty-state">
+                    <td colspan="8" class="empty-state">
                         <p>Belum ada data anggota.</p>
                         <a href="{{ route('members.create') }}" class="btn btn-primary">+ Tambah Anggota Baru</a>
                     </td>
@@ -151,6 +148,92 @@
 </div>
 
 <script>
+// ============================================
+// FILTER DROPDOWN - Province/Regency/District Cascade
+// ============================================
+
+const filterProvince = document.getElementById('filter-province');
+const filterRegency = document.getElementById('filter-regency');
+const filterDistrict = document.getElementById('filter-district');
+
+// Load regencies when province changes
+filterProvince.addEventListener('change', function() {
+    const provinceId = this.value;
+    filterRegency.innerHTML = '<option value="">Memuat...</option>';
+    filterDistrict.innerHTML = '<option value="">Semua Kecamatan</option>';
+    filterDistrict.disabled = true;
+
+    if (provinceId) {
+        fetch('/api/regencies/' + provinceId)
+            .then(r => r.json())
+            .then(data => {
+                filterRegency.innerHTML = '<option value="">Semua Kab/Kota</option>';
+                data.forEach(r => {
+                    filterRegency.innerHTML += `<option value="${r.id}">${r.name}</option>`;
+                });
+                filterRegency.disabled = false;
+                // Preserve selection if exists
+                @if(request('regency_id'))
+                    filterRegency.value = '{{ request('regency_id') }}';
+                @endif
+            })
+            .catch(err => {
+                filterRegency.innerHTML = '<option value="">Error memuat</option>';
+            });
+    } else {
+        filterRegency.innerHTML = '<option value="">Semua Kab/Kota</option>';
+        filterRegency.disabled = true;
+    }
+});
+
+// Load districts when regency changes
+filterRegency.addEventListener('change', function() {
+    const regencyId = this.value;
+    filterDistrict.innerHTML = '<option value="">Memuat...</option>';
+
+    if (regencyId) {
+        fetch('/api/districts/' + regencyId)
+            .then(r => r.json())
+            .then(data => {
+                filterDistrict.innerHTML = '<option value="">Semua Kecamatan</option>';
+                data.forEach(d => {
+                    filterDistrict.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+                });
+                filterDistrict.disabled = false;
+                // Preserve selection if exists
+                @if(request('district_id'))
+                    filterDistrict.value = '{{ request('district_id') }}';
+                @endif
+            })
+            .catch(err => {
+                filterDistrict.innerHTML = '<option value="">Error memuat</option>';
+            });
+    } else {
+        filterDistrict.innerHTML = '<option value="">Semua Kecamatan</option>';
+        filterDistrict.disabled = true;
+    }
+});
+
+// Initialize on page load - check if province already selected
+document.addEventListener('DOMContentLoaded', function() {
+    @if(request('province_id'))
+        // Province is selected, load its regencies
+        filterProvince.dispatchEvent(new Event('change'));
+    @endif
+
+    @if(request('regency_id') && request('province_id'))
+        // After regencies loaded, also load districts
+        setTimeout(function() {
+            @if(request('district_id'))
+                filterRegency.dispatchEvent(new Event('change'));
+            @endif
+        }, 500);
+    @endif
+});
+
+// ============================================
+// Bulk Selection
+// ============================================
 document.getElementById('select-all').addEventListener('change', function() {
     document.querySelectorAll('.member-checkbox').forEach(cb => cb.checked = this.checked);
     updateBulkUI();

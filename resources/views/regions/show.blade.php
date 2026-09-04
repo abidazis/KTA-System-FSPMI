@@ -7,7 +7,10 @@
 <div class="card">
     <div class="card-header">
         <h3>Detail Wilayah: {{ $province->name }}</h3>
-        <a href="{{ route('regions.index') }}" class="btn btn-sm btn-outline">Kembali</a>
+        <a href="{{ route('regions.index') }}" class="btn btn-sm btn-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            Kembali
+        </a>
     </div>
 
     @foreach($province->regencies as $regency)

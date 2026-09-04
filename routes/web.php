@@ -58,8 +58,8 @@ Route::middleware('auth')->group(function () {
     });
 
     // AJAX - Wilayah (di luar permission agar dropdown berfungsi di semua halaman)
-    Route::get('api/regencies', [MemberController::class, 'getRegencies'])->name('api.regencies');
-    Route::get('api/districts', [MemberController::class, 'getDistricts'])->name('api.districts');
+    Route::get('api/regencies/{provinceId}', [MemberController::class, 'getRegencies'])->name('api.regencies');
+    Route::get('api/districts/{regencyId}', [MemberController::class, 'getDistricts'])->name('api.districts');
 
     // Import
     Route::middleware('permission:import')->group(function () {

@@ -47,7 +47,7 @@
             <tr>
                 <th>NIK</th>
                 <th>Nama</th>
-                <th>Wilayah</th>
+                <th>Domisili</th>
                 <th>Status</th>
                 <th>Berlaku Hingga</th>
             </tr>
@@ -57,7 +57,10 @@
             <tr>
                 <td><strong><a href="{{ route('members.show', $member) }}" style="color:var(--primary);text-decoration:none;">{{ $member->nik }}</a></strong></td>
                 <td>{{ $member->nama }}</td>
-                <td>{{ $member->district?->name ?? $member->regency?->name ?? '-' }}</td>
+                <td>
+                    <div>{{ $member->district?->name ?? '-' }}</div>
+                    <small style="color:var(--gray-500);">{{ $member->regency?->name ?? '' }}</small>
+                </td>
                 <td><span class="badge badge-{{ $member->status }}">{{ ucfirst($member->status) }}</span></td>
                 <td>{{ $member->berlaku_hingga->format('d/m/Y') }}</td>
             </tr>

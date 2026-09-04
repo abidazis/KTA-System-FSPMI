@@ -84,7 +84,10 @@
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.5rem;">
             <div class="form-group">
-                <label for="jenis_kelamin">⚧ Jenis Kelamin *</label>
+                <label for="jenis_kelamin">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;margin-right:0.5rem;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                    Jenis Kelamin *
+                </label>
                 <select id="jenis_kelamin" name="jenis_kelamin" required>
                     <option value="">-- Pilih --</option>
                     <option value="Laki-laki" {{ old('jenis_kelamin') == 'Laki-laki' ? 'selected' : '' }}>Laki-laki</option>
@@ -136,8 +139,14 @@
         </div>
 
         <div style="display:flex;gap:0.75rem;margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--gray-200);">
-            <button type="submit" class="btn btn-primary btn-lg"> Simpan Anggota</button>
-            <a href="{{ route('members.index') }}" class="btn btn-outline btn-lg">Batal</a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                Simpan Anggota
+            </button>
+            <a href="{{ route('members.index') }}" class="btn btn-outline btn-lg">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                Batal
+            </a>
         </div>
     </form>
 </div>

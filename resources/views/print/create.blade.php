@@ -92,8 +92,14 @@
         <div style="margin-bottom:1rem;">
             <form method="GET" style="display:flex;gap:0.5rem;align-items:center;">
                 <input type="text" name="search" placeholder="Cari NIK atau Nama" value="{{ request('search') }}" style="flex:1;max-width:300px;">
-                <button type="submit" class="btn btn-sm btn-primary">Cari</button>
-                <a href="{{ route('print.create') }}" class="btn btn-sm btn-outline">Reset</a>
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    Cari
+                </button>
+                <a href="{{ route('print.create') }}" class="btn btn-sm btn-outline">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                    Reset
+                </a>
             </form>
         </div>
 
@@ -103,7 +109,7 @@
                     <th width="40"></th>
                     <th>NIK</th>
                     <th>Nama</th>
-                    <th>Kecamatan</th>
+                    <th>Domisili</th>
                     <th>Status</th>
                     <th>Berlaku</th>
                 </tr>
@@ -114,7 +120,10 @@
                     <td><input type="checkbox" value="{{ $member->id }}" class="member-checkbox" data-id="{{ $member->id }}"></td>
                     <td>{{ $member->nik }}</td>
                     <td>{{ $member->nama }}</td>
-                    <td>{{ $member->district?->name ?? '-' }}</td>
+                    <td>
+                        <div>{{ $member->district?->name ?? '-' }}</div>
+                        <small style="color:var(--gray-500);">{{ $member->regency?->name ?? '' }}</small>
+                    </td>
                     <td><span class="badge badge-{{ $member->status }}">{{ ucfirst($member->status) }}</span></td>
                     <td>{{ $member->berlaku_hingga ? $member->berlaku_hingga->format('d/m/Y') : '-' }}</td>
                 </tr>

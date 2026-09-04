@@ -42,7 +42,10 @@
             </div>
             <div style="display:flex;gap:0.75rem;">
                 <button type="submit" class="btn btn-primary"> Simpan</button>
-                <button type="button" onclick="document.getElementById('add-period-form').style.display='none'" class="btn btn-outline">Batal</button>
+                <button type="button" onclick="document.getElementById('add-period-form').style.display='none'" class="btn btn-outline">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    Batal
+                </button>
             </div>
         </form>
     </div>

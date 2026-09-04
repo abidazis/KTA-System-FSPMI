@@ -7,7 +7,10 @@
 <div class="card">
     <div class="card-header">
         <h3>Form Edit User</h3>
-        <a href="{{ route('users.index') }}" class="btn btn-sm btn-outline">Kembali</a>
+        <a href="{{ route('users.index') }}" class="btn btn-sm btn-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            Kembali
+        </a>
     </div>
 
     <form action="{{ route('users.update', $user) }}" method="POST">
@@ -43,8 +46,14 @@
             </select>
         </div>
         <div style="display:flex;gap:1rem;">
-            <button type="submit" class="btn btn-primary">Simpan</button>
-            <a href="{{ route('users.index') }}" class="btn btn-outline">Batal</a>
+            <button type="submit" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                Simpan
+            </button>
+            <a href="{{ route('users.index') }}" class="btn btn-outline">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                Batal
+            </a>
         </div>
     </form>
 </div>
