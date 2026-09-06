@@ -13,23 +13,6 @@
     </div>
 
     <div style="padding:1.5rem;">
-        {{-- DEBUG: Show what was extracted from ZIP --}}
-        @if(!empty($zipNames))
-        <div class="alert" style="background:var(--info-light);color:var(--info);border-left:4px solid var(--info);padding:1rem;border-radius:0.5rem;margin-bottom:1.25rem;font-size:0.85rem;">
-            <strong>DEBUG - ZIP Entries:</strong> {{ json_encode($zipNames) }}<br>
-            @if(!empty($result['data']))
-                <strong>DEBUG - NIK(s) detected:</strong>
-                @foreach($result['data'] as $row)
-                    NIK={{ $row['nik'] ?? '?' }} (type={{ gettype($row['nik'] ?? null) }})
-                @endforeach
-            @endif
-        </div>
-        @elseif(empty($result['errors'][0]['errors'][0]) == false)
-        <div class="alert" style="background:var(--info-light);color:var(--info);border-left:4px solid var(--info);padding:1rem;border-radius:0.5rem;margin-bottom:1.25rem;font-size:0.85rem;">
-            <strong>DEBUG - ZIP Entries:</strong> (none - file may not have been extracted)<br>
-        </div>
-        @endif
-
         {{-- Summary Stats --}}
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;">
             <div style="padding:1.25rem;border-radius:0.5rem;text-align:center;background:var(--gray-100);">

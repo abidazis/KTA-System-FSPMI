@@ -174,7 +174,6 @@ class ImportController extends Controller
         return view('imports.validation', [
             'result' => $validationResult,
             'importToken' => $token,
-            'zipNames' => $allZipNames,
         ]);
     }
 
@@ -277,23 +276,12 @@ class ImportController extends Controller
 
         $validData = [];
         $errors = [];
-        $total = max(0, count($rows) - 1);
         $photosFound = [];
 
-        // NIK normalization helper — strip leading zeros and normalize to 15 digits
-        // Excel float loses last digit, so all NIKs become 15 digits
-        $normalizeNik = fn(string $nik): string => preg_replace('/^0+/', '', $nik) ?: '0';
-
-        // Get all NIKs already in DB, keyed by normalized form
+        // Get all NIKs already in DB for duplicate checking
         $allDbNiks = Member::pluck('nik')->toArray();
-        $dbNiksByNormalized = [];
-        $dbNiksLast15 = [];
-        foreach ($allDbNiks as $dbNik) {
-            $norm = $normalizeNik($dbNik);
-            $dbNiksByNormalized[$norm] = $dbNik;
-            $dbNiksLast15[$norm] = substr($norm, -15);
-        }
         $existingNiks = array_flip($allDbNiks);
+
         // Track NIKs within this Excel for duplicate detection
         $seenNiks = [];
 
@@ -301,27 +289,40 @@ class ImportController extends Controller
             $row = $rows[$i];
             $rowNum = $i + 1;
 
-            // Skip empty rows
+            // Skip completely empty rows
             if (empty(array_filter($row))) {
                 continue;
             }
 
-            // Map headers to values
+            // Map headers to values with proper NIK normalization
             $rowData = [];
             foreach ($headers as $index => $header) {
                 if (isset($row[$index])) {
                     $val = $row[$index];
-                    // Convert PhpSpreadsheet numeric dates to string
-                    if (is_numeric($val) && in_array($header, ['tanggal_lahir', 'berlaku_hingga', 'tanggal_pembuatan'])) {
-                        $val = $this->excelSerialToDate($val);
+
+                    // NIK column: use proper normalization to handle Excel float issues
+                    if ($header === 'nik') {
+                        $rowData[$header] = self::normalizeNik($val);
                     }
-                    $rowData[$header] = trim((string) $val);
+                    // Date columns: convert PhpSpreadsheet numeric dates to string
+                    elseif (is_numeric($val) && in_array($header, ['tanggal_lahir', 'berlaku_hingga', 'tanggal_pembuatan'])) {
+                        $rowData[$header] = $this->excelSerialToDate($val);
+                    }
+                    // Other columns: simple trim to string
+                    else {
+                        $rowData[$header] = trim((string) $val);
+                    }
                 }
             }
 
+            // Skip instruction/note rows (e.g., template CATATAN rows)
+            if ($this->isInstructionRow($rowData)) {
+                continue;
+            }
+
             $rowErrors = $this->validateRow(
-                $rowData, $existingNiks, $seenNiks, $dbNiksByNormalized,
-                $normalizeNik, $extractPath, $rowNum, $photosFound
+                $rowData, $existingNiks, $seenNiks, $allDbNiks,
+                $extractPath, $rowNum, $photosFound
             );
 
             if (!empty($rowErrors)) {
@@ -339,6 +340,9 @@ class ImportController extends Controller
             }
         }
 
+        // Total = valid + errors (actual member data rows, excluding empty/instruction rows)
+        $total = count($validData) + count($errors);
+
         return [
             'success' => empty($errors),
             'total' => $total,
@@ -351,50 +355,46 @@ class ImportController extends Controller
 
     /**
      * Validate a single row from the Excel import.
+     * NIK should already be normalized before calling this method.
      *
-     * @param array $row Row data from Excel
+     * @param array $row Row data from Excel (nik already normalized)
      * @param array $existingNiks Map of exact NIKs in DB (for exact match)
      * @param array &$seenNiks Map of NIKs seen within this Excel (by-ref, modified)
-     * @param array $dbNiksByNormalized Map of normalized NIK -> original DB NIK (for fuzzy check)
-     * @param callable $normalizeNik Function to normalize a NIK string
+     * @param array $allDbNiks All NIKs in DB (for fuzzy precision check)
      * @param string $extractPath Path to extracted ZIP contents
      * @param int $rowNum Excel row number (for error reporting)
      * @param array &$photosFound Map: Excel-NIK -> ['nik' => confirmed-NIK, 'path' => photo-path] (by-ref, modified)
      * @return array List of error strings (empty = valid)
      */
-    private function validateRow(array $row, array $existingNiks, array &$seenNiks, array $dbNiksByNormalized, callable $normalizeNik, string $extractPath, int $rowNum, array &$photosFound): array
+    private function validateRow(array $row, array $existingNiks, array &$seenNiks, array $allDbNiks, string $extractPath, int $rowNum, array &$photosFound): array
     {
         $rowErrors = [];
-        $nik = trim((string) ($row['nik'] ?? ''));
+
+        // NIK is already normalized by validateExcelData, so just use it directly
+        $nik = $row['nik'] ?? '';
 
         // NIK validation
         if (empty($nik)) {
             $rowErrors[] = 'NIK kosong';
-        } elseif (!preg_match('/^\d{15,16}$/', $nik)) {
+        } elseif (!self::isValidNik($nik)) {
             $rowErrors[] = 'NIK harus terdiri dari 15 atau 16 digit angka';
         } else {
-            // Excel float precision: NIK stored as number may lose last digit
-            // e.g. "3275010101900001" → "3275010101900000" (15 digits, lost trailing 1)
-            $nikNorm = $normalizeNik($nik);
+            // NIK is valid format, now check for duplicates
 
             // Check exact match in DB
             if (isset($existingNiks[$nik])) {
                 $rowErrors[] = "NIK $nik sudah terdaftar di database";
             }
-            // Check duplicate within same Excel
+
+            // Check duplicate within same Excel (using normalized comparison)
+            $nikNorm = ltrim($nik, '0') ?: $nik;
             if (isset($seenNiks[$nikNorm])) {
                 $rowErrors[] = "NIK $nik duplikat dalam file Excel yang sama";
             }
 
-            // Fuzzy check: if this NIK (after normalization) matches last 15 digits of any DB NIK,
-            // it likely lost a digit due to Excel float precision — reject it
-            foreach ($dbNiksByNormalized as $normDb => $originalDb) {
-                if (substr($normDb, -15) === substr($nikNorm, -15)) {
-                    $rowErrors[] = "NIK $nik terlalu mirip dengan NIK {$originalDb} yang sudah terdaftar "
-                        . "(periksa apakah NIK di Excel disimpan sebagai TEXT, bukan ANGKA)";
-                    break;
-                }
-            }
+            // Fuzzy precision check: only reject if NIK is exactly the same as a DB NIK
+            // (This catches true duplicates, not "similar" NIKs)
+            // We don't do aggressive 15-digit matching anymore as it causes false positives
         }
 
         if (empty($row['nama'])) {
@@ -431,14 +431,16 @@ class ImportController extends Controller
         }
 
         // Photo is REQUIRED — find by NIK, using filename as source of truth
-        if (!empty($nik)) {
+        // Only search for photo if NIK is valid
+        if (!empty($nik) && self::isValidNik($nik)) {
             $photoResult = $this->findPhotoByNik($extractPath, $nik);
             if ($photoResult) {
                 $confirmedNik = $photoResult['nik'];
                 $photoPath = $photoResult['path'];
                 // Use the confirmed NIK from filename for storage
                 $photosFound[$nik] = ['nik' => $confirmedNik, 'path' => $photoPath];
-                $seenNiks[$normalizeNik($confirmedNik)] = true;
+                // Track normalized NIK for duplicate detection
+                $seenNiks[ltrim($confirmedNik, '0') ?: $confirmedNik] = true;
             } else {
                 $rowErrors[] = "FOTO TIDAK DITEMUKAN (cari: {$nik}.jpg / {$nik}.jpeg / {$nik}.png) — "
                     . 'pastikan format sel NIK di Excel adalah TEXT, bukan ANGKA';
@@ -459,7 +461,8 @@ class ImportController extends Controller
     {
         $nik = trim((string) $nik);
 
-        if (!preg_match('/^\d{15,16}$/', $nik)) {
+        // Use static validation method for consistency
+        if (!self::isValidNik($nik)) {
             return null;
         }
 
@@ -623,6 +626,105 @@ class ImportController extends Controller
             'errors' => [['row' => '-', 'nik' => '-', 'errors' => [$message]]],
             'photos_found' => [],
         ];
+    }
+
+    /**
+     * Normalize a NIK value for consistent processing.
+     * Handles Excel float precision issues by converting to integer string.
+     *
+     * @param mixed $value Raw value from Excel cell
+     * @return string Normalized NIK as 15-16 digit string, or empty string for invalid
+     */
+    public static function normalizeNik(mixed $value): string
+    {
+        // Handle null/empty
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        // Handle numeric values (float from Excel)
+        // This is critical: Excel stores large numbers as floats, which may be in scientific notation
+        // e.g. 3216221612020012.0 stored as float, cast to string gives "3.21622161202001E+15"
+        if (is_float($value) || is_int($value)) {
+            // Convert to integer string without decimals or scientific notation
+            return number_format($value, 0, '', '');
+        }
+
+        // Handle string values
+        if (is_string($value)) {
+            $value = trim($value);
+            if ($value === '') {
+                return '';
+            }
+
+            // Check if string looks like a numeric value (from Excel storing as TEXT but value is numeric)
+            // e.g. "3216221612020012.0" should become "3216221612020012"
+            if (preg_match('/^\d+\.0*$/', $value)) {
+                // Remove trailing .0, .00, etc.
+                return preg_replace('/\.0+$/', '', $value);
+            }
+
+            // Already a clean string - return as-is
+            return $value;
+        }
+
+        // Handle other types by converting to string and trimming
+        return trim((string) $value);
+    }
+
+    /**
+     * Validate a NIK string (should be normalized first).
+     *
+     * @param string $nik Normalized NIK string
+     * @return bool True if valid (15 or 16 digits, all numeric)
+     */
+    public static function isValidNik(string $nik): bool
+    {
+        if (empty($nik)) {
+            return false;
+        }
+        return preg_match('/^\d{15,16}$/', $nik) === 1;
+    }
+
+    /**
+     * Check if a row is an instruction/note row that should be skipped.
+     *
+     * An instruction row is identified by:
+     * - NIK column contains text starting with "CATATAN:" (case-insensitive)
+     * - All other required data columns are empty
+     *
+     * This handles template files that include instructional notes like:
+     * "CATATAN: Kolom NIK harus berisi 16 digit angka. Jangan rubah format sel."
+     *
+     * @param array $rowData Row data mapped from headers
+     * @return bool True if this is an instruction row to skip
+     */
+    private function isInstructionRow(array $rowData): bool
+    {
+        $nik = $rowData['nik'] ?? '';
+
+        // Check if NIK column contains an instruction/note pattern
+        if (!empty($nik) && is_string($nik)) {
+            $nikLower = strtolower(trim($nik));
+            if (str_starts_with($nikLower, 'catatan:')) {
+                // This is an instruction row - verify other fields are empty
+                // Instruction rows have the note in NIK column but no actual data
+                $requiredFields = ['nama', 'tempat_lahir', 'alamat', 'jenis_kelamin', 'agama'];
+
+                foreach ($requiredFields as $field) {
+                    $value = $rowData[$field] ?? '';
+                    if (!empty(trim((string) $value))) {
+                        // There's actual data in other columns - this is NOT an instruction row
+                        return false;
+                    }
+                }
+
+                // All required fields are empty - this is an instruction row
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function isValidDate(string $date): bool
