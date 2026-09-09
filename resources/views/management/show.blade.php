@@ -19,10 +19,10 @@ function hideEditForm(id) {
         <h3>Informasi Periode</h3>
         <div style="display:flex;gap:0.75rem;">
             <a href="{{ route('management.index') }}" class="btn btn-outline">Kembali</a>
-            <form action="{{ route('management.destroy', $period) }}" method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus periode ini?')">
+            <form action="{{ route('management.destroy', $period) }}" method="POST" style="display:inline;" id="delete-period-form">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="btn btn-danger">
+                <button type="button" class="btn btn-danger" onclick="FSPMIModal.confirmDelete('Yakin ingin menghapus periode ini?').then(function(ok){ if(ok){document.getElementById('delete-period-form').submit();} });">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;margin-right:0.25rem;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         Hapus
                     </button>
@@ -281,10 +281,10 @@ function hideEditForm(id) {
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;margin-right:0.25rem;"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                             Edit
                         </button>
-                        <form action="{{ route('management.officials.destroy', [$period, $official]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Yakin?')">
+                        <form action="{{ route('management.officials.destroy', [$period, $official]) }}" method="POST" style="display:inline;" id="delete-official-form-{{ $official->id }}">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-danger">
+                            <button type="button" class="btn btn-sm btn-danger" onclick="FSPMIModal.confirmDelete('Yakin ingin menghapus pengurus ini?').then(function(ok){ if(ok){document.getElementById('delete-official-form-{{ $official->id }}').submit();} });">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;margin-right:0.25rem;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
                         </form>

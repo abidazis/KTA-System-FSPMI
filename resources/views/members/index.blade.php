@@ -167,10 +167,10 @@
                             <a href="{{ route('members.edit', $member) }}" class="btn btn-sm btn-primary" title="Edit" style="padding:0.25rem 0.375rem;">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                             </a>
-                            <form method="POST" action="{{ route('members.destroy', $member) }}" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus anggota ini?');">
+                            <form method="POST" action="{{ route('members.destroy', $member) }}" style="display:inline;">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger" title="Hapus" style="padding:0.25rem 0.375rem;">
+                                <button type="submit" class="btn btn-sm btn-danger" title="Hapus" style="padding:0.25rem 0.375rem;" onclick="FSPMIModal.confirmDelete('Yakin ingin menghapus anggota ini?').then(function(ok){ if(!ok){event.preventDefault();} });">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                 </button>
                             </form>
@@ -356,28 +356,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // ====== SUBMIT BUTTON CLICK ======
     if (bulkSubmitBtn) {
         bulkSubmitBtn.addEventListener('click', function() {
-            console.log('[BulkActions] Proses clicked');
             var action = bulkActionSelect ? bulkActionSelect.value : '';
             var checked = document.querySelectorAll('.member-checkbox:checked');
-            console.log('[BulkActions] Action:', action, '| Checked:', checked.length);
+            var count = checked.length;
 
             // Validation
-            if (checked.length === 0) {
-                alert('Pilih minimal satu anggota.');
+            if (count === 0) {
+                FSPMIModal.alert('Pilih minimal satu anggota.', 'warning', 'Belum Ada Pilihan');
                 return;
             }
             if (!action) {
-                alert('Pilih aksi terlebih dahulu!');
+                FSPMIModal.alert('Pilih aksi terlebih dahulu!', 'warning', 'Aksi Belum Dipilih');
                 return;
             }
             if (action === 'update_status' && (!newStatusSelect || !newStatusSelect.value)) {
-                alert('Pilih status baru!');
+                FSPMIModal.alert('Pilih status baru!', 'warning', 'Status Belum Dipilih');
                 return;
-            }
-            if (action === 'delete') {
-                if (!confirm('Yakin ingin menghapus ' + checked.length + ' anggota?')) {
-                    return;
-                }
             }
 
             // For "edit" action - open modal
@@ -385,75 +379,82 @@ document.addEventListener('DOMContentLoaded', function() {
                 var modal = document.getElementById('bulk-edit-modal');
                 var countEl = document.getElementById('bulk-edit-count');
                 if (modal) {
-                    if (countEl) countEl.textContent = checked.length + ' anggota dipilih';
+                    if (countEl) countEl.textContent = count + ' anggota dipilih';
                     modal.style.display = 'flex';
                 }
                 return;
             }
 
-            // ====== SUBMIT VIA FETCH ======
-            var memberIds = [];
-            checked.forEach(function(cb) { memberIds.push(cb.value); });
-
-            var formData = new FormData();
-            // Append each member ID as separate entry so PHP gets a proper array
-            memberIds.forEach(function(id) {
-                formData.append('member_ids[]', id);
-            });
-            formData.append('action', action);
-            if (action === 'update_status') {
-                formData.append('new_status', newStatusSelect.value);
+            // For delete - ask for confirmation first
+            if (action === 'delete') {
+                FSPMIModal.confirmBulk(count, 'delete').then(function(ok) {
+                    if (!ok) return;
+                    submitBulkAction(checked, action, null);
+                });
+                return;
             }
 
-            bulkSubmitBtn.disabled = true;
-            bulkSubmitBtn.textContent = 'Memproses...';
+            // Direct submit for other actions
+            submitBulkAction(checked, action, null);
+        });
+    }
 
-            // Use absolute URL to avoid relative path issues
-            var bulkActionUrl = '/members/bulk-action';
-            console.log('[BulkActions] Fetching to:', bulkActionUrl);
+    // ====== SHARED FETCH SUBMITTER ======
+    function submitBulkAction(checked, action, extraData) {
+        var memberIds = [];
+        checked.forEach(function(cb) { memberIds.push(cb.value); });
 
-            fetch(bulkActionUrl, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'Accept': 'application/json'
-                },
-                credentials: 'same-origin'
-            })
-            .then(function(response) {
-                console.log('[BulkActions] Response status:', response.status);
-                if (response.status === 200 || response.status === 201) {
-                    return response.json().catch(function() {
-                        return { success: true, message: 'Berhasil!' };
-                    });
-                }
-                if (response.status === 422) {
-                    return response.json().then(function(data) {
-                        throw new Error(data.message || 'Validasi gagal');
-                    });
-                }
-                if (response.status === 500) {
-                    throw new Error('Server error');
-                }
-                throw new Error('Status: ' + response.status);
-            })
-            .then(function(data) {
-                console.log('[BulkActions] Response data:', data);
-                if (data.success) {
-                    alert(data.message || 'Berhasil!');
+        var formData = new FormData();
+        memberIds.forEach(function(id) {
+            formData.append('member_ids[]', id);
+        });
+        formData.append('action', action);
+        if (action === 'update_status' && newStatusSelect) {
+            formData.append('new_status', newStatusSelect.value);
+        }
+        if (extraData) {
+            Object.keys(extraData).forEach(function(key) {
+                if (extraData[key]) formData.append(key, extraData[key]);
+            });
+        }
+
+        bulkSubmitBtn.disabled = true;
+        bulkSubmitBtn.textContent = 'Memproses...';
+
+        fetch('/members/bulk-action', {
+            method: 'POST',
+            body: formData,
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin'
+        })
+        .then(function(response) {
+            if (response.status === 200 || response.status === 201) {
+                return response.json().catch(function() { return { success: true, message: 'Berhasil!' }; });
+            }
+            if (response.status === 422) {
+                return response.json().then(function(data) {
+                    throw new Error(data.message || 'Validasi gagal');
+                });
+            }
+            throw new Error('Status: ' + response.status);
+        })
+        .then(function(data) {
+            if (data.success) {
+                FSPMIModal.success(data.message || 'Berhasil!').then(function() {
                     window.location.reload();
-                } else {
-                    alert(data.message || 'Terjadi kesalahan');
-                }
-            })
-            .catch(function(err) {
-                console.error('[BulkActions] Error:', err);
-                alert('Gagal: ' + err.message);
-            })
-            .finally(function() {
+                });
+            } else {
+                FSPMIModal.error(data.message || 'Terjadi kesalahan');
+            }
+        })
+        .catch(function(err) {
+            FSPMIModal.error('Gagal: ' + err.message, 'Error');
+        })
+        .finally(function() {
+            if (bulkSubmitBtn) {
                 bulkSubmitBtn.disabled = false;
                 bulkSubmitBtn.textContent = 'Proses';
-            });
+            }
         });
     }
 
@@ -480,7 +481,7 @@ document.addEventListener('DOMContentLoaded', function() {
         bulkEditConfirm.addEventListener('click', function() {
             var checked = document.querySelectorAll('.member-checkbox:checked');
             if (checked.length === 0) {
-                alert('Pilih minimal satu anggota.');
+                FSPMIModal.alert('Pilih minimal satu anggota.', 'warning', 'Belum Ada Pilihan');
                 return;
             }
 
@@ -489,43 +490,56 @@ document.addEventListener('DOMContentLoaded', function() {
             var districtId = document.getElementById('bulk-district-select');
             var berlaku = document.getElementById('bulk-berlaku-select');
 
-            var formData = new FormData();
-            // Append each member ID as separate entry so PHP gets a proper array
-            checked.forEach(function(cb) {
-                formData.append('member_ids[]', cb.value);
-            });
-            formData.append('action', 'edit');
-            if (provinceId && provinceId.value) formData.append('bulk_province_id', provinceId.value);
-            if (regencyId && regencyId.value) formData.append('bulk_regency_id', regencyId.value);
-            if (districtId && districtId.value) formData.append('bulk_district_id', districtId.value);
-            if (berlaku && berlaku.value) formData.append('bulk_berlaku_hingga', berlaku.value);
+            var extraData = {};
+            if (provinceId && provinceId.value) extraData.bulk_province_id = provinceId.value;
+            if (regencyId && regencyId.value) extraData.bulk_regency_id = regencyId.value;
+            if (districtId && districtId.value) extraData.bulk_district_id = districtId.value;
+            if (berlaku && berlaku.value) extraData.bulk_berlaku_hingga = berlaku.value;
 
-            bulkEditConfirm.disabled = true;
-            bulkEditConfirm.textContent = 'Memproses...';
+            if (Object.keys(extraData).length === 0) {
+                FSPMIModal.alert('Pilih minimal satu field yang akan diubah.', 'info', 'Tidak Ada Perubahan');
+                return;
+            }
 
-            // Use absolute URL to avoid relative path issues
-            fetch('/members/bulk-action', {
-                method: 'POST',
-                body: formData,
-                headers: { 'Accept': 'application/json' },
-                credentials: 'same-origin'
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    alert(data.message);
-                    window.location.reload();
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(function(err) {
-                alert('Gagal: ' + err.message);
-            })
-            .finally(function() {
-                bulkEditConfirm.disabled = false;
-                bulkEditConfirm.textContent = 'Simpan Perubahan';
-                if (bulkEditModal) bulkEditModal.style.display = 'none';
+            FSPMIModal.confirmBulk(checked.length, 'edit').then(function(ok) {
+                if (!ok) return;
+
+                var formData = new FormData();
+                checked.forEach(function(cb) {
+                    formData.append('member_ids[]', cb.value);
+                });
+                formData.append('action', 'edit');
+                Object.keys(extraData).forEach(function(key) {
+                    formData.append(key, extraData[key]);
+                });
+
+                bulkEditConfirm.disabled = true;
+                bulkEditConfirm.textContent = 'Memproses...';
+
+                fetch('/members/bulk-action', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin'
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        FSPMIModal.success(data.message).then(function() {
+                            window.location.reload();
+                        });
+                    } else {
+                        FSPMIModal.error(data.message || 'Terjadi kesalahan');
+                    }
+                })
+                .catch(function(err) {
+                    FSPMIModal.error('Gagal: ' + err.message, 'Error');
+                })
+                .finally(function() {
+                    bulkEditConfirm.disabled = false;
+                    bulkEditConfirm.textContent = 'Simpan Perubahan';
+                    if (bulkEditModal) bulkEditModal.style.display = 'none';
+                });
             });
         });
     }
@@ -614,40 +628,45 @@ document.addEventListener('DOMContentLoaded', function() {
             var newStatus = this.value;
             if (!memberId) return;
 
-            if (!confirm('Ubah status anggota ini?')) {
-                this.value = originalStatus;
-                return;
-            }
-
-            this.disabled = true;
             var btn = this;
-
-            fetch('/members/' + memberId + '/status', {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                },
-                body: JSON.stringify({ status: newStatus })
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    originalStatus = newStatus;
-                    btn.style.backgroundColor = '#22c55e33';
-                    setTimeout(function() { btn.style.backgroundColor = ''; }, 1500);
-                } else {
-                    alert(data.message || 'Gagal');
+            FSPMIModal.confirmStatus('Ubah status anggota ini menjadi "' + newStatus + '"?').then(function(ok) {
+                if (!ok) {
                     btn.value = originalStatus;
+                    return;
                 }
-            })
-            .catch(function() {
-                alert('Gagal mengubah status');
+
+                btn.disabled = true;
+
+                fetch('/members/' + memberId + '/status', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        originalStatus = newStatus;
+                        btn.style.backgroundColor = '#22c55e33';
+                        setTimeout(function() { btn.style.backgroundColor = ''; }, 1500);
+                        FSPMIModal.success('Status berhasil diubah!');
+                    } else {
+                        FSPMIModal.error(data.message || 'Gagal mengubah status');
+                        btn.value = originalStatus;
+                    }
+                })
+                .catch(function() {
+                    FSPMIModal.error('Gagal mengubah status', 'Error');
+                    btn.value = originalStatus;
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                });
+            }).catch(function() {
                 btn.value = originalStatus;
-            })
-            .finally(function() {
-                btn.disabled = false;
             });
         });
     });
@@ -661,40 +680,45 @@ document.addEventListener('DOMContentLoaded', function() {
             var newCompanyId = this.value;
             if (!memberId) return;
 
-            if (!confirm('Ubah perusahaan anggota ini?')) {
-                this.value = originalCompanyId;
-                return;
-            }
-
-            this.disabled = true;
             var btn = this;
-
-            fetch('/members/' + memberId + '/status', {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                },
-                body: JSON.stringify({ company_id: newCompanyId || null })
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data.success) {
-                    originalCompanyId = newCompanyId;
-                    btn.style.backgroundColor = '#22c55e33';
-                    setTimeout(function() { btn.style.backgroundColor = ''; }, 1500);
-                } else {
-                    alert(data.message || 'Gagal');
+            FSPMIModal.confirmStatus('Ubah perusahaan anggota ini?').then(function(ok) {
+                if (!ok) {
                     btn.value = originalCompanyId;
+                    return;
                 }
-            })
-            .catch(function() {
-                alert('Gagal mengubah perusahaan');
+
+                btn.disabled = true;
+
+                fetch('/members/' + memberId + '/status', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    body: JSON.stringify({ company_id: newCompanyId || null })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        originalCompanyId = newCompanyId;
+                        btn.style.backgroundColor = '#22c55e33';
+                        setTimeout(function() { btn.style.backgroundColor = ''; }, 1500);
+                        FSPMIModal.success('Perusahaan berhasil diubah!');
+                    } else {
+                        FSPMIModal.error(data.message || 'Gagal', 'Error');
+                        btn.value = originalCompanyId;
+                    }
+                })
+                .catch(function() {
+                    FSPMIModal.error('Gagal mengubah perusahaan', 'Error');
+                    btn.value = originalCompanyId;
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                });
+            }).catch(function() {
                 btn.value = originalCompanyId;
-            })
-            .finally(function() {
-                btn.disabled = false;
             });
         });
     });

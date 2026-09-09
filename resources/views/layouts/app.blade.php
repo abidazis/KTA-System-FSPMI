@@ -458,10 +458,153 @@
             .filters { flex-direction: column; }
             .stats-grid { grid-template-columns: 1fr 1fr; }
         }
+
+        /* ===== CUSTOM MODAL SYSTEM - FSPMI Design ===== */
+        .fspmi-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 36, 64, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            padding: 1rem;
+        }
+        .fspmi-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .fspmi-modal {
+            background: var(--white);
+            border-radius: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+            width: 100%;
+            max-width: 420px;
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.2s ease;
+            overflow: hidden;
+        }
+        .fspmi-modal-overlay.active .fspmi-modal {
+            transform: scale(1) translateY(0);
+        }
+        .fspmi-modal-header {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        .fspmi-modal-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .fspmi-modal-icon svg { width: 22px; height: 22px; }
+        .fspmi-modal-icon.success { background: var(--success-light); color: var(--success); }
+        .fspmi-modal-icon.danger { background: var(--danger-light); color: var(--danger); }
+        .fspmi-modal-icon.warning { background: var(--warning-light); color: var(--warning); }
+        .fspmi-modal-icon.info { background: var(--info-light); color: var(--info); }
+        .fspmi-modal-icon.question { background: var(--gray-100); color: var(--gray-600); }
+        .fspmi-modal-header-text { flex: 1; }
+        .fspmi-modal-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--gray-800);
+            line-height: 1.3;
+        }
+        .fspmi-modal-subtitle {
+            font-size: 0.85rem;
+            color: var(--gray-500);
+            margin-top: 0.125rem;
+        }
+        .fspmi-modal-body {
+            padding: 1.25rem 1.5rem;
+        }
+        .fspmi-modal-body p {
+            font-size: 0.95rem;
+            color: var(--gray-600);
+            line-height: 1.6;
+            margin: 0;
+        }
+        .fspmi-modal-footer {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            padding: 1rem 1.5rem;
+            background: var(--gray-50);
+            border-top: 1px solid var(--gray-100);
+        }
+        .fspmi-modal-footer .btn {
+            padding: 0.625rem 1.25rem;
+            font-size: 0.9rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .fspmi-modal-footer .btn-cancel {
+            background: var(--white);
+            color: var(--gray-600);
+            border: 1.5px solid var(--gray-300);
+        }
+        .fspmi-modal-footer .btn-cancel:hover {
+            background: var(--gray-100);
+            border-color: var(--gray-400);
+        }
+        .fspmi-modal-footer .btn-confirm {
+            background: var(--primary);
+            color: var(--white);
+            box-shadow: 0 2px 8px rgba(30, 58, 95, 0.3);
+        }
+        .fspmi-modal-footer .btn-confirm:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(30, 58, 95, 0.4);
+        }
+        .fspmi-modal-footer .btn-confirm.danger {
+            background: var(--danger);
+            box-shadow: 0 2px 8px rgba(185, 28, 28, 0.3);
+        }
+        .fspmi-modal-footer .btn-confirm.danger:hover {
+            background: #991b1b;
+            box-shadow: 0 4px 12px rgba(185, 28, 28, 0.4);
+        }
+        .fspmi-modal-footer .btn-confirm.success {
+            background: var(--success);
+            box-shadow: 0 2px 8px rgba(4, 120, 87, 0.3);
+        }
+        .fspmi-modal-footer .btn-confirm.success:hover {
+            background: #065f46;
+        }
     </style>
     @stack('styles')
 </head>
 <body>
+    <!-- Custom Modal System - FSPMI Design -->
+    <div id="fspmi-modal-overlay" class="fspmi-modal-overlay">
+        <div class="fspmi-modal">
+            <div class="fspmi-modal-header">
+                <div id="fspmi-modal-icon" class="fspmi-modal-icon info"></div>
+                <div class="fspmi-modal-header-text">
+                    <div id="fspmi-modal-title" class="fspmi-modal-title"></div>
+                    <div id="fspmi-modal-subtitle" class="fspmi-modal-subtitle"></div>
+                </div>
+            </div>
+            <div id="fspmi-modal-body" class="fspmi-modal-body">
+                <p id="fspmi-modal-message"></p>
+            </div>
+            <div id="fspmi-modal-footer" class="fspmi-modal-footer"></div>
+        </div>
+    </div>
     <aside class="sidebar">
         <div class="logo">
             <h1><span class="logo-icon"></span> KTA FSPMI</h1>
@@ -572,6 +715,231 @@
         </div>
     </main>
 
+    <!-- Custom Modal System - FSPMI JavaScript API -->
+    <script>
+    (function() {
+        var overlay = document.getElementById('fspmi-modal-overlay');
+        var iconEl = document.getElementById('fspmi-modal-icon');
+        var titleEl = document.getElementById('fspmi-modal-title');
+        var subtitleEl = document.getElementById('fspmi-modal-subtitle');
+        var messageEl = document.getElementById('fspmi-modal-message');
+        var footerEl = document.getElementById('fspmi-modal-footer');
+        var resolveCallback = null;
+
+        // Icon SVGs per type
+        var icons = {
+            success: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+            danger: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>',
+            warning: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+            info: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+            question: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
+        };
+
+        var titles = {
+            success: 'Berhasil!',
+            danger: 'Terjadi Kesalahan',
+            warning: 'Peringatan',
+            info: 'Informasi',
+            question: 'Konfirmasi'
+        };
+
+        var subtitles = {
+            success: 'Operasi berhasil dilakukan',
+            danger: 'Mohon periksa kesalahan berikut',
+            warning: 'Harap perhatian Anda',
+            info: 'Informasi sistem',
+            question: 'Tindakan memerlukan konfirmasi'
+        };
+
+        function openModal(type, title, subtitle, message, buttons) {
+            return new Promise(function(resolve) {
+                resolveCallback = resolve;
+
+                // Set icon & colors
+                iconEl.className = 'fspmi-modal-icon ' + type;
+                iconEl.innerHTML = icons[type] || icons.info;
+
+                // Set text
+                titleEl.textContent = title || titles[type] || 'Informasi';
+                subtitleEl.textContent = subtitle || subtitles[type] || '';
+                messageEl.textContent = message || '';
+
+                // Build footer buttons
+                footerEl.innerHTML = '';
+                buttons.forEach(function(btn) {
+                    var el = document.createElement('button');
+                    el.className = 'btn ' + btn.class;
+                    el.textContent = btn.text;
+                    el.style.cssText = btn.style || '';
+                    el.addEventListener('click', function() {
+                        closeModal();
+                        if (resolveCallback) resolveCallback(btn.value);
+                        resolveCallback = null;
+                    });
+                    footerEl.appendChild(el);
+                });
+
+                // Show
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+
+                // Focus first button
+                setTimeout(function() {
+                    var firstBtn = footerEl.querySelector('button');
+                    if (firstBtn) firstBtn.focus();
+                }, 100);
+            });
+        }
+
+        function closeModal() {
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Close on backdrop click
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                closeModal();
+                if (resolveCallback) { resolveCallback(false); resolveCallback = null; }
+            }
+        });
+
+        // Close on Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && overlay.classList.contains('active')) {
+                closeModal();
+                if (resolveCallback) { resolveCallback(false); resolveCallback = null; }
+            }
+        });
+
+        // ===== PUBLIC API =====
+
+        // Modal.alert(message, type, title) - Single OK button
+        window.FSPMIModal = {
+            alert: function(message, type, title, subtitle) {
+                type = type || 'info';
+                return openModal(type, title, subtitle, message, [
+                    { text: 'OK', class: 'btn-confirm' + (type === 'danger' ? ' danger' : type === 'success' ? ' success' : '') }
+                ]);
+            },
+
+            // Modal.success(message, title)
+            success: function(message, title) {
+                return openModal('success', title || 'Berhasil!', subtitles.success, message, [
+                    { text: 'OK', class: 'btn-confirm success' }
+                ]);
+            },
+
+            // Modal.error(message, title)
+            error: function(message, title) {
+                return openModal('danger', title || 'Terjadi Kesalahan', subtitles.danger, message, [
+                    { text: 'OK', class: 'btn-confirm danger' }
+                ]);
+            },
+
+            // Modal.warning(message, title)
+            warning: function(message, title) {
+                return openModal('warning', title || 'Peringatan', subtitles.warning, message, [
+                    { text: 'OK', class: 'btn-confirm' }
+                ]);
+            },
+
+            // Modal.info(message, title)
+            info: function(message, title) {
+                return openModal('info', title || 'Informasi', subtitles.info, message, [
+                    { text: 'OK', class: 'btn-confirm' }
+                ]);
+            },
+
+            // Modal.confirm(message, title) - Returns Promise<boolean>
+            confirm: function(message, title, confirmText, cancelText, type) {
+                type = type || 'question';
+                title = title || 'Konfirmasi';
+                confirmText = confirmText || 'Ya, Lanjutkan';
+                cancelText = cancelText || 'Batal';
+                return openModal(type, title, subtitles.question, message, [
+                    { text: cancelText, class: 'btn-cancel', value: false },
+                    { text: confirmText, class: 'btn-confirm' + (type === 'danger' ? ' danger' : ''), value: true }
+                ]);
+            },
+
+            // Modal.confirmDelete(message, title) - Danger confirm for delete
+            confirmDelete: function(message, title) {
+                return this.confirm(message, title || 'Hapus Data', 'Ya, Hapus', 'Batal', 'danger');
+            },
+
+            // Modal.confirmStatus(message, title) - Confirm status change
+            confirmStatus: function(message, title) {
+                return this.confirm(message, title || 'Ubah Status', 'Ya, Ubah', 'Batal', 'warning');
+            },
+
+            // Modal.confirmBulk(count, action) - Bulk action confirm
+            confirmBulk: function(count, action, type) {
+                var messages = {
+                    delete: count + ' anggota akan dihapus. Data yang dihapus tidak dapat dikembalikan.',
+                    update_status: 'Status ' + count + ' anggota akan diubah.',
+                    edit: count + ' anggota akan diedit massal.'
+                };
+                var titles = {
+                    delete: 'Hapus ' + count + ' Anggota?',
+                    update_status: 'Ubah Status ' + count + ' Anggota?',
+                    edit: 'Edit Massal ' + count + ' Anggota?'
+                };
+                var confirmTexts = {
+                    delete: 'Ya, Hapus',
+                    update_status: 'Ya, Ubah',
+                    edit: 'Ya, Edit'
+                };
+                var msg = messages[action] || count + ' item akan diproses.';
+                var ttl = titles[action] || 'Konfirmasi Massal';
+                var conf = confirmTexts[action] || 'Ya, Lanjutkan';
+                return this.confirm(msg, ttl, conf, 'Batal', type || 'danger');
+            }
+        };
+
+        // Backward compatible - override native confirm
+        window.confirm = function(msg) {
+            FSPMIModal.confirm(msg).then(function(ok) {
+                // Can't really override native confirm sync behavior
+                // So we rely on FSPMIModal.confirm() instead
+            });
+            return false; // Prevent default native confirm
+        };
+
+        // Override alert with FSPMI modal (non-blocking)
+        window.alert = function(msg) {
+            FSPMIModal.alert(msg, 'info', 'Informasi');
+        };
+
+        // ===== GLOBAL FORM CONFIRM HANDLER =====
+        // Forms with data-fspmi-confirm attribute will use FSPMI modal instead of native confirm
+        document.addEventListener('submit', function(e) {
+            var form = e.target;
+            if (!form) return;
+            var msg = form.dataset.fspmiConfirm || form.dataset.confirmMsg;
+            var type = form.dataset.fspmiConfirmType || 'question';
+            var confirmBtn = form.dataset.fspmiConfirmBtn || 'Ya, Lanjutkan';
+            var cancelBtn = form.dataset.fspmiConfirmCancel || 'Batal';
+
+            if (!msg) return;
+
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            FSPMIModal.confirm(msg, form.dataset.fspmiConfirmTitle || 'Konfirmasi', confirmBtn, cancelBtn, type).then(function(ok) {
+                if (ok) form.submit();
+            });
+        });
+
+        // Also handle forms with data-confirm (backward compat + simple usage)
+        document.querySelectorAll('form[data-confirm]').forEach(function(form) {
+            var msg = form.dataset.confirm;
+            if (!msg) return;
+            // Remove inline onsubmit to avoid double-confirm
+            form.removeAttribute('onsubmit');
+        });
+    })();
+    </script>
     @stack('scripts')
 </body>
 </html>
