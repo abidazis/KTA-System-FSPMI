@@ -115,34 +115,41 @@
         </div>
     </div>
 
-        <table>
+        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
             <thead>
-                <tr>
-                    <th width="50"></th>
-                    <th>NIK</th>
-                    <th>Nama</th>
-                    <th>Domisili</th>
-                    <th>Gender</th>
-                    <th>Status</th>
-                    <th>Berlaku</th>
-                    <th>Aksi</th>
+                <tr style="background:var(--gray-50);">
+                    <th style="width:40px;padding:0.5rem 0.375rem;text-align:center;"></th>
+                    <th style="padding:0.5rem 0.5rem;text-align:left;white-space:nowrap;">NIK</th>
+                    <th style="padding:0.5rem 0.5rem;text-align:left;white-space:nowrap;">Nama</th>
+                    <th style="padding:0.5rem 0.5rem;text-align:left;white-space:nowrap;">Domisili</th>
+                    <th style="padding:0.5rem 0.5rem;text-align:left;white-space:nowrap;">Asal Perusahaan</th>
+                    <th style="padding:0.5rem 0.5rem;text-align:left;white-space:nowrap;">Status</th>
+                    <th style="padding:0.5rem 0.5rem;text-align:left;white-space:nowrap;">Berlaku</th>
+                    <th style="padding:0.5rem 0.375rem;text-align:center;white-space:nowrap;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($members as $member)
-                <tr>
-                    <td>
-                        <input type="checkbox" name="member_ids[]" value="{{ $member->id }}" class="member-checkbox" style="width:1.125rem;height:1.125rem;">
+                <tr style="border-bottom:1px solid var(--gray-100);">
+                    <td style="padding:0.5rem 0.375rem;text-align:center;">
+                        <input type="checkbox" name="member_ids[]" value="{{ $member->id }}" class="member-checkbox" style="width:1rem;height:1rem;cursor:pointer;">
                     </td>
-                    <td><strong><a href="{{ route('members.show', $member) }}" style="color:var(--primary);text-decoration:none;">{{ $member->nik }}</a></strong></td>
-                    <td>{{ $member->nama }}</td>
-                    <td>
-                        <div>{{ $member->district?->name ?? '-' }}</div>
-                        <small style="color:var(--gray-500);">{{ $member->regency?->name ?? '' }}</small>
+                    <td style="padding:0.5rem 0.5rem;"><strong><a href="{{ route('members.show', $member) }}" style="color:var(--primary);text-decoration:none;">{{ $member->nik }}</a></strong></td>
+                    <td style="padding:0.5rem 0.5rem;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ $member->nama }}">{{ $member->nama }}</td>
+                    <td style="padding:0.5rem 0.5rem;max-width:120px;">
+                        <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $member->district?->name ?? '-' }}</div>
+                        <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.75rem;color:var(--gray-400);">{{ $member->regency?->name ?? '' }}</div>
                     </td>
-                    <td>{{ $member->jenis_kelamin }}</td>
-                    <td>
-                        <select name="status" class="status-select" data-member-id="{{ $member->id }}" style="padding:0.375rem 0.5rem;border-radius:0.25rem;border:2px solid var(--gray-200);font-size:0.85rem;">
+                    <td style="padding:0.375rem 0.5rem;">
+                        <select name="company_id" class="company-select" data-member-id="{{ $member->id }}" style="padding:0.25rem 0.375rem;border-radius:0.25rem;border:1px solid var(--gray-200);font-size:0.8rem;min-width:120px;max-width:150px;background:#fff;cursor:pointer;">
+                            <option value="">-- Pilih --</option>
+                            @foreach($companies as $company)
+                            <option value="{{ $company->id }}" {{ $member->company_id == $company->id ? 'selected' : '' }}>{{ $company->name }}</option>
+                            @endforeach
+                        </select>
+                    </td>
+                    <td style="padding:0.375rem 0.5rem;">
+                        <select name="status" class="status-select" data-member-id="{{ $member->id }}" style="padding:0.25rem 0.375rem;border-radius:0.25rem;border:1px solid var(--gray-200);font-size:0.8rem;background:#fff;cursor:pointer;">
                             <option value="draft" {{ $member->status == 'draft' ? 'selected' : '' }}>Draft</option>
                             <option value="ready" {{ $member->status == 'ready' ? 'selected' : '' }}>Ready</option>
                             <option value="generated" {{ $member->status == 'generated' ? 'selected' : '' }}>Generated</option>
@@ -151,20 +158,20 @@
                             <option value="inactive" {{ $member->status == 'inactive' ? 'selected' : '' }}>Inactive</option>
                         </select>
                     </td>
-                    <td>{{ $member->berlaku_hingga->format('d/m/Y') }}</td>
-                    <td>
-                        <div class="actions">
-                            <a href="{{ route('members.show', $member) }}" class="btn btn-sm btn-outline" title="Detail">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <td style="padding:0.5rem 0.5rem;white-space:nowrap;">{{ $member->berlaku_hingga->format('d/m/Y') }}</td>
+                    <td style="padding:0.375rem 0.25rem;">
+                        <div style="display:flex;align-items:center;justify-content:center;gap:0.25rem;">
+                            <a href="{{ route('members.show', $member) }}" class="btn btn-sm btn-outline" title="Detail" style="padding:0.25rem 0.375rem;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                             </a>
-                            <a href="{{ route('members.edit', $member) }}" class="btn btn-sm btn-primary" title="Edit">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                            <a href="{{ route('members.edit', $member) }}" class="btn btn-sm btn-primary" title="Edit" style="padding:0.25rem 0.375rem;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                             </a>
                             <form method="POST" action="{{ route('members.destroy', $member) }}" style="display:inline;" onsubmit="return confirm('Yakin ingin menghapus anggota ini?');">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                <button type="submit" class="btn btn-sm btn-danger" title="Hapus" style="padding:0.25rem 0.375rem;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                 </button>
                             </form>
                         </div>
@@ -638,6 +645,53 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(function() {
                 alert('Gagal mengubah status');
                 btn.value = originalStatus;
+            })
+            .finally(function() {
+                btn.disabled = false;
+            });
+        });
+    });
+
+    // ====== INLINE COMPANY UPDATE ======
+    var companySelects = document.querySelectorAll('.company-select');
+    companySelects.forEach(function(select) {
+        var originalCompanyId = select.value;
+        select.addEventListener('change', function() {
+            var memberId = this.dataset.memberId;
+            var newCompanyId = this.value;
+            if (!memberId) return;
+
+            if (!confirm('Ubah perusahaan anggota ini?')) {
+                this.value = originalCompanyId;
+                return;
+            }
+
+            this.disabled = true;
+            var btn = this;
+
+            fetch('/members/' + memberId + '/status', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                body: JSON.stringify({ company_id: newCompanyId || null })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    originalCompanyId = newCompanyId;
+                    btn.style.backgroundColor = '#22c55e33';
+                    setTimeout(function() { btn.style.backgroundColor = ''; }, 1500);
+                } else {
+                    alert(data.message || 'Gagal');
+                    btn.value = originalCompanyId;
+                }
+            })
+            .catch(function() {
+                alert('Gagal mengubah perusahaan');
+                btn.value = originalCompanyId;
             })
             .finally(function() {
                 btn.disabled = false;

@@ -18,7 +18,7 @@ class MemberController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Member::with(['province', 'regency', 'district']);
+        $query = Member::with(['province', 'regency', 'district', 'company']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -71,12 +71,14 @@ class MemberController extends Controller
         $provinces = Province::orderBy('name')->get();
         $religions = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu'];
         $statuses = ['draft', 'ready', 'generated', 'printed', 'active', 'expired', 'inactive'];
+        $companies = Company::where('is_active', true)->orderBy('name')->get();
 
         return view('members.index', [
             'members' => $members,
             'provinces' => $provinces,
             'religions' => $religions,
             'statuses' => $statuses,
+            'companies' => $companies,
         ]);
     }
 
@@ -253,20 +255,48 @@ class MemberController extends Controller
 
     public function updateStatus(Request $request, Member $member): JsonResponse
     {
-        $validated = $request->validate([
-            'status' => ['required', 'in:draft,ready,generated,printed,active,inactive'],
-        ]);
+        // Handle status update
+        if ($request->has('status')) {
+            $validated = $request->validate([
+                'status' => ['required', 'in:draft,ready,generated,printed,active,inactive'],
+            ]);
 
-        $oldStatus = $member->status;
-        $member->update(['status' => $validated['status']]);
+            $oldStatus = $member->status;
+            $member->update(['status' => $validated['status']]);
 
-        AuditLog::log('update_member_status', $member, ['status' => $oldStatus], ['status' => $validated['status']]);
+            AuditLog::log('update_member_status', $member, ['status' => $oldStatus], ['status' => $validated['status']]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status berhasil diubah',
+                'status' => $member->status,
+            ]);
+        }
+
+        // Handle company_id update
+        if ($request->has('company_id')) {
+            $validated = $request->validate([
+                'company_id' => ['nullable', 'exists:companies,id'],
+            ]);
+
+            $oldCompanyId = $member->company_id;
+            $member->update(['company_id' => $validated['company_id'] ?: null]);
+
+            AuditLog::log('update_member_company', $member, ['company_id' => $oldCompanyId], ['company_id' => $validated['company_id']]);
+
+            $member->load('company');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Perusahaan berhasil diubah',
+                'company_name' => $member->company?->name ?? '-',
+            ]);
+        }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Status berhasil diubah',
-            'status' => $member->status,
-        ]);
+            'success' => false,
+            'message' => 'Tidak ada data yang diubah.'
+        ], 422);
     }
 
     /**
