@@ -4,9 +4,13 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
+
+// Exclude bulk-action route from CSRF (uses JS fetch with header token)
+PreventRequestForgery::except(['members/bulk-action']);
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(

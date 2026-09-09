@@ -192,7 +192,7 @@ class MemberController extends Controller
             'berlaku_hingga' => ['required', 'date'],
             'tanggal_pembuatan' => ['required', 'date'],
             'company_id' => ['required', 'exists:companies,id'],
-            'foto' => ['nullable', 'Image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
 
         if ($request->hasFile('foto')) {
@@ -269,32 +269,107 @@ class MemberController extends Controller
         ]);
     }
 
-    public function bulkAction(Request $request): \Illuminate\Http\RedirectResponse
+    /**
+     * Bulk action handler - handles update_status, edit, and delete
+     * Returns JSON for JavaScript fetch API
+     */
+    public function bulkAction(Request $request): JsonResponse
     {
+        // Validate required fields
         $validated = $request->validate([
             'member_ids' => ['required', 'array', 'min:1'],
-            'action' => ['required', 'in:delete,update_status,export'],
+            'action' => ['required', 'in:delete,update_status,edit'],
         ]);
 
-        $members = Member::whereIn('id', $validated['member_ids']);
+        $count = count($validated['member_ids']);
 
-        switch ($validated['action']) {
-            case 'delete':
-                foreach ($members->get() as $member) {
-                    if ($member->foto_path) {
-                        Storage::disk('local')->delete($member->foto_path);
+        try {
+            switch ($validated['action']) {
+                case 'delete':
+                    $members = Member::whereIn('id', $validated['member_ids'])->get();
+                    foreach ($members as $member) {
+                        if ($member->foto_path) {
+                            Storage::disk('local')->delete($member->foto_path);
+                        }
+                        AuditLog::log('delete_member', null, $member->toArray(), null);
+                        $member->delete();
                     }
-                    AuditLog::log('delete_member', null, $member->toArray(), null);
-                    $member->delete();
-                }
-                return redirect()->back()->with('success', count($validated['member_ids']) . ' anggota berhasil dihapus.');
+                    return response()->json([
+                        'success' => true,
+                        'message' => $count . ' anggota berhasil dihapus.',
+                        'count' => $count
+                    ]);
 
-            case 'update_status':
-                $request->validate(['new_status' => ['required', 'in:draft,ready,generated,active,inactive']]);
-                $members->update(['status' => $request->new_status]);
-                return redirect()->back()->with('success', count($validated['member_ids']) . ' anggota berhasil diperbarui.');
+                case 'update_status':
+                    $newStatus = $request->input('new_status');
+                    if (!$newStatus) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Status baru wajib dipilih.'
+                        ], 422);
+                    }
+                    $validStatuses = ['draft', 'ready', 'generated', 'printed', 'active', 'inactive'];
+                    if (!in_array($newStatus, $validStatuses)) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Status tidak valid.'
+                        ], 422);
+                    }
+                    $updated = Member::whereIn('id', $validated['member_ids'])->update(['status' => $newStatus]);
+                    AuditLog::log('bulk_update_member_status', null, ['ids' => $validated['member_ids']], ['status' => $newStatus, 'count' => $updated]);
+                    return response()->json([
+                        'success' => true,
+                        'message' => $count . ' anggota berhasil diperbarui.',
+                        'count' => $updated
+                    ]);
+
+                case 'edit':
+                    $updateData = [];
+
+                    // Check bulk_ prefix fields first, then fallback to direct names
+                    $provinceId = $request->input('bulk_province_id') ?: $request->input('province_id');
+                    $regencyId = $request->input('bulk_regency_id') ?: $request->input('regency_id');
+                    $districtId = $request->input('bulk_district_id') ?: $request->input('district_id');
+                    $berlaku = $request->input('bulk_berlaku_hingga') ?: $request->input('berlaku_hingga');
+
+                    if ($provinceId && $provinceId !== '') {
+                        $updateData['province_id'] = $provinceId;
+                    }
+                    if ($regencyId && $regencyId !== '') {
+                        $updateData['regency_id'] = $regencyId;
+                    }
+                    if ($districtId && $districtId !== '') {
+                        $updateData['district_id'] = $districtId;
+                    }
+                    if ($berlaku && $berlaku !== '') {
+                        $updateData['berlaku_hingga'] = $berlaku;
+                    }
+
+                    if (empty($updateData)) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Tidak ada data yang diubah.'
+                        ], 422);
+                    }
+
+                    $updated = Member::whereIn('id', $validated['member_ids'])->update($updateData);
+                    AuditLog::log('bulk_edit_member', null, ['ids' => $validated['member_ids']], array_merge($updateData, ['count' => $updated]));
+                    return response()->json([
+                        'success' => true,
+                        'message' => $count . ' anggota berhasil diperbarui.',
+                        'count' => $updated
+                    ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
 
-        return redirect()->back();
+        return response()->json([
+            'success' => false,
+            'message' => 'Aksi tidak valid.'
+        ], 422);
     }
 }

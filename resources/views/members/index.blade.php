@@ -48,7 +48,7 @@
     </form>
 
     {{-- Bulk Actions --}}
-    <form id="bulk-form" method="POST" action="{{ route('members.bulk-action') }}">
+    <form id="bulk-form" method="POST" action="/members/bulk-action">
         @csrf
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding:1rem;background:var(--gray-50);border-radius:0.5rem;border:1px solid var(--gray-200);">
             <label style="display:flex;align-items:center;gap:0.75rem;cursor:pointer;">
@@ -60,6 +60,7 @@
                 <select name="action" id="bulk-action-select" style="padding:0.5rem 0.75rem;border:2px solid var(--gray-200);border-radius:0.375rem;font-size:0.95rem;">
                     <option value="">-- Aksi --</option>
                     <option value="update_status">Ubah Status</option>
+                    <option value="edit">Edit Massal</option>
                     <option value="delete">Hapus</option>
                 </select>
                 <select name="new_status" id="new-status-select" style="padding:0.5rem 0.75rem;border:2px solid var(--gray-200);border-radius:0.375rem;font-size:0.95rem;display:none;">
@@ -71,9 +72,48 @@
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                 </select>
-                <button type="submit" class="btn btn-danger" id="bulk-submit-btn">Proses</button>
+                <button type="button" class="btn btn-primary" id="bulk-submit-btn">Proses</button>
             </div>
         </div>
+
+    {{-- Bulk Edit Modal --}}
+    <div id="bulk-edit-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:0.75rem;padding:2rem;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;">
+            <h3 style="margin:0 0 1.5rem;font-size:1.25rem;font-weight:600;">Edit Massal Anggota</h3>
+            <p id="bulk-edit-count" style="color:var(--gray-600);margin-bottom:1.5rem;"></p>
+            <div style="display:flex;flex-direction:column;gap:1rem;">
+                <div>
+                    <label style="display:block;font-weight:500;margin-bottom:0.5rem;">Provinsi</label>
+                    <select name="bulk_province_id" id="bulk-province-select" style="width:100%;padding:0.5rem 0.75rem;border:2px solid var(--gray-200);border-radius:0.375rem;">
+                        <option value="">-- Tidak diubah --</option>
+                        @foreach($provinces as $province)
+                        <option value="{{ $province->id }}">{{ $province->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block;font-weight:500;margin-bottom:0.5rem;">Kab/Kota</label>
+                    <select name="bulk_regency_id" id="bulk-regency-select" style="width:100%;padding:0.5rem 0.75rem;border:2px solid var(--gray-200);border-radius:0.375rem;" disabled>
+                        <option value="">-- Tidak diubah --</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block;font-weight:500;margin-bottom:0.5rem;">Kecamatan</label>
+                    <select name="bulk_district_id" id="bulk-district-select" style="width:100%;padding:0.5rem 0.75rem;border:2px solid var(--gray-200);border-radius:0.375rem;" disabled>
+                        <option value="">-- Tidak diubah --</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block;font-weight:500;margin-bottom:0.5rem;">Berlaku Hingga</label>
+                    <input type="date" name="bulk_berlaku_hingga" id="bulk-berlaku-select" style="width:100%;padding:0.5rem 0.75rem;border:2px solid var(--gray-200);border-radius:0.375rem;">
+                </div>
+            </div>
+            <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:1.5rem;">
+                <button type="button" id="bulk-edit-cancel" class="btn btn-outline">Batal</button>
+                <button type="button" class="btn btn-primary" id="bulk-edit-confirm">Simpan Perubahan</button>
+            </div>
+        </div>
+    </div>
 
         <table>
             <thead>
@@ -230,22 +270,382 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 500);
     @endif
 });
+</script>
 
-// ============================================
-// Bulk Selection
-// ============================================
-document.getElementById('select-all').addEventListener('change', function() {
-    document.querySelectorAll('.member-checkbox').forEach(cb => cb.checked = this.checked);
-    updateBulkUI();
-});
-document.querySelectorAll('.member-checkbox').forEach(cb => cb.addEventListener('change', updateBulkUI));
-function updateBulkUI() {
-    const checked = document.querySelectorAll('.member-checkbox:checked').length;
-    document.getElementById('bulk-actions').style.display = checked > 0 ? 'flex' : 'none';
-    document.getElementById('selected-count').textContent = checked + ' dipilih';
-}
-document.getElementById('bulk-action-select').addEventListener('change', function() {
-    document.getElementById('new-status-select').style.display = this.value === 'update_status' ? 'inline-block' : 'none';
-});
+{{-- =============================================
+     BULK ACTIONS - COMPLETE SELF-CONTAINED
+     ============================================= --}}
+<script>
+(function() {
+    console.log('[BulkActions] Initializing...');
+
+    var selectAll = document.getElementById('select-all');
+    var bulkActions = document.getElementById('bulk-actions');
+    var countSpan = document.getElementById('selected-count');
+    var bulkActionSelect = document.getElementById('bulk-action-select');
+    var newStatusSelect = document.getElementById('new-status-select');
+    var bulkSubmitBtn = document.getElementById('bulk-submit-btn');
+    var bulkForm = document.getElementById('bulk-form');
+
+    if (!selectAll) {
+        console.log('[BulkActions] select-all not found');
+        return;
+    }
+
+    var memberCheckboxes = document.querySelectorAll('.member-checkbox');
+    console.log('[BulkActions] Found', memberCheckboxes.length, 'checkboxes');
+
+    // ====== SELECT ALL TOGGLE ======
+    selectAll.addEventListener('change', function() {
+        memberCheckboxes.forEach(function(cb) {
+            cb.checked = selectAll.checked;
+        });
+        updateBulkUI();
+    });
+
+    // ====== INDIVIDUAL CHECKBOX TOGGLE ======
+    memberCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateBulkUI);
+    });
+
+    // ====== UPDATE UI ======
+    function updateBulkUI() {
+        var checked = document.querySelectorAll('.member-checkbox:checked');
+        var checkedCount = checked.length;
+
+        if (bulkActions && countSpan) {
+            if (checkedCount > 0) {
+                bulkActions.style.display = 'flex';
+                countSpan.textContent = checkedCount + ' dipilih';
+            } else {
+                bulkActions.style.display = 'none';
+            }
+        }
+
+        // Indeterminate state for select all
+        if (checkedCount > 0 && checkedCount < memberCheckboxes.length) {
+            selectAll.checked = false;
+            selectAll.indeterminate = true;
+        } else if (checkedCount === memberCheckboxes.length) {
+            selectAll.checked = true;
+            selectAll.indeterminate = false;
+        } else {
+            selectAll.checked = false;
+            selectAll.indeterminate = false;
+        }
+    }
+
+    // ====== SHOW/HIDE STATUS DROPDOWN ======
+    if (bulkActionSelect && newStatusSelect) {
+        bulkActionSelect.addEventListener('change', function() {
+            if (this.value === 'update_status') {
+                newStatusSelect.style.display = 'inline-block';
+            } else {
+                newStatusSelect.style.display = 'none';
+            }
+        });
+    }
+
+    // ====== SUBMIT BUTTON CLICK ======
+    if (bulkSubmitBtn) {
+        bulkSubmitBtn.addEventListener('click', function() {
+            console.log('[BulkActions] Proses clicked');
+            var action = bulkActionSelect ? bulkActionSelect.value : '';
+            var checked = document.querySelectorAll('.member-checkbox:checked');
+            console.log('[BulkActions] Action:', action, '| Checked:', checked.length);
+
+            // Validation
+            if (checked.length === 0) {
+                alert('Pilih minimal satu anggota.');
+                return;
+            }
+            if (!action) {
+                alert('Pilih aksi terlebih dahulu!');
+                return;
+            }
+            if (action === 'update_status' && (!newStatusSelect || !newStatusSelect.value)) {
+                alert('Pilih status baru!');
+                return;
+            }
+            if (action === 'delete') {
+                if (!confirm('Yakin ingin menghapus ' + checked.length + ' anggota?')) {
+                    return;
+                }
+            }
+
+            // For "edit" action - open modal
+            if (action === 'edit') {
+                var modal = document.getElementById('bulk-edit-modal');
+                var countEl = document.getElementById('bulk-edit-count');
+                if (modal) {
+                    if (countEl) countEl.textContent = checked.length + ' anggota dipilih';
+                    modal.style.display = 'flex';
+                }
+                return;
+            }
+
+            // ====== SUBMIT VIA FETCH ======
+            var memberIds = [];
+            checked.forEach(function(cb) { memberIds.push(cb.value); });
+
+            var formData = new FormData();
+            // Append each member ID as separate entry so PHP gets a proper array
+            memberIds.forEach(function(id) {
+                formData.append('member_ids[]', id);
+            });
+            formData.append('action', action);
+            if (action === 'update_status') {
+                formData.append('new_status', newStatusSelect.value);
+            }
+
+            bulkSubmitBtn.disabled = true;
+            bulkSubmitBtn.textContent = 'Memproses...';
+
+            // Use absolute URL to avoid relative path issues
+            var bulkActionUrl = '/members/bulk-action';
+            console.log('[BulkActions] Fetching to:', bulkActionUrl);
+
+            fetch(bulkActionUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                console.log('[BulkActions] Response status:', response.status);
+                if (response.status === 200 || response.status === 201) {
+                    return response.json().catch(function() {
+                        return { success: true, message: 'Berhasil!' };
+                    });
+                }
+                if (response.status === 422) {
+                    return response.json().then(function(data) {
+                        throw new Error(data.message || 'Validasi gagal');
+                    });
+                }
+                if (response.status === 500) {
+                    throw new Error('Server error');
+                }
+                throw new Error('Status: ' + response.status);
+            })
+            .then(function(data) {
+                console.log('[BulkActions] Response data:', data);
+                if (data.success) {
+                    alert(data.message || 'Berhasil!');
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Terjadi kesalahan');
+                }
+            })
+            .catch(function(err) {
+                console.error('[BulkActions] Error:', err);
+                alert('Gagal: ' + err.message);
+            })
+            .finally(function() {
+                bulkSubmitBtn.disabled = false;
+                bulkSubmitBtn.textContent = 'Proses';
+            });
+        });
+    }
+
+    // ====== BULK EDIT MODAL ======
+    var bulkEditCancel = document.getElementById('bulk-edit-cancel');
+    var bulkEditConfirm = document.getElementById('bulk-edit-confirm');
+    var bulkEditModal = document.getElementById('bulk-edit-modal');
+
+    if (bulkEditCancel) {
+        bulkEditCancel.addEventListener('click', function() {
+            if (bulkEditModal) bulkEditModal.style.display = 'none';
+        });
+    }
+
+    if (bulkEditModal) {
+        bulkEditModal.addEventListener('click', function(e) {
+            if (e.target === bulkEditModal) {
+                bulkEditModal.style.display = 'none';
+            }
+        });
+    }
+
+    if (bulkEditConfirm) {
+        bulkEditConfirm.addEventListener('click', function() {
+            var checked = document.querySelectorAll('.member-checkbox:checked');
+            if (checked.length === 0) {
+                alert('Pilih minimal satu anggota.');
+                return;
+            }
+
+            var provinceId = document.getElementById('bulk-province-select');
+            var regencyId = document.getElementById('bulk-regency-select');
+            var districtId = document.getElementById('bulk-district-select');
+            var berlaku = document.getElementById('bulk-berlaku-select');
+
+            var formData = new FormData();
+            // Append each member ID as separate entry so PHP gets a proper array
+            checked.forEach(function(cb) {
+                formData.append('member_ids[]', cb.value);
+            });
+            formData.append('action', 'edit');
+            if (provinceId && provinceId.value) formData.append('bulk_province_id', provinceId.value);
+            if (regencyId && regencyId.value) formData.append('bulk_regency_id', regencyId.value);
+            if (districtId && districtId.value) formData.append('bulk_district_id', districtId.value);
+            if (berlaku && berlaku.value) formData.append('bulk_berlaku_hingga', berlaku.value);
+
+            bulkEditConfirm.disabled = true;
+            bulkEditConfirm.textContent = 'Memproses...';
+
+            // Use absolute URL to avoid relative path issues
+            fetch('/members/bulk-action', {
+                method: 'POST',
+                body: formData,
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(function(err) {
+                alert('Gagal: ' + err.message);
+            })
+            .finally(function() {
+                bulkEditConfirm.disabled = false;
+                bulkEditConfirm.textContent = 'Simpan Perubahan';
+                if (bulkEditModal) bulkEditModal.style.display = 'none';
+            });
+        });
+    }
+
+    // ====== BULK PROVINCE DROPDOWN ======
+    var bulkProvinceSelect = document.getElementById('bulk-province-select');
+    var bulkRegencySelect = document.getElementById('bulk-regency-select');
+    var bulkDistrictSelect = document.getElementById('bulk-district-select');
+
+    if (bulkProvinceSelect) {
+        bulkProvinceSelect.addEventListener('change', function() {
+            var provinceId = this.value;
+            if (bulkRegencySelect) {
+                bulkRegencySelect.innerHTML = '<option value="">Memuat...</option>';
+                bulkRegencySelect.disabled = true;
+            }
+            if (bulkDistrictSelect) {
+                bulkDistrictSelect.innerHTML = '<option value="">-- Tidak diubah --</option>';
+                bulkDistrictSelect.disabled = true;
+            }
+
+            if (!provinceId) {
+                if (bulkRegencySelect) {
+                    bulkRegencySelect.innerHTML = '<option value="">-- Tidak diubah --</option>';
+                    bulkRegencySelect.disabled = true;
+                }
+                return;
+            }
+
+            fetch('/api/regencies/' + provinceId)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (bulkRegencySelect) {
+                        bulkRegencySelect.innerHTML = '<option value="">-- Tidak diubah --</option>';
+                        data.forEach(function(r) {
+                            bulkRegencySelect.innerHTML += '<option value="' + r.id + '">' + r.name + '</option>';
+                        });
+                        bulkRegencySelect.disabled = false;
+                    }
+                })
+                .catch(function() {
+                    if (bulkRegencySelect) bulkRegencySelect.innerHTML = '<option value="">Gagal memuat</option>';
+                });
+        });
+    }
+
+    if (bulkRegencySelect) {
+        bulkRegencySelect.addEventListener('change', function() {
+            var regencyId = this.value;
+            if (bulkDistrictSelect) {
+                bulkDistrictSelect.innerHTML = '<option value="">Memuat...</option>';
+                bulkDistrictSelect.disabled = true;
+            }
+
+            if (!regencyId) {
+                if (bulkDistrictSelect) {
+                    bulkDistrictSelect.innerHTML = '<option value="">-- Tidak diubah --</option>';
+                    bulkDistrictSelect.disabled = true;
+                }
+                return;
+            }
+
+            fetch('/api/districts/' + regencyId)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (bulkDistrictSelect) {
+                        bulkDistrictSelect.innerHTML = '<option value="">-- Tidak diubah --</option>';
+                        data.forEach(function(d) {
+                            bulkDistrictSelect.innerHTML += '<option value="' + d.id + '">' + d.name + '</option>';
+                        });
+                        bulkDistrictSelect.disabled = false;
+                    }
+                })
+                .catch(function() {
+                    if (bulkDistrictSelect) bulkDistrictSelect.innerHTML = '<option value="">Gagal memuat</option>';
+                });
+        });
+    }
+
+    // ====== INLINE STATUS UPDATE ======
+    var statusSelects = document.querySelectorAll('.status-select');
+    statusSelects.forEach(function(select) {
+        var originalStatus = select.value;
+        select.addEventListener('change', function() {
+            var memberId = this.dataset.memberId;
+            var newStatus = this.value;
+            if (!memberId) return;
+
+            if (!confirm('Ubah status anggota ini?')) {
+                this.value = originalStatus;
+                return;
+            }
+
+            this.disabled = true;
+            var btn = this;
+
+            fetch('/members/' + memberId + '/status', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    originalStatus = newStatus;
+                    btn.style.backgroundColor = '#22c55e33';
+                    setTimeout(function() { btn.style.backgroundColor = ''; }, 1500);
+                } else {
+                    alert(data.message || 'Gagal');
+                    btn.value = originalStatus;
+                }
+            })
+            .catch(function() {
+                alert('Gagal mengubah status');
+                btn.value = originalStatus;
+            })
+            .finally(function() {
+                btn.disabled = false;
+            });
+        });
+    });
+
+    console.log('[BulkActions] Init complete');
+})();
 </script>
 @endsection

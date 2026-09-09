@@ -35,7 +35,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initWilayahDropdowns();
     initBulkActions();
     initPhotoPreview();
-    initInlineStatusChange();
+    initInlineStatusUpdate();
+    initBulkEditModal();
 });
 
 function initWilayahDropdowns() {
@@ -71,7 +72,7 @@ function initWilayahDropdowns() {
         }
 
         ajaxGet(
-            '/api/regencies?province_id=' + provinceId,
+            '/api/regencies/' + provinceId,
             function(data) {
                 if (!targetRegencySelect) return;
                 targetRegencySelect.innerHTML = '<option value="">-- Pilih Kabupaten/Kota --</option>';
@@ -111,7 +112,7 @@ function initWilayahDropdowns() {
         }
 
         ajaxGet(
-            '/api/districts?regency_id=' + regencyId,
+            '/api/districts/' + regencyId,
             function(data) {
                 if (!targetDistrictSelect) return;
                 targetDistrictSelect.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
@@ -152,7 +153,7 @@ function initWilayahDropdowns() {
                     return;
                 }
                 ajaxGet(
-                    '/api/regencies?province_id=' + this.value,
+                    '/api/regencies/' + this.value,
                     function(data) {
                         filterRegency.innerHTML = '<option value="">Semua Kabupaten/Kota</option>';
                         for (var i = 0; i < data.length; i++) {
@@ -174,7 +175,7 @@ function initWilayahDropdowns() {
                     return;
                 }
                 ajaxGet(
-                    '/api/districts?regency_id=' + this.value,
+                    '/api/districts/' + this.value,
                     function(data) {
                         filterDistrict.innerHTML = '<option value="">Semua Kecamatan</option>';
                         for (var i = 0; i < data.length; i++) {
@@ -190,40 +191,58 @@ function initWilayahDropdowns() {
 
 function initBulkActions() {
     var selectAll = document.getElementById('select-all');
-    if (!selectAll) return;
+    if (!selectAll) {
+        console.log('[BulkActions] select-all not found');
+        return;
+    }
+    console.log('[BulkActions] Initializing...');
 
+    var memberCheckboxes = document.querySelectorAll('.member-checkbox');
+    var bulkActions = document.getElementById('bulk-actions');
+    var countSpan = document.getElementById('selected-count');
+    var bulkActionSelect = document.getElementById('bulk-action-select');
+    var newStatusSelect = document.getElementById('new-status-select');
+    var bulkSubmitBtn = document.getElementById('bulk-submit-btn');
+    var bulkForm = document.getElementById('bulk-form');
+    console.log('[BulkActions] Elements found:', { memberCheckboxes: memberCheckboxes.length, bulkActions: !!bulkActions, bulkSubmitBtn: !!bulkSubmitBtn, bulkForm: !!bulkForm });
+
+    // Toggle select all
     selectAll.addEventListener('change', function() {
-        var checkboxes = document.querySelectorAll('.member-checkbox');
-        checkboxes.forEach(function(cb) {
+        memberCheckboxes.forEach(function(cb) {
             cb.checked = selectAll.checked;
         });
-        updateBulkActionsDisplay();
+        updateBulkUI();
     });
 
-    document.querySelectorAll('.member-checkbox').forEach(function(cb) {
-        cb.addEventListener('change', updateBulkActionsDisplay);
+    memberCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateBulkUI);
     });
 
-    function updateBulkActionsDisplay() {
+    function updateBulkUI() {
         var checked = document.querySelectorAll('.member-checkbox:checked');
-        var bulkActions = document.getElementById('bulk-actions');
-        var count = document.getElementById('selected-count');
-        if (bulkActions && count) {
+        if (bulkActions && countSpan) {
             if (checked.length > 0) {
-                bulkActions.style.display = 'inline-flex';
-                count.textContent = checked.length + ' dipilih';
+                bulkActions.style.display = 'flex';
+                countSpan.textContent = checked.length + ' dipilih';
             } else {
                 bulkActions.style.display = 'none';
             }
         }
+        // Indeterminate state
+        if (checked.length > 0 && checked.length < memberCheckboxes.length) {
+            selectAll.checked = false;
+            selectAll.indeterminate = true;
+        } else if (checked.length === memberCheckboxes.length) {
+            selectAll.checked = true;
+            selectAll.indeterminate = false;
+        } else {
+            selectAll.checked = false;
+            selectAll.indeterminate = false;
+        }
     }
 
     // Toggle status dropdown based on action
-    var bulkActionSelect = document.getElementById('bulk-action-select');
-    var newStatusSelect = document.getElementById('new-status-select');
-    var bulkSubmitBtn = document.getElementById('bulk-submit-btn');
-
-    if (bulkActionSelect && newStatusSelect && bulkSubmitBtn) {
+    if (bulkActionSelect && newStatusSelect) {
         bulkActionSelect.addEventListener('change', function() {
             if (this.value === 'update_status') {
                 newStatusSelect.style.display = 'inline-block';
@@ -231,29 +250,320 @@ function initBulkActions() {
                 newStatusSelect.style.display = 'none';
             }
         });
+    }
 
+    // Bulk submit with client-side validation
+    if (bulkSubmitBtn && bulkForm) {
         bulkSubmitBtn.addEventListener('click', function(e) {
-            var action = bulkActionSelect.value;
-            if (!action) {
-                e.preventDefault();
-                alert('Pilih aksi terlebih dahulu!');
-                return false;
+            console.log('[BulkActions] Proses clicked');
+            var action = bulkActionSelect ? bulkActionSelect.value : '';
+            var checked = document.querySelectorAll('.member-checkbox:checked');
+            console.log('[BulkActions] Action:', action, 'Checked:', checked.length);
+
+            if (checked.length === 0) {
+                alert('Pilih minimal satu anggota.');
+                return;
             }
-            if (action === 'update_status') {
-                var newStatus = newStatusSelect.value;
-                if (!newStatus) {
-                    e.preventDefault();
-                    alert('Pilih status baru!');
-                    return false;
-                }
+            if (!action) {
+                alert('Pilih aksi terlebih dahulu!');
+                return;
+            }
+            if (action === 'update_status' && newStatusSelect && !newStatusSelect.value) {
+                alert('Pilih status baru!');
+                return;
             }
             if (action === 'delete') {
-                if (!confirm('Yakin ingin menghapus ' + document.querySelectorAll('.member-checkbox:checked').length + ' anggota?')) {
-                    e.preventDefault();
-                    return false;
+                if (!confirm('Yakin ingin menghapus ' + checked.length + ' anggota?')) {
+                    return;
                 }
             }
-            return true;
+            if (action === 'edit') {
+                if (typeof openBulkEditModal === 'function') {
+                    openBulkEditModal(checked.length);
+                }
+                return;
+            }
+
+            // Collect checked member IDs
+            var memberIds = [];
+            checked.forEach(function(cb) { memberIds.push(cb.value); });
+
+            console.log('[BulkActions] Submitting via fetch to:', bulkForm.action, 'IDs:', memberIds);
+
+            // Use JavaScript fetch instead of HTML form submit for better control
+            var formData = new FormData(bulkForm);
+            // Add checked member IDs (in case not all are in the form)
+            formData.delete('member_ids[]');
+            memberIds.forEach(function(id) { formData.append('member_ids[]', id); });
+
+            bulkSubmitBtn.disabled = true;
+            bulkSubmitBtn.textContent = 'Memproses...';
+
+            fetch(bulkForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                console.log('[BulkActions] Response status:', response.status);
+                if (response.status === 302 || response.redirected) {
+                    // Server returned redirect - follow it
+                    window.location.href = response.url || response.redirected;
+                    return;
+                }
+                if (response.status === 200 || response.status === 201) {
+                    return response.json().catch(function() { return { success: true }; });
+                }
+                if (response.status === 419) {
+                    alert('Sesi habis. Silakan refresh halaman dan coba lagi.');
+                    window.location.reload();
+                    return;
+                }
+                if (response.status === 422) {
+                    return response.json().then(function(data) {
+                        alert('Validasi gagal: ' + (data.message || data.error || 'Cek data input'));
+                    });
+                }
+                return response.text().then(function(text) {
+                    console.error('[BulkActions] Error response:', text);
+                    alert('Terjadi kesalahan (status ' + response.status + '). Silakan coba lagi.');
+                });
+            })
+            .then(function(data) {
+                if (data && data.success) {
+                    alert(data.message || 'Berhasil!');
+                    window.location.reload();
+                }
+            })
+            .catch(function(err) {
+                console.error('[BulkActions] Fetch error:', err);
+                alert('Gagal mengirim request. Pastikan koneksi internet stabil.');
+            })
+            .finally(function() {
+                bulkSubmitBtn.disabled = false;
+                bulkSubmitBtn.textContent = 'Proses';
+            });
+        });
+    }
+}
+
+// ============================================
+// INLINE STATUS UPDATE (per-row dropdown in members table)
+// ============================================
+function initInlineStatusUpdate() {
+    var statusSelects = document.querySelectorAll('.status-select');
+    if (!statusSelects.length) return;
+
+    var csrfToken = document.querySelector('meta[name="csrf-token"]')
+        ? document.querySelector('meta[name="csrf-token"]').content
+        : (document.querySelector('input[name="_token"]') ? document.querySelector('input[name="_token"]').value : '');
+
+    // Store original status on page load
+    statusSelects.forEach(function(select) {
+        select.dataset.originalStatus = select.value;
+    });
+
+    statusSelects.forEach(function(select) {
+        select.addEventListener('change', function() {
+            var memberId = this.dataset.memberId;
+            var newStatus = this.value;
+            var originalStatus = this.dataset.originalStatus || '';
+
+            if (newStatus === originalStatus) return;
+
+            var el = this;
+            el.disabled = true;
+
+            fetch('/members/' + memberId + '/status', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    el.dataset.originalStatus = newStatus;
+                    // Brief green flash
+                    var origBg = el.style.backgroundColor;
+                    el.style.backgroundColor = '#22c55e33';
+                    setTimeout(function() { el.style.backgroundColor = origBg; }, 1000);
+                } else {
+                    alert('Gagal mengubah status: ' + (data.message || 'Unknown error'));
+                    el.value = originalStatus;
+                }
+            })
+            .catch(function() {
+                alert('Terjadi kesalahan saat mengubah status.');
+                el.value = originalStatus;
+            })
+            .finally(function() {
+                el.disabled = false;
+            });
+        });
+    });
+}
+
+// ============================================
+// BULK EDIT MODAL
+// ============================================
+function initBulkEditModal() {
+    var modal = document.getElementById('bulk-edit-modal');
+    if (!modal) return;
+
+    var csrfToken = document.querySelector('meta[name="csrf-token"]')
+        ? document.querySelector('meta[name="csrf-token"]').content
+        : (document.querySelector('input[name="_token"]') ? document.querySelector('input[name="_token"]').value : '');
+
+    var bulkEditCount = document.getElementById('bulk-edit-count');
+    var bulkProvinceSelect = document.getElementById('bulk-province-select');
+    var bulkRegencySelect = document.getElementById('bulk-regency-select');
+    var bulkDistrictSelect = document.getElementById('bulk-district-select');
+    var bulkBerlakuSelect = document.getElementById('bulk-berlaku-select');
+    var bulkEditCancel = document.getElementById('bulk-edit-cancel');
+    var bulkEditConfirm = document.getElementById('bulk-edit-confirm');
+
+    window.openBulkEditModal = function(count) {
+        if (bulkEditCount) bulkEditCount.textContent = 'Mengedit ' + count + ' anggota.';
+        modal.style.display = 'flex';
+    };
+
+    function closeBulkEditModal() {
+        modal.style.display = 'none';
+        if (bulkProvinceSelect) bulkProvinceSelect.value = '';
+        if (bulkRegencySelect) {
+            bulkRegencySelect.innerHTML = '<option value="">-- Tidak diubah --</option>';
+            bulkRegencySelect.disabled = true;
+        }
+        if (bulkDistrictSelect) {
+            bulkDistrictSelect.innerHTML = '<option value="">-- Tidak diubah --</option>';
+            bulkDistrictSelect.disabled = true;
+        }
+        if (bulkBerlakuSelect) bulkBerlakuSelect.value = '';
+    }
+
+    if (bulkEditCancel) {
+        bulkEditCancel.addEventListener('click', closeBulkEditModal);
+    }
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeBulkEditModal();
+    });
+
+    // Cascade: province → regency
+    if (bulkProvinceSelect) {
+        bulkProvinceSelect.addEventListener('change', function() {
+            var provinceId = this.value;
+            if (bulkRegencySelect) {
+                bulkRegencySelect.innerHTML = '<option value="">Memuat...</option>';
+                bulkRegencySelect.disabled = true;
+            }
+            if (bulkDistrictSelect) {
+                bulkDistrictSelect.innerHTML = '<option value="">-- Tidak diubah --</option>';
+                bulkDistrictSelect.disabled = true;
+            }
+            if (provinceId && bulkRegencySelect) {
+                fetch('/api/regencies/' + provinceId)
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        bulkRegencySelect.innerHTML = '<option value="">-- Tidak diubah --</option>';
+                        data.forEach(function(r) {
+                            bulkRegencySelect.innerHTML += '<option value="' + r.id + '">' + r.name + '</option>';
+                        });
+                        bulkRegencySelect.disabled = false;
+                    })
+                    .catch(function() {
+                        bulkRegencySelect.innerHTML = '<option value="">Error</option>';
+                    });
+            } else if (bulkRegencySelect) {
+                bulkRegencySelect.innerHTML = '<option value="">-- Tidak diubah --</option>';
+            }
+        });
+    }
+
+    // Cascade: regency → district
+    if (bulkRegencySelect) {
+        bulkRegencySelect.addEventListener('change', function() {
+            var regencyId = this.value;
+            if (bulkDistrictSelect) {
+                bulkDistrictSelect.innerHTML = '<option value="">Memuat...</option>';
+                bulkDistrictSelect.disabled = true;
+            }
+            if (regencyId && bulkDistrictSelect) {
+                fetch('/api/districts/' + regencyId)
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        bulkDistrictSelect.innerHTML = '<option value="">-- Tidak diubah --</option>';
+                        data.forEach(function(d) {
+                            bulkDistrictSelect.innerHTML += '<option value="' + d.id + '">' + d.name + '</option>';
+                        });
+                        bulkDistrictSelect.disabled = false;
+                    })
+                    .catch(function() {
+                        bulkDistrictSelect.innerHTML = '<option value="">Error</option>';
+                    });
+            } else if (bulkDistrictSelect) {
+                bulkDistrictSelect.innerHTML = '<option value="">-- Tidak diubah --</option>';
+            }
+        });
+    }
+
+    // Submit bulk edit via AJAX
+    if (bulkEditConfirm) {
+        bulkEditConfirm.addEventListener('click', function() {
+            var checked = document.querySelectorAll('.member-checkbox:checked');
+            var memberIds = Array.from(checked).map(function(cb) { return cb.value; });
+
+            var payload = {
+                member_ids: memberIds,
+                action: 'edit',
+                province_id: bulkProvinceSelect && bulkProvinceSelect.value ? bulkProvinceSelect.value : null,
+                regency_id: bulkRegencySelect && bulkRegencySelect.value ? bulkRegencySelect.value : null,
+                district_id: bulkDistrictSelect && bulkDistrictSelect.value ? bulkDistrictSelect.value : null,
+                berlaku_hingga: bulkBerlakuSelect && bulkBerlakuSelect.value ? bulkBerlakuSelect.value : null,
+            };
+
+            if (!payload.province_id && !payload.regency_id && !payload.district_id && !payload.berlaku_hingga) {
+                alert('Isi minimal satu field yang ingin diubah.');
+                return;
+            }
+
+            bulkEditConfirm.disabled = true;
+            bulkEditConfirm.textContent = 'Menyimpan...';
+
+            var bulkForm = document.getElementById('bulk-form');
+            var actionUrl = bulkForm ? bulkForm.action : '/members/bulk-action';
+
+            fetch(actionUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.success || data.redirect) {
+                    window.location.reload();
+                } else {
+                    alert('Gagal: ' + (data.message || 'Unknown error'));
+                    bulkEditConfirm.disabled = false;
+                    bulkEditConfirm.textContent = 'Simpan Perubahan';
+                }
+            })
+            .catch(function() {
+                alert('Terjadi kesalahan. Silakan coba lagi.');
+                bulkEditConfirm.disabled = false;
+                bulkEditConfirm.textContent = 'Simpan Perubahan';
+            });
         });
     }
 }
@@ -278,37 +588,7 @@ function initPhotoPreview() {
 }
 
 // Inline status change for members table
-function initInlineStatusChange() {
-    document.querySelectorAll('.status-select').forEach(function(select) {
-        select.addEventListener('change', function() {
-            var memberId = this.getAttribute('data-member-id');
-            var newStatus = this.value;
-            var selectElement = this;
-
-            if (!confirm('Ubah status anggota ini menjadi "' + newStatus + '"?')) {
-                // Revert to previous value
-                return;
-            }
-
-            // Send AJAX request
-            ajaxPost('/members/' + memberId + '/status', { status: newStatus },
-                function(response) {
-                    // Show success feedback
-                    selectElement.style.borderColor = '#059669';
-                    selectElement.style.backgroundColor = '#d1fae5';
-                    setTimeout(function() {
-                        selectElement.style.borderColor = '';
-                        selectElement.style.backgroundColor = '';
-                    }, 1000);
-                },
-                function(error) {
-                    alert('Gagal mengubah status: ' + error);
-                    // Could revert select value here
-                }
-            );
-        });
-    });
-}
+// initInlineStatusUpdate is defined above (see "INLINE STATUS UPDATE" section)
 
 function ajaxPost(url, data, onSuccess, onError) {
     var xhr = new XMLHttpRequest();
@@ -338,7 +618,7 @@ window.testAPI = function() {
     result.textContent = 'Testing...';
 
     ajaxGet(
-        '/api/regencies?province_id=1',
+        '/api/regencies/1',
         function(data) {
             result.textContent = 'Success! Loaded ' + data.length + ' regencies';
             result.style.color = 'green';
