@@ -45,4 +45,14 @@ class ManagementPeriod extends Model
     {
         return $query->where('status', 'active');
     }
+
+    public function getStempelUrl(): ?string
+    {
+        if (empty($this->stempel_path)) return null;
+        $privatePath = storage_path('app/private/' . $this->stempel_path);
+        if (file_exists($privatePath)) return '/media/' . $this->stempel_path;
+        $publicPath = storage_path('app/public/' . $this->stempel_path);
+        if (file_exists($publicPath)) return '/media/' . $this->stempel_path;
+        return null;
+    }
 }

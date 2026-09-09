@@ -57,17 +57,17 @@ class KtaController extends Controller
             'sekretaris' => $sekretaris,
             'tanggal_cetak' => now()->format('d F Y'),
             'logo_path' => public_path('images/logo-kta.png'),
-            'ttd_ketua_path' => $ketua && $ketua->signature_path
-                ? storage_path('app/private/' . $ketua->signature_path)
+            'ttd_ketua_path' => $ketua && $ketua->signature_path && Storage::disk('local')->exists($ketua->signature_path)
+                ? Storage::disk('local')->path($ketua->signature_path)
                 : null,
-            'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path
-                ? storage_path('app/private/' . $sekretaris->signature_path)
+            'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path && Storage::disk('local')->exists($sekretaris->signature_path)
+                ? Storage::disk('local')->path($sekretaris->signature_path)
                 : null,
-            'foto_path' => $member->foto_path
-                ? storage_path('app/private/' . $member->foto_path)
+            'foto_path' => $member->foto_path && Storage::disk('local')->exists($member->foto_path)
+                ? Storage::disk('local')->path($member->foto_path)
                 : null,
-            'stempel_path' => $period && $period->stempel_path
-                ? storage_path('app/private/' . $period->stempel_path)
+            'stempel_path' => $period && $period->stempel_path && Storage::disk('local')->exists($period->stempel_path)
+                ? Storage::disk('local')->path($period->stempel_path)
                 : null,
         ];
 
@@ -95,17 +95,17 @@ class KtaController extends Controller
             'sekretaris' => $sekretaris,
             'tanggal_cetak' => now()->format('d F Y'),
             'is_pdf' => true,
-            'foto_path' => $member->foto_path
-                ? storage_path('app/private/' . $member->foto_path)
+            'foto_path' => $member->foto_path && Storage::disk('local')->exists($member->foto_path)
+                ? Storage::disk('local')->path($member->foto_path)
                 : null,
-            'ttd_ketua_path' => $ketua && $ketua->signature_path
-                ? storage_path('app/private/' . $ketua->signature_path)
+            'ttd_ketua_path' => $ketua && $ketua->signature_path && Storage::disk('local')->exists($ketua->signature_path)
+                ? Storage::disk('local')->path($ketua->signature_path)
                 : null,
-            'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path
-                ? storage_path('app/private/' . $sekretaris->signature_path)
+            'ttd_sekretaris_path' => $sekretaris && $sekretaris->signature_path && Storage::disk('local')->exists($sekretaris->signature_path)
+                ? Storage::disk('local')->path($sekretaris->signature_path)
                 : null,
-            'stempel_path' => $period && $period->stempel_path
-                ? storage_path('app/private/' . $period->stempel_path)
+            'stempel_path' => $period && $period->stempel_path && Storage::disk('local')->exists($period->stempel_path)
+                ? Storage::disk('local')->path($period->stempel_path)
                 : null,
         ];
 

@@ -153,7 +153,7 @@ class MemberController extends Controller
 
     public function show(Member $member): View
     {
-        $member->load(['province', 'regency', 'district', 'printBatches.period']);
+        $member->load(['province', 'regency', 'district', 'company', 'printBatches.period']);
 
         return view('members.show', ['member' => $member]);
     }

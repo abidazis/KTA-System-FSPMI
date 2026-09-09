@@ -68,7 +68,7 @@ function hideEditForm(id) {
         <div style="padding:1rem;">
             @if($period->stempel_path)
             <div style="text-align:center;margin-bottom:1.5rem;">
-                <img src="{{ route('storage.local', ['path' => $period->stempel_path]) }}"
+                <img src="{{ $period->getStempelUrl() }}"
                      style="max-height:120px;border:2px solid var(--gray-200);border-radius:0.5rem;padding:0.5rem;background:var(--gray-50);">
             </div>
             <form action="{{ route('management.stempel', $period) }}" method="POST" enctype="multipart/form-data">
@@ -125,7 +125,7 @@ function hideEditForm(id) {
                 @if($ketua)
                     @if($ketua->signature_path)
                     <div style="margin-bottom:1rem;">
-                        <img src="{{ route('storage.local', ['path' => $ketua->signature_path]) }}"
+                        <img src="{{ $ketua->getSignatureUrl() }}"
                              style="height:70px;border:1px solid var(--gray-200);border-radius:0.25rem;background:var(--gray-50);padding:0.25rem;">
                     </div>
                     @else
@@ -167,7 +167,7 @@ function hideEditForm(id) {
                 @if($sekretaris)
                     @if($sekretaris->signature_path)
                     <div style="margin-bottom:1rem;">
-                        <img src="{{ route('storage.local', ['path' => $sekretaris->signature_path]) }}"
+                        <img src="{{ $sekretaris->getSignatureUrl() }}"
                              style="height:70px;border:1px solid var(--gray-200);border-radius:0.25rem;background:var(--gray-50);padding:0.25rem;">
                     </div>
                     @else
@@ -260,7 +260,7 @@ function hideEditForm(id) {
                 <td>{{ $official->nama }}</td>
                 <td>
                     @if($official->signature_path)
-                    <img src="{{ route('storage.local', ['path' => $official->signature_path]) }}" style="height:35px;border:1px solid var(--gray-200);border-radius:0.25rem;">
+                    <img src="{{ $official->getSignatureUrl() }}" style="height:35px;border:1px solid var(--gray-200);border-radius:0.25rem;">
                     @else
                     <span style="color:var(--gray-400);">-</span>
                     @endif
@@ -311,7 +311,7 @@ function hideEditForm(id) {
                             <label>Tanda Tangan (PNG)</label>
                             <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.5rem;">
                                 @if($official->signature_path)
-                                <img src="{{ route('storage.local', ['path' => $official->signature_path]) }}" style="height:45px;border:1px solid var(--gray-200);border-radius:0.25rem;">
+                                <img src="{{ $official->getSignatureUrl() }}" style="height:45px;border:1px solid var(--gray-200);border-radius:0.25rem;">
                                 @endif
                                 <input type="file" name="signature" accept="image/png">
                             </div>

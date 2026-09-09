@@ -30,14 +30,16 @@
     <div style="display:grid;grid-template-columns:280px 1fr;gap:2rem;">
         {{-- Photo & Basic Info --}}
         <div style="text-align:center;">
-            @if($member->hasPhoto())
+            @if($member->hasPhoto() && $member->getPhotoUrl())
             <div style="margin-bottom:1.5rem;">
-                <img src="{{ route('storage.local', ['path' => $member->foto_path]) }}" alt="Foto"
-                     style="width:180px;height:240px;object-fit:cover;border-radius:0.75rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);border:3px solid var(--white);">
+                <img src="{{ $member->getPhotoUrl() }}" alt="Foto {{ $member->nama }}"
+                     style="width:180px;height:240px;object-fit:cover;border-radius:0.75rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);border:3px solid var(--white);"
+                     onerror="this.parentElement.innerHTML='<div style=\'width:180px;height:240px;margin:0 auto;background:var(--gray-100);border-radius:0.75rem;display:flex;align-items:center;justify-content:center;color:var(--gray-400);font-size:3rem;\'>👤</div>';">
             </div>
             @else
-            <div style="width:180px;height:240px;margin:0 auto 1.5rem;background:var(--gray-100);border-radius:0.75rem;display:flex;align-items:center;justify-content:center;color:var(--gray-400);font-size:3rem;">
-                            </div>
+            <div style="width:180px;height:240px;margin:0 auto 1.5rem;background:var(--gray-100);border-radius:0.75rem;display:flex;align-items:center;justify-content:center;color:var(--gray-400);font-size:3rem;" title="Tidak ada foto">
+                👤
+            </div>
             @endif
 
             <div style="background:var(--gray-50);border-radius:0.5rem;padding:1rem;text-align:left;">

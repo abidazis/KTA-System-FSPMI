@@ -94,7 +94,7 @@
                             </td>
                             <td style="text-align:center;">
                                 @if($bg->front_image)
-                                    <img src="{{ Storage::disk('local')->url($bg->front_image) }}" alt="Front"
+                                    <img src="{{ $bg->getFrontImageUrl() }}" alt="Front"
                                          style="width:100px;height:auto;border-radius:0.5rem;border:2px solid var(--gray-200);">
                                 @else
                                     <span style="color:var(--gray-400);">-</span>
@@ -102,7 +102,7 @@
                             </td>
                             <td style="text-align:center;">
                                 @if($bg->back_image)
-                                    <img src="{{ Storage::disk('local')->url($bg->back_image) }}" alt="Back"
+                                    <img src="{{ $bg->getBackImageUrl() }}" alt="Back"
                                          style="width:100px;height:auto;border-radius:0.5rem;border:2px solid var(--gray-200);">
                                 @else
                                     <span style="color:var(--gray-400);">-</span>

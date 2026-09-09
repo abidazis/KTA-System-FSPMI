@@ -85,7 +85,19 @@ class Member extends Model
 
     public function hasPhoto(): bool
     {
-        return !empty($this->foto_path) && file_exists(storage_path('app/private/' . $this->foto_path));
+        if (empty($this->foto_path)) return false;
+        // Check in private disk (storage/app/private/) - where 'local' disk stores files
+        $privatePath = storage_path('app/private/' . $this->foto_path);
+        if (file_exists($privatePath)) return true;
+        // Check in local disk root (storage/app/) - fallback
+        $localPath = storage_path('app/' . $this->foto_path);
+        return file_exists($localPath);
+    }
+
+    public function getPhotoUrl(): ?string
+    {
+        if (!$this->hasPhoto()) return null;
+        return '/media/' . $this->foto_path;
     }
 
     public function scopeActive($query)

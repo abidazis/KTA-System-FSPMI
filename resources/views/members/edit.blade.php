@@ -137,7 +137,7 @@
             <small style="color:var(--gray-500);">Format: JPG, PNG. Maks: 2MB. Biarkan kosong jika tidak ingin mengganti.</small>
             <div id="photo-preview" style="margin-top:1rem;">
                 @if($member->hasPhoto())
-                <img src="{{ route('storage.local', ['path' => $member->foto_path]) }}" style="max-width:200px;border-radius:0.5rem;border:2px solid var(--gray-200);">
+                <img src="{{ $member->getPhotoUrl() }}" style="max-width:200px;border-radius:0.5rem;border:2px solid var(--gray-200);">
                 @endif
             </div>
             @error('foto') <span class="error">{{ $message }}</span> @enderror

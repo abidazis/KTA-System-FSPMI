@@ -42,4 +42,16 @@ class KtaBackground extends Model
         }
         return storage_path('app/private/' . $this->back_image);
     }
+
+    public function getFrontImageUrl(): ?string
+    {
+        if (!$this->front_image) return null;
+        return '/media/' . $this->front_image;
+    }
+
+    public function getBackImageUrl(): ?string
+    {
+        if (!$this->back_image) return null;
+        return '/media/' . $this->back_image;
+    }
 }

@@ -14,6 +14,7 @@ use App\Http\Controllers\Region\RegionController;
 use App\Http\Controllers\Setting\CompanyController;
 use App\Http\Controllers\Setting\KtaBackgroundController;
 use App\Http\Controllers\User\UserController;
+use App\Http\Controllers\MediaController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
@@ -123,6 +124,11 @@ Route::middleware('auth')->group(function () {
         Route::delete('regions/{province}', [RegionController::class, 'destroy'])->name('regions.destroy');
     });
 
+    // Media - serve files from local storage
+    Route::get('media/{path}', [MediaController::class, 'show'])
+        ->where('path', '.*')
+        ->name('media.show');
+
     // Users
     Route::middleware('permission:user-view')->group(function () {
         Route::get('users', [UserController::class, 'index'])->name('users.index');
@@ -133,13 +139,4 @@ Route::middleware('auth')->group(function () {
         Route::put('users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
-
-    // Storage - serve files from local disk (root: storage/app/private)
-    Route::get('storage/{path}', function ($path) {
-        $diskPath = storage_path('app/private/' . $path);
-        if (!file_exists($diskPath)) {
-            abort(404);
-        }
-        return response()->file($diskPath);
-    })->where('path', '.*')->name('storage.local');
 });
