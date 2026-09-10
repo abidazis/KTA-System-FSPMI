@@ -38,9 +38,8 @@ class PrintController extends Controller
 
     public function create(Request $request): View
     {
-        $query = Member::with(['province', 'regency', 'district', 'company'])
-            ->whereNotNull('foto_path')
-            ->whereIn('status', ['ready', 'generated', 'printed', 'active']);
+        // Tampilkan SEMUA anggota tanpa pagination - user pilih mana yang mau dicetak
+        $query = Member::with(['province', 'regency', 'district', 'company']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -54,19 +53,43 @@ class PrintController extends Controller
             $query->where('district_id', $request->district_id);
         }
 
-        $members = $query->latest()->paginate(25)->withQueryString();
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Tampilkan semua tanpa pagination (scroll)
+        $members = $query->latest()->get();
 
         return view('print.create', ['members' => $members]);
     }
 
     public function preview(Request $request): View
     {
-        $request->validate([
-            'member_ids' => ['required', 'array', 'min:1', 'max:100'],
-        ]);
+        // Ambil member_ids dari array atau dari JSON
+        $memberIds = [];
+
+        if ($request->has('member_ids')) {
+            $ids = $request->member_ids;
+            if (is_array($ids)) {
+                $memberIds = array_map('intval', $ids);
+            } elseif (is_string($ids)) {
+                $memberIds = array_map('intval', explode(',', $ids));
+            }
+        } elseif ($request->filled('selected_ids_json')) {
+            $decoded = json_decode($request->selected_ids_json, true);
+            if (is_array($decoded)) {
+                $memberIds = array_map('intval', $decoded);
+            }
+        }
+
+        if (empty($memberIds)) {
+            return redirect()
+                ->route('print.create')
+                ->with('error', 'Pilih minimal satu anggota.');
+        }
 
         $members = Member::with(['province', 'regency', 'district', 'company'])
-            ->whereIn('id', $request->member_ids)
+            ->whereIn('id', $memberIds)
             ->get();
 
         $period = ManagementPeriod::where('status', 'active')->first();
@@ -108,11 +131,30 @@ class PrintController extends Controller
 
     public function store(Request $request): \Illuminate\Http\RedirectResponse
     {
-        $request->validate([
-            'member_ids' => ['required', 'array', 'min:1'],
-        ]);
+        // Ambil member_ids dari array
+        $memberIds = [];
 
-        $members = Member::whereIn('id', $request->member_ids)->get();
+        if ($request->has('member_ids')) {
+            $ids = $request->member_ids;
+            if (is_array($ids)) {
+                $memberIds = array_map('intval', $ids);
+            } elseif (is_string($ids)) {
+                $memberIds = array_map('intval', explode(',', $ids));
+            }
+        } elseif ($request->filled('selected_ids_json')) {
+            $decoded = json_decode($request->selected_ids_json, true);
+            if (is_array($decoded)) {
+                $memberIds = array_map('intval', $decoded);
+            }
+        }
+
+        if (empty($memberIds)) {
+            return redirect()
+                ->route('print.create')
+                ->with('error', 'Pilih minimal satu anggota.');
+        }
+
+        $members = Member::whereIn('id', $memberIds)->get();
 
         if ($members->isEmpty()) {
             return redirect()

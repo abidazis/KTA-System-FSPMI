@@ -59,6 +59,8 @@
 
     /* MEMBER PHOTO */
     $fotoSrc = null;
+    // Debug: log foto_path
+    $foto_path_for_debug = $foto_path;
     if (!empty($foto_path) && file_exists($foto_path)) {
         $fotoSrc = $imageSrc($foto_path);
     }

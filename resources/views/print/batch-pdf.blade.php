@@ -160,13 +160,14 @@
 
 {{-- 4 KTA per page: row 1 front + row 2 back --}}
 @foreach($members->chunk(4) as $pageIndex => $pageMembers)
+@php $pageMembersArray = $pageMembers->values()->all(); @endphp
 <div class="page">
 
     {{-- ROW 1: 4 KTA DEPAN berjejer horizontal --}}
     @foreach([0, 1, 2, 3] as $i)
-        @if(isset($pageMembers[$i]))
+        @if(isset($pageMembersArray[$i]))
             @php
-                $kta = $pageMembers[$i];
+                $kta = $pageMembersArray[$i];
                 $member = $kta['member'];
                 $ketua = $kta['ketua'];
                 $sekretaris = $kta['sekretaris'];
@@ -176,7 +177,7 @@
                 $stempel_path = $kta['stempel_path'] ?? null;
                 $side = 'front';
             @endphp
-            <div style="position:absolute; left:{{ 15 + $i * 69 }}mm; top:15mm;">
+            <div style="position:absolute; left:{{ 22.5 + $i * 66 }}mm; top:15mm;">
                 @include('print.partials.kta-card-v2')
             </div>
         @endif
@@ -184,9 +185,9 @@
 
     {{-- ROW 2: 4 KTA BELAKANG berjejer horizontal --}}
     @foreach([0, 1, 2, 3] as $i)
-        @if(isset($pageMembers[$i]))
+        @if(isset($pageMembersArray[$i]))
             @php
-                $kta = $pageMembers[$i];
+                $kta = $pageMembersArray[$i];
                 $member = $kta['member'];
                 $ketua = $kta['ketua'];
                 $sekretaris = $kta['sekretaris'];
@@ -196,7 +197,7 @@
                 $stempel_path = $kta['stempel_path'] ?? null;
                 $side = 'back';
             @endphp
-            <div style="position:absolute; left:{{ 15 + $i * 69 }}mm; top:110mm;">
+            <div style="position:absolute; left:{{ 22.5 + $i * 66 }}mm; top:110mm;">
                 @include('print.partials.kta-card-v2')
             </div>
         @endif
