@@ -139,13 +139,6 @@
     text-align: center;
 }
 
-.page-label {
-    position: absolute;
-    bottom: 0.3cm;
-    right: 0.5cm;
-    font-size: 0.22cm;
-    color: #94a3b8;
-}
 </style>
 @endprepend
 
@@ -202,13 +195,9 @@
     @endphp
 
     {{-- 4 KTA per page: row 1 front + row 2 back --}}
-    @php $totalPages = ceil($members->count() / 4); @endphp
     @foreach($members->chunk(4) as $pageIndex => $pageMembers)
         @php $pageMembersArray = $pageMembers->values()->all(); @endphp
         <div class="page-wrapper" id="page-{{ $pageIndex + 1 }}" style="margin-bottom:2rem;">
-            <div style="display:flex;justify-content:center;margin-bottom:0.5rem;">
-                <span style="background:var(--primary);color:white;padding:0.375rem 1rem;border-radius:0.5rem;font-size:0.85rem;font-weight:600;">Halaman {{ $pageIndex + 1 }} dari {{ $totalPages }}</span>
-            </div>
             <div class="preview-page">
 
                 {{-- ROW 1: 4 KTA DEPAN berjejer horizontal --}}
@@ -251,7 +240,6 @@
                     @endif
                 @endforeach
 
-                <div class="page-label">Halaman {{ $pageIndex + 1 }}</div>
             </div>
         </div>
     @endforeach
