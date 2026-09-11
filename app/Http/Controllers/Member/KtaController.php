@@ -78,7 +78,7 @@ class KtaController extends Controller
         ]));
     }
 
-    public function download(Request $request, Member $member): Response
+    public function download(Request $request, Member $member): \Illuminate\Http\Response
     {
         $member->load('company');
 

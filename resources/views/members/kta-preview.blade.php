@@ -53,15 +53,59 @@
             color: #334155;
         }
 
-        /* Card: landscape 85.6mm x 54mm */
+        /* Card: portrait 5.4cm x 8.56cm - SAMA DENGAN PRINT PREVIEW */
         .kta-card-wrapper {
-            width: 85.6mm;
-            height: 54mm;
+            width: 5.4cm;
+            height: 8.56cm;
             position: relative;
             overflow: hidden;
             border-radius: 4px;
             box-shadow: 0 4px 16px rgba(0,0,0,0.15);
             margin: 0 auto;
+        }
+
+        /* Styling untuk kta-card - SAMA DENGAN PRINT PREVIEW */
+        .kta-card-wrapper .kta-card {
+            width: 5.4cm;
+            height: 8.56cm;
+            position: relative;
+            overflow: hidden;
+            font-family: Arial, Helvetica, sans-serif;
+            -webkit-print-color-adjust: exact;
+            box-sizing: border-box;
+            print-color-adjust: exact;
+        }
+
+        .kta-card-wrapper .kta-bg-image {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 5.4cm;
+            height: 8.56cm;
+            z-index: 0;
+        }
+
+        .kta-card-wrapper .kta-data-layer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 5.4cm;
+            height: 8.56cm;
+            z-index: 1;
+        }
+
+        .kta-card-wrapper .kta-field {
+            position: absolute;
+            font-weight: 500;
+            color: #000;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .kta-card-wrapper .kta-photo,
+        .kta-card-wrapper .kta-signature,
+        .kta-card-wrapper .kta-seal {
+            position: absolute;
         }
 
         .actions {
@@ -90,50 +134,7 @@
             color: #334155;
             border: 1px solid #cbd5e1;
         }
-
-        /* Auto-fit untuk NAMA & NIK panjang */
-        .kta-field-autofit {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: clip;
-            transform-origin: left center;
-            line-height: 1;
-        }
-
-        .kta-field-autofit-center {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: clip;
-            transform-origin: center center;
-            line-height: 1;
-            text-align: center;
-        }
     </style>
-
-    <script>
-    (function () {
-        function fitField(el) {
-            if (!el || !el.scrollWidth || !el.clientWidth) return;
-            var overflow = el.scrollWidth - el.clientWidth;
-            if (overflow > 0.5) {
-                var ratio = el.clientWidth / el.scrollWidth;
-                if (ratio < 0.6) ratio = 0.6;
-                el.style.transform = 'scaleX(' + ratio.toFixed(3) + ')';
-            }
-        }
-        function fitAll() {
-            var nodes = document.querySelectorAll('[data-autofit="true"]');
-            for (var i = 0; i < nodes.length; i++) fitField(nodes[i]);
-        }
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', fitAll);
-        } else {
-            fitAll();
-        }
-        if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll);
-        window.addEventListener('load', fitAll);
-    })();
-    </script>
 </head>
 
 <body>

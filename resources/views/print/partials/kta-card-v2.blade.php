@@ -253,7 +253,7 @@
                      style="left:{{ $fieldPositions[$f['val_key'].'_label']['left'] }}mm;
                             top:{{ $fieldPositions[$f['val_key'].'_label']['top'] }}mm;
                             font-size:{{ $fieldPositions[$f['val_key'].'_label']['font_size'] }}mm;
-                            font-weight:bold; color:#000;">
+                            font-weight:bold; color:#000; text-align:left;">
                     {{ $f['label'] }}
                 </div>
             @endif
@@ -269,7 +269,7 @@
                      style="left:{{ $fieldPositions[$f['val_key']]['left'] }}mm;
                             top:{{ $fieldPositions[$f['val_key']]['top'] }}mm;
                             font-size:{{ $fieldPositions[$f['val_key']]['font_size'] }}mm;
-                            font-weight:bold; color:#000;
+                            font-weight:bold; color:#000; text-align:left;
                             width:{{ $fieldPositions[$f['val_key']]['width'] }}mm;
                             @if(isset($fieldPositions[$f['val_key']]['height']) && $f['val_key'] !== 'alamat') height:{{ $fieldPositions[$f['val_key']]['height'] }}mm; overflow:hidden; line-height: 1.2; @endif
                             @if($f['val_key'] === 'alamat') line-height: 1.2; @endif">
