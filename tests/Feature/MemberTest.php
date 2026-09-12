@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Company;
 use App\Models\Member;
 use App\Models\User;
 use Spatie\Permission\Models\Permission;
@@ -44,6 +45,13 @@ class MemberTest extends TestCase
 
     public function test_can_create_member(): void
     {
+        // Create a company first
+        $company = Company::create([
+            'kode' => 'TST',
+            'name' => 'Test Company',
+            'is_active' => true,
+        ]);
+
         $user = User::factory()->create()->givePermissionTo(['anggota-view', 'anggota-create']);
         $this->actingAs($user);
 
@@ -57,6 +65,7 @@ class MemberTest extends TestCase
             'agama' => 'Islam',
             'berlaku_hingga' => '2030-01-01',
             'tanggal_pembuatan' => '2026-01-01',
+            'company_id' => $company->id,
         ]);
 
         $this->assertDatabaseHas('members', ['nik' => '3275010101900001']);

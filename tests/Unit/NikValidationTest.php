@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Http\Controllers\Import\ImportController;
+use App\Services\ImportService;
 use Tests\TestCase;
 
 class NikValidationTest extends TestCase
@@ -13,12 +13,12 @@ class NikValidationTest extends TestCase
     public function test_normalize_nik_with_string(): void
     {
         // Clean string should return as-is
-        $this->assertEquals('3216221612020012', ImportController::normalizeNik('3216221612020012'));
-        $this->assertEquals('123456789012345', ImportController::normalizeNik('123456789012345'));
+        $this->assertEquals('3216221612020012', ImportService::normalizeNik('3216221612020012'));
+        $this->assertEquals('123456789012345', ImportService::normalizeNik('123456789012345'));
 
         // String with whitespace should be trimmed
-        $this->assertEquals('3216221612020012', ImportController::normalizeNik(' 3216221612020012 '));
-        $this->assertEquals('3216221612020012', ImportController::normalizeNik("\t3216221612020012\n"));
+        $this->assertEquals('3216221612020012', ImportService::normalizeNik(' 3216221612020012 '));
+        $this->assertEquals('3216221612020012', ImportService::normalizeNik("\t3216221612020012\n"));
     }
 
     /**
@@ -28,11 +28,11 @@ class NikValidationTest extends TestCase
     {
         // Float representing a 16-digit NIK
         $floatNik = 3216221612020012.0;
-        $this->assertEquals('3216221612020012', ImportController::normalizeNik($floatNik));
+        $this->assertEquals('3216221612020012', ImportService::normalizeNik($floatNik));
 
         // Float representing a 15-digit NIK
         $floatNik15 = 123456789012345.0;
-        $this->assertEquals('123456789012345', ImportController::normalizeNik($floatNik15));
+        $this->assertEquals('123456789012345', ImportService::normalizeNik($floatNik15));
     }
 
     /**
@@ -40,8 +40,8 @@ class NikValidationTest extends TestCase
      */
     public function test_normalize_nik_with_integer(): void
     {
-        $this->assertEquals('3216221612020012', ImportController::normalizeNik(3216221612020012));
-        $this->assertEquals('123456789012345', ImportController::normalizeNik(123456789012345));
+        $this->assertEquals('3216221612020012', ImportService::normalizeNik(3216221612020012));
+        $this->assertEquals('123456789012345', ImportService::normalizeNik(123456789012345));
     }
 
     /**
@@ -49,9 +49,9 @@ class NikValidationTest extends TestCase
      */
     public function test_normalize_nik_with_null_or_empty(): void
     {
-        $this->assertEquals('', ImportController::normalizeNik(null));
-        $this->assertEquals('', ImportController::normalizeNik(''));
-        $this->assertEquals('', ImportController::normalizeNik('   '));
+        $this->assertEquals('', ImportService::normalizeNik(null));
+        $this->assertEquals('', ImportService::normalizeNik(''));
+        $this->assertEquals('', ImportService::normalizeNik('   '));
     }
 
     /**
@@ -60,12 +60,12 @@ class NikValidationTest extends TestCase
     public function test_is_valid_nik_with_valid_values(): void
     {
         // Valid 16-digit NIKs
-        $this->assertTrue(ImportController::isValidNik('3216221612020012'));
-        $this->assertTrue(ImportController::isValidNik('1234567890123456'));
+        $this->assertTrue(ImportService::isValidNik('3216221612020012'));
+        $this->assertTrue(ImportService::isValidNik('1234567890123456'));
 
         // Valid 15-digit NIKs
-        $this->assertTrue(ImportController::isValidNik('123456789012345'));
-        $this->assertTrue(ImportController::isValidNik('000123456789012')); // Leading zeros are valid
+        $this->assertTrue(ImportService::isValidNik('123456789012345'));
+        $this->assertTrue(ImportService::isValidNik('000123456789012')); // Leading zeros are valid
     }
 
     /**
@@ -74,24 +74,24 @@ class NikValidationTest extends TestCase
     public function test_is_valid_nik_with_invalid_values(): void
     {
         // Empty values
-        $this->assertFalse(ImportController::isValidNik(''));
-        $this->assertFalse(ImportController::isValidNik('   '));
+        $this->assertFalse(ImportService::isValidNik(''));
+        $this->assertFalse(ImportService::isValidNik('   '));
 
         // Wrong length - too short
-        $this->assertFalse(ImportController::isValidNik('12345678901234')); // 14 digits
-        $this->assertFalse(ImportController::isValidNik('1234567890')); // 10 digits
+        $this->assertFalse(ImportService::isValidNik('12345678901234')); // 14 digits
+        $this->assertFalse(ImportService::isValidNik('1234567890')); // 10 digits
 
         // Wrong length - too long
-        $this->assertFalse(ImportController::isValidNik('12345678901234567')); // 17 digits
+        $this->assertFalse(ImportService::isValidNik('12345678901234567')); // 17 digits
 
         // Contains letters
-        $this->assertFalse(ImportController::isValidNik('32162216120200A2'));
+        $this->assertFalse(ImportService::isValidNik('32162216120200A2'));
 
         // Contains spaces
-        $this->assertFalse(ImportController::isValidNik('3216 2216 1202 0012'));
+        $this->assertFalse(ImportService::isValidNik('3216 2216 1202 0012'));
 
         // Scientific notation (should be rejected)
-        $this->assertFalse(ImportController::isValidNik('3.21622161202001E+15'));
+        $this->assertFalse(ImportService::isValidNik('3.21622161202001E+15'));
     }
 
     /**
@@ -107,7 +107,7 @@ class NikValidationTest extends TestCase
         $nikFromExcel = 3216221612020012.0; // Float representation
 
         // Normalize should convert to proper string
-        $normalized = ImportController::normalizeNik($nikFromExcel);
+        $normalized = ImportService::normalizeNik($nikFromExcel);
 
         // Should be 16 digits, all numeric
         $this->assertEquals(16, strlen($normalized));
@@ -115,7 +115,7 @@ class NikValidationTest extends TestCase
         $this->assertEquals('3216221612020012', $normalized);
 
         // And it should pass validation
-        $this->assertTrue(ImportController::isValidNik($normalized));
+        $this->assertTrue(ImportService::isValidNik($normalized));
     }
 
     /**
@@ -134,7 +134,7 @@ class NikValidationTest extends TestCase
         ];
 
         foreach ($testCases as [$input, $expectedLength, $expectedValid]) {
-            $normalized = ImportController::normalizeNik($input);
+            $normalized = ImportService::normalizeNik($input);
             $this->assertEquals(
                 $expectedLength,
                 strlen($normalized),
@@ -143,7 +143,7 @@ class NikValidationTest extends TestCase
             $this->assertMatchesRegularExpression('/^\d+$/', $normalized);
             $this->assertEquals(
                 $expectedValid,
-                ImportController::isValidNik($normalized),
+                ImportService::isValidNik($normalized),
                 "Input " . json_encode($input) . " normalized to '$normalized' should " . ($expectedValid ? "be valid" : "be invalid")
             );
         }
@@ -157,19 +157,25 @@ class NikValidationTest extends TestCase
         // All these should normalize to empty string
         $emptyCases = [null, '', '   ', "\t", "\n", "  \t\n  "];
         foreach ($emptyCases as $input) {
-            $normalized = ImportController::normalizeNik($input);
+            $normalized = ImportService::normalizeNik($input);
             $this->assertEquals('', $normalized, "Input " . json_encode($input) . " should normalize to empty string");
-            $this->assertFalse(ImportController::isValidNik($normalized));
+            $this->assertFalse(ImportService::isValidNik($normalized));
         }
     }
 
     /**
      * Test isInstructionRow detection for template CATATAN rows.
+     * Since isInstructionRow is private, we use reflection.
      */
     public function test_is_instruction_row_detection(): void
     {
-        // Test using reflection to access private method
-        $controller = new \App\Http\Controllers\Import\ImportController();
+        // Create service instance
+        $service = new ImportService();
+
+        // Use reflection to access private method
+        $reflection = new \ReflectionClass($service);
+        $method = $reflection->getMethod('isInstructionRow');
+        $method->setAccessible(true);
 
         // CASE 1: CATATAN row with empty fields - should be detected as instruction row
         $catatanRow = [
@@ -186,10 +192,7 @@ class NikValidationTest extends TestCase
             'kecamatan' => '',
             'foto' => '',
         ];
-        $reflection = new \ReflectionClass($controller);
-        $method = $reflection->getMethod('isInstructionRow');
-        $method->setAccessible(true);
-        $this->assertTrue($method->invoke($controller, $catatanRow), 'CATATAN row with empty fields should be detected as instruction');
+        $this->assertTrue($method->invoke($service, $catatanRow), 'CATATAN row with empty fields should be detected as instruction');
 
         // CASE 2: CATATAN row but with data in other fields - should NOT be instruction row
         $catatanWithData = [
@@ -206,7 +209,7 @@ class NikValidationTest extends TestCase
             'kecamatan' => '',
             'foto' => '',
         ];
-        $this->assertFalse($method->invoke($controller, $catatanWithData), 'CATATAN row with actual data should NOT be detected as instruction');
+        $this->assertFalse($method->invoke($service, $catatanWithData), 'CATATAN row with actual data should NOT be detected as instruction');
 
         // CASE 3: Valid NIK - should NOT be instruction row
         $validRow = [
@@ -223,7 +226,7 @@ class NikValidationTest extends TestCase
             'kecamatan' => 'Kecamatan',
             'foto' => '3216221612020012.jpg',
         ];
-        $this->assertFalse($method->invoke($controller, $validRow), 'Valid NIK row should NOT be detected as instruction');
+        $this->assertFalse($method->invoke($service, $validRow), 'Valid NIK row should NOT be detected as instruction');
 
         // CASE 4: Case insensitive - lowercase "catatan:"
         $lowercaseCatatan = [
@@ -240,7 +243,7 @@ class NikValidationTest extends TestCase
             'kecamatan' => '',
             'foto' => '',
         ];
-        $this->assertTrue($method->invoke($controller, $lowercaseCatatan), 'Lowercase "catatan:" should also be detected');
+        $this->assertTrue($method->invoke($service, $lowercaseCatatan), 'Lowercase "catatan:" should also be detected');
 
         // CASE 5: Mixed case "Catatan:"
         $mixedCatatan = [
@@ -257,7 +260,7 @@ class NikValidationTest extends TestCase
             'kecamatan' => '',
             'foto' => '',
         ];
-        $this->assertTrue($method->invoke($controller, $mixedCatatan), 'Mixed case "Catatan:" should also be detected');
+        $this->assertTrue($method->invoke($service, $mixedCatatan), 'Mixed case "Catatan:" should also be detected');
 
         // CASE 6: Row with numeric-like NIK but no actual data - should NOT be instruction row
         $numericNikNoData = [
@@ -274,6 +277,6 @@ class NikValidationTest extends TestCase
             'kecamatan' => '',
             'foto' => '',
         ];
-        $this->assertFalse($method->invoke($controller, $numericNikNoData), 'Numeric NIK with empty fields should NOT be detected as instruction (invalid member data)');
+        $this->assertFalse($method->invoke($service, $numericNikNoData), 'Numeric NIK with empty fields should NOT be detected as instruction (invalid member data)');
     }
 }
