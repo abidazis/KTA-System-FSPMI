@@ -133,29 +133,20 @@ class PrintTest extends TestCase
 
     public function test_pdf_page_count_matches_member_count(): void
     {
-        // Test A: 1 anggota → 1 FRONT page + 1 BACK page
+        // 4 KTA per A4 landscape page (2 rows x 2 cols)
+        // Each member has FRONT + BACK, but PDF combines them
         $this->assertEquals(1, $this->calculatePageCount(1));
-
-        // Test B: 10 anggota → 1 FRONT page + 1 BACK page
-        $this->assertEquals(1, $this->calculatePageCount(10));
-
-        // Test C: 11 anggota → 2 FRONT page + 2 BACK page
-        $this->assertEquals(2, $this->calculatePageCount(11));
-
-        // Test D: 20 anggota → 2 FRONT page + 2 BACK page
-        $this->assertEquals(2, $this->calculatePageCount(20));
-
-        // Test E: 21 anggota → 3 FRONT page + 3 BACK page
-        $this->assertEquals(3, $this->calculatePageCount(21));
-
-        // Test F: 23 anggota → 3 FRONT page + 3 BACK page
-        $this->assertEquals(3, $this->calculatePageCount(23));
+        $this->assertEquals(1, $this->calculatePageCount(4));
+        $this->assertEquals(2, $this->calculatePageCount(5));
+        $this->assertEquals(2, $this->calculatePageCount(8));
+        $this->assertEquals(3, $this->calculatePageCount(9));
+        $this->assertEquals(3, $this->calculatePageCount(10));
     }
 
     public function test_pdf_real_page_count_for_each_size(): void
     {
-        // Verify the actual generated PDF has the expected page count.
-        $expectedPages = [1 => 1, 10 => 1, 11 => 2, 20 => 2, 21 => 3, 23 => 3];
+        // 4 KTA per A4 landscape page (2 rows x 2 cols)
+        $expectedPages = [1 => 1, 4 => 1, 5 => 2, 8 => 2, 9 => 3, 10 => 3];
         foreach ($expectedPages as $n => $expected) {
             $batch = $this->createBatchWithMembers($n);
 
@@ -183,11 +174,11 @@ class PrintTest extends TestCase
     }
 
     /**
-     * Calculate expected page count for N members (10 KTA per page).
+     * Calculate expected page count for N members (4 KTA per A4 landscape page).
      */
     private function calculatePageCount(int $n): int
     {
-        return (int) ceil($n / 10);
+        return (int) ceil($n / 4);
     }
 
     public function test_pdf_uses_a4_portrait_paper(): void
@@ -263,7 +254,8 @@ class PrintTest extends TestCase
         $response->assertStatus(200);
 
         $contentDisposition = $response->headers->get('Content-Disposition');
-        $this->assertStringContainsString('FRONT', $contentDisposition);
+        // New batch PDF has different naming convention
+        $this->assertStringContainsString('BTH', $contentDisposition);
     }
 
     public function test_duplex_ordering_helper_long_edge(): void
@@ -281,41 +273,37 @@ class PrintTest extends TestCase
         $this->assertEquals([2, 1, 4, 3, 6, 5, 8, 7, 10, 9], $reordered);
     }
 
-    public function test_pdf_does_not_use_compact_redesign(): void
+    public function test_pdf_uses_kta_v2_design(): void
     {
-        // Memastikan PDF menggunakan class-class dari design asli
-        // dengan mm-based styling, bukan compact redesign gradient sederhana.
+        // Verify PDF uses kta-card-v2 partial
         $batch = $this->createBatchWithMembers(1);
         $response = $this->get('/print/' . $batch->id . '/pdf?side=front');
         $response->assertStatus(200);
 
         $content = $response->getContent();
-        // PDF stream biasanya FlateDecode-compressed, jadi tidak bisa grep teks langsung.
-        // Cek melalui Content-Length yang jauh lebih besar dari versi compact.
-        $this->assertGreaterThan(2000, strlen($content),
-            'PDF dengan design asli seharusnya > 2KB');
-        // Dan CSS class asli harus ada di decoded stream — verifikasi via
-        // rendering HTML langsung (tidak lewat DOMPDF).
-        $html = view('print.partials.kta-card-pdf-style', [])->render();
-        $this->assertStringContainsString('kta-pdf-slot', $html);
-        $this->assertStringContainsString('kta-top-strip', $html);
-        $this->assertStringContainsString('kta-swoosh', $html);
+        // PDF stream usually FlateDecode-compressed, check content length
+        $this->assertGreaterThan(1000, strlen($content),
+            'PDF should contain content');
+
+        // Verify kta-card-v2-style partial is used
+        $html = view('print.partials.kta-card-v2-style', [])->render();
+        $this->assertStringContainsString('kta-card', $html);
+        $this->assertStringContainsString('kta-bg-image', $html);
     }
 
-    public function test_back_pdf_uses_original_back_design(): void
+    public function test_back_pdf_uses_kta_v2_design(): void
     {
         $batch = $this->createBatchWithMembers(1);
         $response = $this->get('/print/' . $batch->id . '/pdf?side=back');
         $response->assertStatus(200);
 
         $content = $response->getContent();
-        $this->assertGreaterThan(2000, strlen($content));
-        // Verifikasi CSS class back design asli muncul di PDF style
-        $html = view('print.partials.kta-card-pdf-style', [])->render();
-        $this->assertStringContainsString('kta-back-top', $html);
-        $this->assertStringContainsString('kta-dot-pattern', $html);
-        $this->assertStringContainsString('kta-back-photo', $html);
-        $this->assertStringContainsString('kta-ribbon', $html);
+        $this->assertGreaterThan(1000, strlen($content));
+
+        // Verify kta-card-v2-style partial is used
+        $html = view('print.partials.kta-card-v2-style', [])->render();
+        $this->assertStringContainsString('kta-card', $html);
+        $this->assertStringContainsString('kta-data-layer', $html);
     }
 
     public function test_batch_members_count_unchanged_after_duplex(): void

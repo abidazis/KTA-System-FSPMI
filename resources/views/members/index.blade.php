@@ -9,6 +9,10 @@
         <h3>Daftar Anggota</h3>
         <div style="display:flex;gap:0.75rem;">
             <a href="{{ route('imports.index') }}" class="btn btn-outline">Import</a>
+            <a href="{{ route('members.export', request()->query()) }}" class="btn btn-success">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;margin-right:0.25rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export Excel
+            </a>
             <a href="{{ route('members.create') }}" class="btn btn-primary">+ Tambah</a>
         </div>
     </div>

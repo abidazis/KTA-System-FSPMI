@@ -13,6 +13,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\MembersExport;
 
 class MemberController extends Controller
 {
@@ -401,5 +403,54 @@ class MemberController extends Controller
             'success' => false,
             'message' => 'Aksi tidak valid.'
         ], 422);
+    }
+
+    /**
+     * Export members to Excel
+     * Uses the same filters as the index method
+     */
+    public function export(Request $request)
+    {
+        // Collect filters from query string (same as index page)
+        $filters = $request->only([
+            'search',
+            'province_id',
+            'regency_id',
+            'district_id',
+            'jenis_kelamin',
+            'agama',
+            'status',
+            'masa_berlaku',
+        ]);
+
+        // Generate filename with date
+        $date = now()->format('Y-m-d');
+        $filename = "data-anggota-fspmi-{$date}.xlsx";
+
+        // If there are active filters, add them to filename for clarity
+        if (!empty($filters)) {
+            // Build a short filter descriptor
+            $filterParts = [];
+            if (!empty($filters['search'])) {
+                $filterParts[] = 'srch';
+            }
+            if (!empty($filters['province_id'])) {
+                $filterParts[] = 'prov';
+            }
+            if (!empty($filters['regency_id'])) {
+                $filterParts[] = 'kab';
+            }
+            if (!empty($filters['district_id'])) {
+                $filterParts[] = 'kec';
+            }
+            if (!empty($filters['status'])) {
+                $filterParts[] = $filters['status'];
+            }
+            if (!empty($filterParts)) {
+                $filename = "data-anggota-fspmi-{$date}(" . implode('-', $filterParts) . ").xlsx";
+            }
+        }
+
+        return Excel::download(new MembersExport($filters), $filename);
     }
 }

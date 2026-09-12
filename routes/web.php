@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function () {
     // Members
     Route::middleware('permission:anggota-view')->group(function () {
         Route::get('members', [MemberController::class, 'index'])->name('members.index');
+        Route::get('members/export', [MemberController::class, 'export'])->name('members.export');
         Route::get('members/create', [MemberController::class, 'create'])->name('members.create');
         Route::post('members', [MemberController::class, 'store'])->name('members.store');
         Route::post('members/bulk-action', [MemberController::class, 'bulkAction'])->name('members.bulk-action');
