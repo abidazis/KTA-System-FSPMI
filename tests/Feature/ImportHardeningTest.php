@@ -50,9 +50,10 @@ class ImportHardeningTest extends TestCase
                  'provinsi' => 'DKI Jakarta', 'kabupaten_kota' => 'Jakarta Selatan',
                  'kecamatan' => 'Kecamatan', 'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
                  'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
-                 'kode_perusahaan' => 'ABC', 'nama_perusahaan' => 'PT ABC Indonesia'],
+                 'kode_perusahaan' => 'ABC', 'nama_perusahaan' => 'PT ABC Indonesia',
+                 'foto' => 'ABC-0001.jpg'],
             ]),
-            'foto/3216221612029001.jpg' => $this->createTestImage(),
+            'foto/ABC-0001.jpg' => $this->createTestImage('member_andi'),
         ]);
 
         // Validate
@@ -98,8 +99,8 @@ class ImportHardeningTest extends TestCase
         $user = User::factory()->create()->givePermissionTo('import');
         $this->actingAs($user);
 
-        // Same photo content for two different NIKs
-        $samePhotoContent = $this->createTestImage();
+        // Same photo content for two different NIKs (same file in ZIP)
+        $samePhotoContent = $this->createTestImage('shared_batch_photo');
 
         $zipPath = $this->createTestZip([
             'data.xlsx' => $this->createTestExcel([
@@ -107,15 +108,18 @@ class ImportHardeningTest extends TestCase
                  'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Merdeka 1',
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
                  'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
-                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01'],
+                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
+                 'foto' => '256-0001.jpg'],
                 ['nik' => '3216221612029003', 'nama' => 'Siti Rahayu', 'tempat_lahir' => 'Bandung',
                  'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Merdeka 2',
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
                  'jenis_kelamin' => 'Perempuan', 'agama' => 'Islam',
-                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01'],
+                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
+                 'foto' => '256-0002.jpg'],
             ]),
-            'foto/3216221612029002.jpg' => $samePhotoContent,
-            'foto/3216221612029003.jpg' => $samePhotoContent, // Same content!
+            // Both files in ZIP have same content → duplicate detection
+            'foto/256-0001.jpg' => $samePhotoContent,
+            'foto/256-0002.jpg' => $samePhotoContent,
         ]);
 
         $response = $this->post('/import/validate', [
@@ -174,9 +178,10 @@ class ImportHardeningTest extends TestCase
                  'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Baru 1',
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
                  'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
-                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01'],
+                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
+                 'foto' => 'TST-0001.jpg'],
             ]),
-            'foto/3216221612029005.jpg' => $sharedPhotoContent, // Same content as existing!
+            'foto/TST-0001.jpg' => $sharedPhotoContent, // Same content as existing!
         ]);
 
         $response = $this->post('/import/validate', [
@@ -214,9 +219,10 @@ class ImportHardeningTest extends TestCase
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
                  'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
                  'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
-                 'kode_perusahaan' => 'ABC', 'nama_perusahaan' => 'PT ABC Manufacturing'], // Different name!
+                 'kode_perusahaan' => 'ABC', 'nama_perusahaan' => 'PT ABC Manufacturing',
+                 'foto' => 'ABC-0001.jpg'], // Different name!
             ]),
-            'foto/3216221612029006.jpg' => $this->createTestImage(),
+            'foto/ABC-0001.jpg' => $this->createTestImage('member_conflict'),
         ]);
 
         $response = $this->post('/import/validate', [
@@ -252,16 +258,18 @@ class ImportHardeningTest extends TestCase
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
                  'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
                  'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
-                 'kode_perusahaan' => 'XYZ', 'nama_perusahaan' => 'PT XYZ Corporation'],
+                 'kode_perusahaan' => 'XYZ', 'nama_perusahaan' => 'PT XYZ Corporation',
+                 'foto' => 'XYZ-0001.jpg'],
                 ['nik' => '3216221612029008', 'nama' => 'Budi', 'tempat_lahir' => 'Bandung',
                  'tanggal_lahir' => '2020-12-16', 'alamat' => 'Alamat 2',
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
                  'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
                  'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
-                 'kode_perusahaan' => 'XYZ', 'nama_perusahaan' => 'PT XYZ Corporation'],
+                 'kode_perusahaan' => 'XYZ', 'nama_perusahaan' => 'PT XYZ Corporation',
+                 'foto' => 'XYZ-0002.jpg'],
             ]),
-            'foto/3216221612029007.jpg' => $this->createTestImage('member_1'),
-            'foto/3216221612029008.jpg' => $this->createTestImage('member_2'),
+            'foto/XYZ-0001.jpg' => $this->createTestImage('member_1'),
+            'foto/XYZ-0002.jpg' => $this->createTestImage('member_2'),
         ]);
 
         // Validate
@@ -325,9 +333,10 @@ class ImportHardeningTest extends TestCase
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
                  'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
                  'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
-                 'kode_perusahaan' => 'SEQ', 'nama_perusahaan' => 'Sequence Test Company'],
+                 'kode_perusahaan' => 'SEQ', 'nama_perusahaan' => 'Sequence Test Company',
+                 'foto' => 'SEQ-0006.jpg'],
             ]),
-            'foto/3216221612029010.jpg' => $this->createTestImage('seq_test_photo_different'),
+            'foto/SEQ-0006.jpg' => $this->createTestImage('seq_test_photo_different'),
         ]);
 
         // Validate
@@ -479,7 +488,9 @@ class ImportHardeningTest extends TestCase
             $sheet->setCellValue('J' . $rowNum, $row['agama']);
             $sheet->setCellValueExplicit('K' . $rowNum, (string) $row['berlaku_hingga'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $sheet->setCellValueExplicit('L' . $rowNum, (string) $row['tanggal_pembuatan'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $sheet->setCellValue('M' . $rowNum, $row['nik'] . '.jpg');
+            // Use foto column if provided, otherwise default to NIK + .jpg
+            $fotoValue = !empty($row['foto']) ? $row['foto'] : ($row['nik'] . '.jpg');
+            $sheet->setCellValue('M' . $rowNum, $fotoValue);
             $sheet->setCellValue('N' . $rowNum, $row['kode_perusahaan'] ?? '');
             $sheet->setCellValue('O' . $rowNum, $row['nama_perusahaan'] ?? '');
             $rowNum++;

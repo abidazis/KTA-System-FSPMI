@@ -347,7 +347,9 @@ class ImportService
 
         // Photo validation (REQUIRED)
         if (!empty($nik) && self::isValidNik($nik)) {
-            $photoResult = $this->findAndValidatePhoto($extractPath, $nik, $rowNum, $existingPhotoHashes, $processedNikHashes);
+            // Use foto column if provided, otherwise use NIK
+            $fotoColumn = $row['foto'] ?? null;
+            $photoResult = $this->findAndValidatePhoto($extractPath, $nik, $fotoColumn, $rowNum, $existingPhotoHashes, $processedNikHashes);
 
             if (!empty($photoResult['errors'])) {
                 $errors = array_merge($errors, $photoResult['errors']);
@@ -417,11 +419,12 @@ class ImportService
     }
 
     /**
-     * Find photo by NIK and validate it.
+     * Find photo by foto column (or NIK fallback) and validate it.
      */
     private function findAndValidatePhoto(
         string $extractPath,
         string $nik,
+        ?string $fotoColumn,
         int $rowNum,
         array $existingPhotoHashes,
         array $processedNikHashes
@@ -429,6 +432,12 @@ class ImportService
         $extensions = ['jpg', 'jpeg', 'png'];
         $foundFile = null;
         $foundHash = null;
+
+        // Determine search filename: use foto column value if provided, otherwise use NIK
+        $searchFileName = !empty($fotoColumn) ? trim($fotoColumn) : $nik;
+
+        // Remove extension from search filename for matching
+        $searchBaseName = pathinfo($searchFileName, PATHINFO_FILENAME);
 
         $iterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($extractPath, \RecursiveDirectoryIterator::SKIP_DOTS),
@@ -447,11 +456,8 @@ class ImportService
 
             $baseName = pathinfo($file->getFilename(), PATHINFO_FILENAME);
 
-            // Check if filename matches NIK (with various normalization)
-            $fnClean = ltrim($baseName, '0') ?: $baseName;
-            $nkClean = ltrim($nik, '0') ?: $nik;
-
-            if ($fnClean === $nkClean || $baseName === $nik) {
+            // Match against foto column filename or NIK
+            if (strcasecmp($baseName, $searchBaseName) === 0 || strcasecmp($baseName, $nik) === 0) {
                 // Calculate hash
                 $hash = hash_file('sha256', $file->getPathname());
 
@@ -478,7 +484,7 @@ class ImportService
 
                 // Valid photo found
                 $foundFile = [
-                    'nik' => $baseName,
+                    'source_name' => $file->getFilename(), // original filename in ZIP
                     'path' => $file->getPathname(),
                     'hash' => $hash,
                     'extension' => $extension,
@@ -489,10 +495,13 @@ class ImportService
         }
 
         if (!$foundFile) {
+            $searchHint = !empty($fotoColumn)
+                ? $searchFileName
+                : "{$nik}.jpg / {$nik}.jpeg / {$nik}.png";
             return [
                 'errors' => [
-                    "FOTO TIDAK DITEMUKAN (cari: {$nik}.jpg / {$nik}.jpeg / {$nik}.png) — "
-                    . 'Pastikan file foto tersedia di folder foto/ dan nama file sesuai dengan NIK.'
+                    "FOTO TIDAK DITEMUKAN (cari: {$searchHint}) — "
+                    . 'Pastikan file foto tersedia di folder foto/ dan nama file sesuai dengan kolom foto.'
                 ],
             ];
         }
@@ -502,7 +511,7 @@ class ImportService
         if (!$imageInfo) {
             return [
                 'errors' => [
-                    "FOTO TIDAK VALID: File {$nik}.{$foundFile['extension']} bukan file gambar yang valid."
+                    "FOTO TIDAK VALID: File {$searchBaseName}.{$foundFile['extension']} bukan file gambar yang valid."
                 ],
             ];
         }

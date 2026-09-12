@@ -79,7 +79,7 @@ class ImportController extends Controller
         // Example data row
         $sheet->setCellValueExplicit('A2', "'3275010101900001", \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
         $sheet->setCellValue('B2', 'Nama Lengkap');
-        $sheet->setCellValue('C2', 'Kota');
+        $sheet->setValue('C2', 'Kota');
         $sheet->setCellValueExplicit('D2', '1990-01-01', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
         $sheet->setCellValue('E2', 'Alamat Lengkap');
         $sheet->setCellValue('F2', 'Jawa Barat');
@@ -89,12 +89,12 @@ class ImportController extends Controller
         $sheet->setCellValue('J2', 'Islam');
         $sheet->setCellValueExplicit('K2', '2031-12-31', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
         $sheet->setCellValueExplicit('L2', '2026-01-01', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-        $sheet->setCellValue('M2', '3275010101900001.jpg');
+        $sheet->setCellValue('M2', 'ABC-0001.jpg'); // foto filename from ZIP
         $sheet->setCellValue('N2', 'ABC'); // kode_perusahaan (NEW)
         $sheet->setCellValue('O2', 'PT ABC Indonesia'); // nama_perusahaan (NEW)
 
         // Add note about NIK in cell A4
-        $sheet->setCellValue('A4', 'CATATAN: Kolom NIK harus berisi 16 digit angka. Jangan rubah format sel. Kolom kode_perusahaan dan nama_perusahaan opsional.');
+        $sheet->setCellValue('A4', 'CATATAN: Kolom NIK harus berisi 16 digit angka. Kolom foto = nama file foto di folder foto/ (cth: ABC-0001.jpg). Kolom kode_perusahaan & nama_perusahaan opsional.');
         $sheet->getStyle('A4')->applyFromArray([
             'font' => ['italic' => true, 'color' => ['rgb' => 'dc2626'], 'size' => 10],
         ]);
