@@ -45,7 +45,7 @@
     <table>
         <thead>
             <tr>
-                <th>NIK</th>
+                <th>No. Anggota</th>
                 <th>Nama</th>
                 <th>Domisili</th>
                 <th>Status</th>

@@ -23,6 +23,7 @@ class RoleSeeder extends Seeder
             'user-create',
             'user-edit',
             'user-delete',
+            'formulasi-nomor-anggota',
         ];
 
         foreach ($permissions as $permission) {
@@ -40,6 +41,7 @@ class RoleSeeder extends Seeder
             'anggota-delete',
             'import',
             'cetak',
+            'formulasi-nomor-anggota',
         ]);
 
         $operator = Role::firstOrCreate(['name' => 'operator']);

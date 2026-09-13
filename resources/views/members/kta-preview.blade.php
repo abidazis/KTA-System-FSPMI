@@ -143,7 +143,7 @@
 
     <div class="preview-header">
         <h2>Preview KTA</h2>
-        <p>{{ strtoupper($member->nama) }} &mdash; NIK {{ $member->nik }}</p>
+        <p>{{ strtoupper($member->nama) }} &mdash; No. Anggota {{ $member->nik }}</p>
     </div>
 
     <div class="kta-preview-grid">

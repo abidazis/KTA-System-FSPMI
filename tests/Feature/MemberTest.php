@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\Member;
+use App\Models\MemberNumberFormula;
 use App\Models\User;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,6 +21,17 @@ class MemberTest extends TestCase
         Permission::create(['name' => 'anggota-create']);
         Permission::create(['name' => 'anggota-edit']);
         Permission::create(['name' => 'anggota-delete']);
+
+        // Create a default active formula
+        MemberNumberFormula::create([
+            'name' => 'Test Formula',
+            'prefix' => 'FSPMI',
+            'separator' => '-',
+            'include_company_code' => true,
+            'sequence_digits' => 4,
+            'is_active' => true,
+            'created_by' => 1,
+        ]);
     }
 
     public function test_can_view_members_list(): void
@@ -43,7 +55,7 @@ class MemberTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_can_create_member(): void
+    public function test_can_create_member_with_auto_generated_number(): void
     {
         // Create a company first
         $company = Company::create([
@@ -56,7 +68,6 @@ class MemberTest extends TestCase
         $this->actingAs($user);
 
         $response = $this->post('/members', [
-            'nik' => '3275010101900001',
             'nama' => 'Test Member',
             'tempat_lahir' => 'Jakarta',
             'tanggal_lahir' => '1990-01-01',
@@ -68,18 +79,30 @@ class MemberTest extends TestCase
             'company_id' => $company->id,
         ]);
 
-        $this->assertDatabaseHas('members', ['nik' => '3275010101900001']);
+        // Should redirect to member show page
+        $response->assertRedirect();
+
+        // Member should be created with auto-generated nik
+        $member = Member::where('nama', 'Test Member')->first();
+        $this->assertNotNull($member);
+        $this->assertEquals('FSPMI-TST-0001', $member->nik);
     }
 
-    public function test_nik_must_be_unique(): void
+    public function test_cannot_create_member_without_formula(): void
     {
+        // Deactivate all formulas
+        MemberNumberFormula::query()->update(['is_active' => false]);
+
+        $company = Company::create([
+            'kode' => 'TST',
+            'name' => 'Test Company',
+            'is_active' => true,
+        ]);
+
         $user = User::factory()->create()->givePermissionTo(['anggota-view', 'anggota-create']);
         $this->actingAs($user);
 
-        Member::factory()->create(['nik' => '3275010101900001']);
-
         $response = $this->post('/members', [
-            'nik' => '3275010101900001',
             'nama' => 'Test Member',
             'tempat_lahir' => 'Jakarta',
             'tanggal_lahir' => '1990-01-01',
@@ -88,9 +111,37 @@ class MemberTest extends TestCase
             'agama' => 'Islam',
             'berlaku_hingga' => '2030-01-01',
             'tanggal_pembuatan' => '2026-01-01',
+            'company_id' => $company->id,
         ]);
 
-        $response->assertSessionHasErrors('nik');
+        // Should redirect back with error
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+        $response->assertSessionHas('error', 'Nomor anggota belum dapat dibuat karena formula nomor anggota belum dikonfigurasi oleh administrator.');
+
+        // Member should NOT be created
+        $this->assertDatabaseMissing('members', ['nama' => 'Test Member']);
+    }
+
+    public function test_cannot_create_member_without_company_when_formula_requires_it(): void
+    {
+        $user = User::factory()->create()->givePermissionTo(['anggota-view', 'anggota-create']);
+        $this->actingAs($user);
+
+        $response = $this->post('/members', [
+            'nama' => 'Test Member',
+            'tempat_lahir' => 'Jakarta',
+            'tanggal_lahir' => '1990-01-01',
+            'alamat' => 'Test Address',
+            'jenis_kelamin' => 'Laki-laki',
+            'agama' => 'Islam',
+            'berlaku_hingga' => '2030-01-01',
+            'tanggal_pembuatan' => '2026-01-01',
+            'company_id' => '', // No company
+        ]);
+
+        // Should fail validation
+        $response->assertSessionHasErrors('company_id');
     }
 
     public function test_can_view_member_detail(): void
@@ -98,9 +149,29 @@ class MemberTest extends TestCase
         $user = User::factory()->create()->givePermissionTo('anggota-view');
         $this->actingAs($user);
 
-        $member = Member::factory()->create();
-        $response = $this->get("/members/{$member->id}");
+        $company = Company::create([
+            'kode' => 'TST',
+            'name' => 'Test Company',
+            'is_active' => true,
+        ]);
+
+        $member = Member::create([
+            'nik' => 'FSPMI-TST-0001',
+            'nama' => 'Test Member',
+            'tempat_lahir' => 'Jakarta',
+            'tanggal_lahir' => '1990-01-01',
+            'alamat' => 'Test Address',
+            'jenis_kelamin' => 'Laki-laki',
+            'agama' => 'Islam',
+            'berlaku_hingga' => '2030-01-01',
+            'tanggal_pembuatan' => '2026-01-01',
+            'company_id' => $company->id,
+            'status' => 'active',
+        ]);
+
+        $response = $this->get('/members/' . $member->id);
         $response->assertStatus(200);
+        $response->assertSee('Test Member');
     }
 
     public function test_can_delete_member(): void
@@ -108,7 +179,16 @@ class MemberTest extends TestCase
         $user = User::factory()->create()->givePermissionTo(['anggota-view', 'anggota-delete']);
         $this->actingAs($user);
 
-        $member = Member::factory()->create();
+        $company = Company::create([
+            'kode' => 'TST',
+            'name' => 'Test Company',
+            'is_active' => true,
+        ]);
+
+        $member = Member::factory()->create([
+            'company_id' => $company->id,
+            'nik' => 'FSPMI-TST-0001',
+        ]);
         $response = $this->delete("/members/{$member->id}");
         $response->assertRedirect('/members');
         $this->assertSoftDeleted('members', ['id' => $member->id]);

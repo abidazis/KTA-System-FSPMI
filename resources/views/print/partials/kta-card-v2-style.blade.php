@@ -126,12 +126,12 @@
 
 /*
 |--------------------------------------------------------------------------
-| AUTO-FIT FIELD (NAMA, NIK on front side)
+| AUTO-FIT FIELD (NAMA, NO. ANGGOTA on front side)
 |--------------------------------------------------------------------------
 | Teks yang panjang akan di-scale secara horizontal menggunakan
 | CSS transform (via JS) agar muat di container. Pendek tetap pada
 | ukuran semula. Untuk PDF (tanpa JS), font-size sudah dikecilkan
-| di template agar teks 16 digit NIK tidak terpotong.
+| di template agar teks tidak terpotong.
 | Fallback text-overflow: ellipsis untuk browser tanpa JS support.
 |--------------------------------------------------------------------------
 */
@@ -228,10 +228,9 @@
 |--------------------------------------------------------------------------
 | AUTO-FIT JS (browser preview only)
 |--------------------------------------------------------------------------
-| Skala horizontal text (transform: scaleX) untuk NAMA & NIK yang
+| Skala horizontal text (transform: scaleX) untuk NAMA & NO. ANGGOTA yang
 | panjang sehingga muat di container. Pendek tetap ukuran normal.
-| Untuk PDF (DomPDF, tanpa JS), font-size 2.4mm sudah aman untuk
-| NIK 16 digit standar Indonesia.
+| Untuk PDF (DomPDF, tanpa JS), font-size 2.4mm sudah aman.
 |--------------------------------------------------------------------------
 */
 

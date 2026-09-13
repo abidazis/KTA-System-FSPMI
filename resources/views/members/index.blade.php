@@ -123,7 +123,7 @@
             <thead>
                 <tr style="background:var(--gray-50);">
                     <th style="width:40px;padding:0.5rem 0.375rem;text-align:center;"></th>
-                    <th style="padding:0.5rem 0.5rem;text-align:left;white-space:nowrap;">NIK</th>
+                    <th style="padding:0.5rem 0.5rem;text-align:left;white-space:nowrap;">No. Anggota</th>
                     <th style="padding:0.5rem 0.5rem;text-align:left;white-space:nowrap;">Nama</th>
                     <th style="padding:0.5rem 0.5rem;text-align:left;white-space:nowrap;">Domisili</th>
                     <th style="padding:0.5rem 0.5rem;text-align:left;white-space:nowrap;">Asal Perusahaan</th>

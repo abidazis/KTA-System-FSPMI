@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\Member;
+use App\Models\MemberNumberFormula;
 use App\Models\MemberPhoto;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,6 +34,24 @@ class ImportHardeningTest extends TestCase
             mkdir($tempDir, 0755, true);
         }
         Permission::create(['name' => 'import']);
+
+        // Create default active formula
+        MemberNumberFormula::create([
+            'name' => 'Formula Test',
+            'prefix' => 'FSPMI',
+            'separator' => '-',
+            'include_company_code' => true,
+            'sequence_digits' => 4,
+            'is_active' => true,
+            'created_by' => 1,
+        ]);
+
+        // Pre-create the company so it's available during validation preview
+        Company::create([
+            'kode' => 'ABC',
+            'name' => 'PT ABC Indonesia',
+            'is_active' => true,
+        ]);
     }
 
     /**
@@ -45,7 +64,7 @@ class ImportHardeningTest extends TestCase
 
         $zipPath = $this->createTestZip([
             'data.xlsx' => $this->createTestExcel([
-                ['nik' => '3216221612029001', 'nama' => 'Andi Wijaya', 'tempat_lahir' => 'Jakarta',
+                ['nama' => 'Andi Wijaya', 'tempat_lahir' => 'Jakarta',
                  'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Merdeka 1',
                  'provinsi' => 'DKI Jakarta', 'kabupaten_kota' => 'Jakarta Selatan',
                  'kecamatan' => 'Kecamatan', 'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
@@ -70,10 +89,13 @@ class ImportHardeningTest extends TestCase
         $response->assertRedirect('/members');
         $response->assertSessionHas('success');
 
-        // Verify member was created
-        $member = Member::where('nik', '3216221612029001')->first();
+        // Verify member was created with auto-generated nomor anggota
+        $member = Member::where('nama', 'Andi Wijaya')->first();
         $this->assertNotNull($member);
+        $this->assertNotNull($member->nik);
         $this->assertEquals('Andi Wijaya', $member->nama);
+        // Should match formula pattern: FSPMI-ABC-0001
+        $this->assertMatchesRegularExpression('/^FSPMI-ABC-\d{4}$/', $member->nik);
 
         // Verify company was created
         $company = Company::where('kode', 'ABC')->first();
@@ -99,18 +121,18 @@ class ImportHardeningTest extends TestCase
         $user = User::factory()->create()->givePermissionTo('import');
         $this->actingAs($user);
 
-        // Same photo content for two different NIKs (same file in ZIP)
+        // Same photo content for two different members (same file content)
         $samePhotoContent = $this->createTestImage('shared_batch_photo');
 
         $zipPath = $this->createTestZip([
             'data.xlsx' => $this->createTestExcel([
-                ['nik' => '3216221612029002', 'nama' => 'Budi Santoso', 'tempat_lahir' => 'Jakarta',
+                ['nama' => 'Budi Santoso', 'tempat_lahir' => 'Jakarta',
                  'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Merdeka 1',
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
                  'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
                  'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
                  'foto' => '256-0001.jpg'],
-                ['nik' => '3216221612029003', 'nama' => 'Siti Rahayu', 'tempat_lahir' => 'Bandung',
+                ['nama' => 'Siti Rahayu', 'tempat_lahir' => 'Bandung',
                  'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Merdeka 2',
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
                  'jenis_kelamin' => 'Perempuan', 'agama' => 'Islam',
@@ -141,8 +163,10 @@ class ImportHardeningTest extends TestCase
         $user = User::factory()->create()->givePermissionTo('import');
         $this->actingAs($user);
 
-        // Create existing member with photo
+        // Create existing company
         $company = Company::create(['kode' => 'TST', 'name' => 'Test', 'is_active' => true]);
+
+        // Create existing member with existing NIK format
         $existingMember = Member::create([
             'nik' => '3216221612029004',
             'nama' => 'Existing Member',
@@ -171,10 +195,10 @@ class ImportHardeningTest extends TestCase
             'photo_hash' => $photoHash,
         ]);
 
-        // Try to import same photo content with different NIK
+        // Try to import same photo content with different member
         $zipPath = $this->createTestZip([
             'data.xlsx' => $this->createTestExcel([
-                ['nik' => '3216221612029005', 'nama' => 'New Member', 'tempat_lahir' => 'Surabaya',
+                ['nama' => 'New Member', 'tempat_lahir' => 'Surabaya',
                  'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Baru 1',
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
                  'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
@@ -214,7 +238,7 @@ class ImportHardeningTest extends TestCase
         // Try to import with same kode but different name
         $zipPath = $this->createTestZip([
             'data.xlsx' => $this->createTestExcel([
-                ['nik' => '3216221612029006', 'nama' => 'New Member', 'tempat_lahir' => 'Jakarta',
+                ['nama' => 'New Member', 'tempat_lahir' => 'Jakarta',
                  'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Baru 1',
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
                  'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
@@ -245,7 +269,7 @@ class ImportHardeningTest extends TestCase
         $this->actingAs($user);
 
         // Create company with specific kode
-        $company = Company::create([
+        Company::create([
             'kode' => 'XYZ',
             'name' => 'PT XYZ Corporation',
             'is_active' => true,
@@ -253,14 +277,14 @@ class ImportHardeningTest extends TestCase
 
         $zipPath = $this->createTestZip([
             'data.xlsx' => $this->createTestExcel([
-                ['nik' => '3216221612029007', 'nama' => 'Andi', 'tempat_lahir' => 'Jakarta',
+                ['nama' => 'Andi', 'tempat_lahir' => 'Jakarta',
                  'tanggal_lahir' => '2020-12-16', 'alamat' => 'Alamat 1',
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
                  'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
                  'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
                  'kode_perusahaan' => 'XYZ', 'nama_perusahaan' => 'PT XYZ Corporation',
                  'foto' => 'XYZ-0001.jpg'],
-                ['nik' => '3216221612029008', 'nama' => 'Budi', 'tempat_lahir' => 'Bandung',
+                ['nama' => 'Budi', 'tempat_lahir' => 'Bandung',
                  'tanggal_lahir' => '2020-12-16', 'alamat' => 'Alamat 2',
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
                  'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
@@ -284,6 +308,9 @@ class ImportHardeningTest extends TestCase
         $response->assertSeeText('XYZ-');
         $response->assertSeeText('.jpg');
 
+        // Check preview shows generated nomor anggota
+        $response->assertSeeText('FSPMI-XYZ-');
+
         @unlink($zipPath);
     }
 
@@ -302,6 +329,7 @@ class ImportHardeningTest extends TestCase
             'is_active' => true,
         ]);
 
+        // Create existing member with old format NIK
         $existingMember = Member::create([
             'nik' => '3216221612029009',
             'nama' => 'Existing Member',
@@ -316,7 +344,7 @@ class ImportHardeningTest extends TestCase
             'company_id' => $company->id,
         ]);
 
-        // Create photo record with sequence number — use fixed content so hash is deterministic
+        // Create photo record with sequence number
         $sharedContent = $this->createTestImage('seq_test_photo');
         Storage::disk('local')->put('members/photos/SEQ-0005.jpg', $sharedContent);
         MemberPhoto::create([
@@ -328,7 +356,7 @@ class ImportHardeningTest extends TestCase
         // Import new member with same company
         $zipPath = $this->createTestZip([
             'data.xlsx' => $this->createTestExcel([
-                ['nik' => '3216221612029010', 'nama' => 'New Member', 'tempat_lahir' => 'Jakarta',
+                ['nama' => 'New Member', 'tempat_lahir' => 'Jakarta',
                  'tanggal_lahir' => '2020-12-16', 'alamat' => 'Alamat',
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
                  'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
@@ -352,8 +380,7 @@ class ImportHardeningTest extends TestCase
     }
 
     /**
-     * Test: 99 valid + 1 duplicate = 99 saved, 1 rejected
-     * System allows partial import: valid rows are committed, errors are shown and skipped.
+     * Test: partial import saves valid rows only
      */
     public function test_partial_import_saves_valid_rows_only(): void
     {
@@ -362,12 +389,10 @@ class ImportHardeningTest extends TestCase
 
         $countBefore = Member::count();
 
-        // Create 99 valid rows + 1 invalid row (duplicate NIK)
+        // Create 99 valid rows + 1 invalid row (missing required field)
         $rows = [];
         for ($i = 0; $i < 99; $i++) {
-            $nik = '32162216120' . str_pad($i + 100, 5, '0', STR_PAD_LEFT);
             $rows[] = [
-                'nik' => $nik,
                 'nama' => "Member $i",
                 'tempat_lahir' => 'Jakarta',
                 'tanggal_lahir' => '2020-12-16',
@@ -379,13 +404,15 @@ class ImportHardeningTest extends TestCase
                 'agama' => 'Islam',
                 'berlaku_hingga' => '2031-12-31',
                 'tanggal_pembuatan' => '2026-01-01',
+                'kode_perusahaan' => 'ABC',
+                'nama_perusahaan' => 'PT ABC Indonesia',
+                'foto' => "FOTO-" . str_pad($i + 1, 4, '0', STR_PAD_LEFT) . ".jpg",
             ];
         }
 
-        // Add invalid row (duplicate NIK with row 0)
+        // Add invalid row (missing required field 'nama')
         $rows[] = [
-            'nik' => $rows[0]['nik'], // Duplicate!
-            'nama' => 'Invalid Member',
+            'nama' => '', // Empty name - invalid!
             'tempat_lahir' => 'Jakarta',
             'tanggal_lahir' => '2020-12-16',
             'alamat' => 'Alamat',
@@ -396,25 +423,28 @@ class ImportHardeningTest extends TestCase
             'agama' => 'Islam',
             'berlaku_hingga' => '2031-12-31',
             'tanggal_pembuatan' => '2026-01-01',
+            'kode_perusahaan' => 'ABC',
+            'nama_perusahaan' => 'PT ABC Indonesia',
+            'foto' => 'FOTO-0100.jpg',
         ];
 
         $files = ['data.xlsx' => $this->createTestExcel($rows)];
 
         // Add photos for all 100 rows
         for ($i = 0; $i < 100; $i++) {
-            $nik = $rows[$i]['nik'];
-            $files["foto/{$nik}.jpg"] = $this->createTestImage("row_{$i}");
+            $fotoName = $rows[$i]['foto'];
+            $files["foto/{$fotoName}"] = $this->createTestImage("row_{$i}");
         }
 
         $zipPath = $this->createTestZip($files);
 
-        // Validate — should show duplicate error
+        // Validate — should show error
         $response = $this->post('/import/validate', [
             'file' => new UploadedFile($zipPath, 'import.zip', 'application/zip', null, true),
         ]);
 
         $response->assertStatus(200);
-        $response->assertSeeText('duplikat');
+        $response->assertSeeText('Nama kosong');
 
         // Process import with valid token
         $token = session('import_token');
@@ -423,9 +453,8 @@ class ImportHardeningTest extends TestCase
         // Should succeed and redirect to members
         $response->assertRedirect('/members');
 
-        // 99 valid rows should be saved; 1 duplicate row rejected
+        // 99 valid rows should be saved; 1 invalid row rejected
         $this->assertEquals(99, Member::count() - $countBefore);
-        $this->assertDatabaseMissing('members', ['nik' => $rows[0]['nik'], 'nama' => 'Invalid Member']);
 
         @unlink($zipPath);
     }
@@ -467,7 +496,8 @@ class ImportHardeningTest extends TestCase
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $headers = ['nik', 'nama', 'tempat_lahir', 'tanggal_lahir', 'alamat',
+        // Headers without nik (auto-generated)
+        $headers = ['nama', 'tempat_lahir', 'tanggal_lahir', 'alamat',
                     'provinsi', 'kabupaten_kota', 'kecamatan', 'jenis_kelamin',
                     'agama', 'berlaku_hingga', 'tanggal_pembuatan', 'foto',
                     'kode_perusahaan', 'nama_perusahaan'];
@@ -476,23 +506,20 @@ class ImportHardeningTest extends TestCase
 
         $rowNum = 2;
         foreach ($rows as $row) {
-            $sheet->setCellValueExplicit('A' . $rowNum, (string) $row['nik'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $sheet->setCellValue('B' . $rowNum, $row['nama']);
-            $sheet->setCellValue('C' . $rowNum, $row['tempat_lahir']);
-            $sheet->setCellValueExplicit('D' . $rowNum, (string) $row['tanggal_lahir'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $sheet->setCellValue('E' . $rowNum, $row['alamat']);
-            $sheet->setCellValue('F' . $rowNum, $row['provinsi'] ?? '');
-            $sheet->setCellValue('G' . $rowNum, $row['kabupaten_kota'] ?? '');
-            $sheet->setCellValue('H' . $rowNum, $row['kecamatan'] ?? '');
-            $sheet->setCellValue('I' . $rowNum, $row['jenis_kelamin']);
-            $sheet->setCellValue('J' . $rowNum, $row['agama']);
-            $sheet->setCellValueExplicit('K' . $rowNum, (string) $row['berlaku_hingga'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            $sheet->setCellValueExplicit('L' . $rowNum, (string) $row['tanggal_pembuatan'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            // Use foto column if provided, otherwise default to NIK + .jpg
-            $fotoValue = !empty($row['foto']) ? $row['foto'] : ($row['nik'] . '.jpg');
-            $sheet->setCellValue('M' . $rowNum, $fotoValue);
-            $sheet->setCellValue('N' . $rowNum, $row['kode_perusahaan'] ?? '');
-            $sheet->setCellValue('O' . $rowNum, $row['nama_perusahaan'] ?? '');
+            $sheet->setCellValue('A' . $rowNum, $row['nama']);
+            $sheet->setCellValue('B' . $rowNum, $row['tempat_lahir']);
+            $sheet->setCellValueExplicit('C' . $rowNum, (string) $row['tanggal_lahir'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('D' . $rowNum, $row['alamat']);
+            $sheet->setCellValue('E' . $rowNum, $row['provinsi'] ?? '');
+            $sheet->setCellValue('F' . $rowNum, $row['kabupaten_kota'] ?? '');
+            $sheet->setCellValue('G' . $rowNum, $row['kecamatan'] ?? '');
+            $sheet->setCellValue('H' . $rowNum, $row['jenis_kelamin']);
+            $sheet->setCellValue('I' . $rowNum, $row['agama']);
+            $sheet->setCellValueExplicit('J' . $rowNum, (string) $row['berlaku_hingga'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit('K' . $rowNum, (string) $row['tanggal_pembuatan'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('L' . $rowNum, $row['foto'] ?? '');
+            $sheet->setCellValue('M' . $rowNum, $row['kode_perusahaan'] ?? '');
+            $sheet->setCellValue('N' . $rowNum, $row['nama_perusahaan'] ?? '');
             $rowNum++;
         }
 

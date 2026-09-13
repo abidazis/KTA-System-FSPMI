@@ -5,11 +5,15 @@ namespace App\Services;
 use App\Models\Company;
 use App\Models\District;
 use App\Models\Member;
+use App\Models\MemberNumberFormula;
+use App\Models\MemberNumberSequence;
 use App\Models\MemberPhoto;
 use App\Models\Province;
 use App\Models\Regency;
+use App\Services\MemberNumberGenerator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 class ImportService
 {
@@ -23,7 +27,13 @@ class ImportService
         $validData = [];
         $photosData = [];
         $companyData = [];
-        $processedNikHashes = []; // Track NIK hashes in current batch
+        $processedNikHashes = []; // Track photo hashes in current batch
+
+        // Check if active formula exists
+        $formula = MemberNumberFormula::getActive();
+        if (!$formula) {
+            return $this->formatError('Formula nomor anggota belum dikonfigurasi. Silakan hubungi administrator untuk mengatur formula.');
+        }
 
         // Parse Excel
         try {
@@ -51,13 +61,12 @@ class ImportService
         // Normalize headers
         $headers = array_map(fn($h) => strtolower(trim((string) ($h ?? ''))), $rows[0]);
 
-        // Check required headers (including new company columns)
+        // Check required headers (NIK is no longer required - will be auto-generated)
         $requiredHeaders = [
-            'nik', 'nama', 'tempat_lahir', 'tanggal_lahir',
+            'nama', 'tempat_lahir', 'tanggal_lahir',
             'alamat', 'jenis_kelamin', 'agama',
             'berlaku_hingga', 'tanggal_pembuatan',
         ];
-        // kode_perusahaan and foto_perusahaan are optional
 
         foreach ($requiredHeaders as $required) {
             if (!in_array($required, $headers)) {
@@ -65,12 +74,8 @@ class ImportService
             }
         }
 
-        // Get existing data for validation
-        $existingNikMap = Member::pluck('nik')->map(fn($nik) => $nik)->flip()->toArray();
+        // Get existing photo hashes for duplicate detection
         $existingPhotoHashes = MemberPhoto::pluck('photo_hash', 'photo_hash')->filter()->flip()->toArray();
-
-        // Track NIKs in current batch
-        $batchNikMap = [];
 
         // First pass: Parse all data and validate without database writes
         for ($i = 1; $i < count($rows); $i++) {
@@ -94,8 +99,6 @@ class ImportService
             $rowErrors = $this->validateRowData(
                 $rowData,
                 $rowNum,
-                $existingNikMap,
-                $batchNikMap,
                 $existingPhotoHashes,
                 $processedNikHashes,
                 $extractPath,
@@ -103,22 +106,26 @@ class ImportService
                 $companyData
             );
 
+            // Set company_id from companyData (validateRowData doesn't modify $rowData)
+            $companyInfo = $companyData[$rowNum] ?? null;
+            if ($companyInfo && isset($companyInfo['id'])) {
+                $rowData['company_id'] = $companyInfo['id'];
+            }
+
             if (!empty($rowErrors)) {
                 $errors[] = [
                     'row' => $rowNum,
-                    'nik' => $rowData['nik'] ?? '-',
+                    'nik' => '-',
                     'nama' => $rowData['nama'] ?? '-',
                     'perusahaan' => $rowData['kode_perusahaan'] ?? $rowData['nama_perusahaan'] ?? '-',
                     'errors' => $rowErrors,
                 ];
             } else {
-                // Add to valid data
-                $batchNikMap[$rowData['nik']] = true;
                 $validData[] = $rowData;
             }
         }
 
-        // Generate preview data (photo names, company assignments)
+        // Generate preview data including generated member numbers
         $previewData = $this->generatePreviewData($validData, $companyData, $photosData);
 
         $total = count($validData) + count($errors);
@@ -142,12 +149,47 @@ class ImportService
         $imported = 0;
         $createdMembers = [];
 
+        // Check if active formula exists
+        $formula = MemberNumberFormula::getActive();
+        if (!$formula) {
+            return [
+                'success' => false,
+                'total' => count($data),
+                'imported' => 0,
+                'errors' => [
+                    ['row' => '-', 'nik' => '-', 'errors' => ['Formula nomor anggota belum dikonfigurasi.']],
+                ],
+            ];
+        }
+
         try {
             DB::beginTransaction();
 
+            // Generate all member numbers for the batch
+            $companyIds = array_map(fn($row) => $row['company_id'] ?? null, $data);
+            $generator = new MemberNumberGenerator();
+
+            try {
+                $memberNumbers = $generator->generateBatch($companyIds);
+            } catch (RuntimeException $e) {
+                DB::rollBack();
+                return [
+                    'success' => false,
+                    'total' => count($data),
+                    'imported' => 0,
+                    'errors' => [
+                        ['row' => '-', 'nik' => '-', 'errors' => ['Gagal generate nomor anggota: ' . $e->getMessage()]],
+                    ],
+                ];
+            }
+
             foreach ($data as $index => $row) {
-                $nik = $row['nik'];
+                $nomorAnggota = $memberNumbers[$index] ?? null;
                 $preview = $previewData[$index] ?? null;
+
+                if (!$nomorAnggota) {
+                    throw new RuntimeException("Nomor anggota tidak dapat dibuat untuk baris #" . ($index + 1));
+                }
 
                 // Find or create company
                 $company = $this->resolveCompany($row, $preview['company_kode'] ?? null);
@@ -177,9 +219,9 @@ class ImportService
                     $fotoPath = $destPath;
                 }
 
-                // Create member
+                // Create member with generated nomor anggota
                 $member = Member::create([
-                    'nik' => $nik,
+                    'nik' => $nomorAnggota,
                     'nama' => $row['nama'],
                     'tempat_lahir' => $row['tempat_lahir'],
                     'tanggal_lahir' => $this->parseDate($row['tanggal_lahir']),
@@ -251,9 +293,7 @@ class ImportService
             if (isset($row[$index])) {
                 $val = $row[$index];
 
-                if ($header === 'nik') {
-                    $data[$header] = self::normalizeNik($val);
-                } elseif (is_numeric($val) && in_array($header, ['tanggal_lahir', 'berlaku_hingga', 'tanggal_pembuatan'])) {
+                if (is_numeric($val) && in_array($header, ['tanggal_lahir', 'berlaku_hingga', 'tanggal_pembuatan'])) {
                     $data[$header] = $this->excelSerialToDate($val);
                 } else {
                     $data[$header] = trim((string) $val);
@@ -274,33 +314,13 @@ class ImportService
     private function validateRowData(
         array $row,
         int $rowNum,
-        array $existingNikMap,
-        array $batchNikMap,
         array $existingPhotoHashes,
         array &$processedNikHashes,
         string $extractPath,
         array &$photosData,
         array &$companyData
     ): array {
-        $errors = [];
-        $nik = $row['nik'] ?? '';
-
-        // NIK validation
-        if (empty($nik)) {
-            $errors[] = 'NIK kosong';
-        } elseif (!self::isValidNik($nik)) {
-            $errors[] = "NIK \"$nik\" tidak valid. NIK harus terdiri dari 15 atau 16 digit angka.";
-        } else {
-            // Check duplicate in database
-            if (isset($existingNikMap[$nik])) {
-                $errors[] = "NIK $nik sudah terdaftar di database";
-            }
-
-            // Check duplicate in batch
-            if (isset($batchNikMap[$nik])) {
-                $errors[] = "NIK $nik duplikat dalam file Excel yang sama";
-            }
-        }
+        $errors = []; // nik is no longer required
 
         // Other field validations
         if (empty($row['nama'])) {
@@ -343,22 +363,21 @@ class ImportService
         }
         if (isset($companyValidation['data'])) {
             $companyData[$rowNum] = $companyValidation['data'];
+            $row['company_id'] = $companyValidation['data']['id'] ?? null;
         }
 
-        // Photo validation (REQUIRED)
-        if (!empty($nik) && self::isValidNik($nik)) {
-            // Use foto column if provided, otherwise use NIK
-            $fotoColumn = $row['foto'] ?? null;
-            $photoResult = $this->findAndValidatePhoto($extractPath, $nik, $fotoColumn, $rowNum, $existingPhotoHashes, $processedNikHashes);
+        // Photo validation (REQUIRED for import)
+        $fotoColumn = $row['foto'] ?? null;
+        $searchKey = $fotoColumn ?? $rowNum; // Use foto column or row number as key
+        $photoResult = $this->findAndValidatePhoto($extractPath, $searchKey, $fotoColumn, $rowNum, $existingPhotoHashes, $processedNikHashes);
 
-            if (!empty($photoResult['errors'])) {
-                $errors = array_merge($errors, $photoResult['errors']);
-            }
-            if (isset($photoResult['data'])) {
-                $photosData[$nik] = $photoResult['data'];
-                $processedNikHashes[$photoResult['data']['hash']] = $photoResult['data'];
-                $row['_source_photo'] = $photoResult['data'];
-            }
+        if (!empty($photoResult['errors'])) {
+            $errors = array_merge($errors, $photoResult['errors']);
+        }
+        if (isset($photoResult['data'])) {
+            $photosData[$searchKey] = $photoResult['data'];
+            $processedNikHashes[$photoResult['data']['hash']] = $photoResult['data'];
+            $row['_source_photo'] = $photoResult['data'];
         }
 
         return $errors;
@@ -419,11 +438,11 @@ class ImportService
     }
 
     /**
-     * Find photo by foto column (or NIK fallback) and validate it.
+     * Find photo by foto column and validate it.
      */
     private function findAndValidatePhoto(
         string $extractPath,
-        string $nik,
+        string $searchKey,
         ?string $fotoColumn,
         int $rowNum,
         array $existingPhotoHashes,
@@ -433,8 +452,8 @@ class ImportService
         $foundFile = null;
         $foundHash = null;
 
-        // Determine search filename: use foto column value if provided, otherwise use NIK
-        $searchFileName = !empty($fotoColumn) ? trim($fotoColumn) : $nik;
+        // Determine search filename: use foto column value if provided, otherwise use search key
+        $searchFileName = !empty($fotoColumn) ? trim($fotoColumn) : $searchKey;
 
         // Remove extension from search filename for matching
         $searchBaseName = pathinfo($searchFileName, PATHINFO_FILENAME);
@@ -456,8 +475,8 @@ class ImportService
 
             $baseName = pathinfo($file->getFilename(), PATHINFO_FILENAME);
 
-            // Match against foto column filename or NIK
-            if (strcasecmp($baseName, $searchBaseName) === 0 || strcasecmp($baseName, $nik) === 0) {
+            // Match against foto column filename or search key
+            if (strcasecmp($baseName, $searchBaseName) === 0 || strcasecmp($baseName, $searchKey) === 0) {
                 // Calculate hash
                 $hash = hash_file('sha256', $file->getPathname());
 
@@ -497,7 +516,7 @@ class ImportService
         if (!$foundFile) {
             $searchHint = !empty($fotoColumn)
                 ? $searchFileName
-                : "{$nik}.jpg / {$nik}.jpeg / {$nik}.png";
+                : "{$searchKey}.jpg / {$searchKey}.jpeg / {$searchKey}.png";
             return [
                 'errors' => [
                     "FOTO TIDAK DITEMUKAN (cari: {$searchHint}) — "
@@ -520,18 +539,40 @@ class ImportService
     }
 
     /**
-     * Generate preview data including photo names.
+     * Generate preview data including generated member numbers and photo names.
      */
     private function generatePreviewData(array $validData, array $companyData, array $photosData): array
     {
         $preview = [];
         $companySequenceCounters = [];
 
+        // Get active formula
+        $formula = MemberNumberFormula::getActive();
+        $generator = new MemberNumberGenerator();
+
+        // First pass: reserve numbers for preview
+        $companyIds = [];
         foreach ($validData as $index => $row) {
-            $nik = $row['nik'];
             $rowNum = $index + 2; // Excel row number
             $companyInfo = $companyData[$rowNum] ?? null;
-            $photoData = $photosData[$nik] ?? null;
+            $companyIds[$index] = $companyInfo['id'] ?? null;
+        }
+
+        // Reserve numbers based on company
+        $reservations = $generator->reserveForPreview($companyIds);
+
+        foreach ($validData as $index => $row) {
+            $rowNum = $index + 2; // Excel row number
+            $companyInfo = $companyData[$rowNum] ?? null;
+            $reservation = $reservations[$index] ?? null;
+
+            // Use reserved number for preview
+            $nomorAnggota = $reservation['preview_number'] ?? 'PENDING';
+
+            // Get photo data
+            $fotoColumn = $row['foto'] ?? null;
+            $searchKey = $fotoColumn ?? $rowNum;
+            $photoData = $photosData[$searchKey] ?? null;
 
             // Determine company code
             $companyKode = 'UNK';
@@ -544,7 +585,7 @@ class ImportService
                 }
             }
 
-            // Get next sequence for this company
+            // Get next sequence for this company (for photo naming)
             if (!isset($companySequenceCounters[$companyKode])) {
                 $companySequenceCounters[$companyKode] = MemberPhoto::getNextSequenceForCompany($companyKode);
             }
@@ -553,10 +594,11 @@ class ImportService
             $photoName = sprintf('%s-%04d.%s', $companyKode, $sequence, $photoData['extension'] ?? 'jpg');
 
             $preview[] = [
-                'nik' => $nik,
+                'nomor_anggota' => $nomorAnggota,
                 'nama' => $row['nama'],
                 'company_kode' => $companyKode,
                 'company_name' => $companyInfo['name'] ?? null,
+                'company_id' => $companyInfo['id'] ?? null,
                 'photo_name' => $photoName,
                 'photo_hash' => $photoData['hash'] ?? null,
                 'photo_source_path' => $photoData['path'] ?? null,
@@ -691,11 +733,13 @@ class ImportService
      */
     private function isInstructionRow(array $rowData): bool
     {
-        $nik = $rowData['nik'] ?? '';
-        if (!empty($nik) && is_string($nik)) {
-            $nikLower = strtolower(trim($nik));
-            if (str_starts_with($nikLower, 'catatan:')) {
-                $requiredFields = ['nama', 'tempat_lahir', 'alamat', 'jenis_kelamin', 'agama'];
+        // Check if this looks like a note/catalog row by checking the CATATAN pattern
+        $nama = $rowData['nama'] ?? '';
+        if (!empty($nama) && is_string($nama)) {
+            $namaLower = strtolower(trim($nama));
+            if (str_starts_with($namaLower, 'catatan:')) {
+                // Verify this is truly an instruction row (no real data)
+                $requiredFields = ['tempat_lahir', 'alamat', 'jenis_kelamin', 'agama'];
                 foreach ($requiredFields as $field) {
                     $value = $rowData[$field] ?? '';
                     if (!empty(trim((string) $value))) {
@@ -736,14 +780,14 @@ class ImportService
     }
 
     /**
-     * Validate NIK format.
+     * Validate NIK format (DEPRECATED - kept for backward compatibility).
+     * Now member numbers are auto-generated, this method always returns true.
      */
     public static function isValidNik(string $nik): bool
     {
-        if (empty($nik)) {
-            return false;
-        }
-        return preg_match('/^\d{15,16}$/', $nik) === 1;
+        // Member numbers are now auto-generated, validation is not needed
+        // Return true to allow any format
+        return true;
     }
 
     /**

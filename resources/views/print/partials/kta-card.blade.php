@@ -157,7 +157,7 @@
         <div class="kta-front-fields">
 
             <div class="kta-row">
-                <div class="kta-label">NIK</div>
+                <div class="kta-label">NO. ANGGOTA</div>
                 <div class="kta-colon">:</div>
                 <div class="kta-value">
                     {{ $member->nik ?? '-' }}

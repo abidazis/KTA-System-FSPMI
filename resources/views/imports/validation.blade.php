@@ -62,7 +62,6 @@
                     <thead style="background:var(--danger-light);position:sticky;top:0;">
                         <tr>
                             <th style="padding:0.75rem;text-align:center;width:60px;">Baris</th>
-                            <th style="padding:0.75rem;width:150px;">NIK</th>
                             <th style="padding:0.75rem;width:150px;">Nama</th>
                             <th style="padding:0.75rem;width:120px;">Perusahaan</th>
                             <th style="padding:0.75rem;">Error & Solusi</th>
@@ -72,7 +71,6 @@
                         @foreach($result['errors'] as $error)
                         <tr style="border-bottom:1px solid var(--gray-100);">
                             <td style="padding:0.75rem;text-align:center;font-weight:700;color:var(--danger);">{{ $error['row'] }}</td>
-                            <td style="padding:0.75rem;"><code style="background:var(--gray-100);padding:0.25rem 0.5rem;border-radius:0.25rem;font-size:0.85rem;">{{ $error['nik'] }}</code></td>
                             <td style="padding:0.75rem;">{{ $error['nama'] ?? '-' }}</td>
                             <td style="padding:0.75rem;">{{ $error['perusahaan'] ?? '-' }}</td>
                             <td style="padding:0.75rem;">
@@ -109,8 +107,7 @@
             <p style="color:var(--gray-600);margin:0;font-size:0.95rem;">
                 {{ count($result['preview']) }} Foto Valid |
                 0 Foto Duplicate |
-                0 NIK Duplicate |
-                0 Konflik Perusahaan
+                No. Anggota dibuat otomatis
             </p>
         </div>
 
@@ -118,14 +115,14 @@
         @if(!empty($result['preview']))
         <div style="margin-bottom:1.5rem;">
             <h5 style="color:var(--primary);margin-bottom:0.75rem;font-size:1.1rem;">
-                📷 Preview Penamaan Foto
+                📷 Preview Penamaan Foto & No. Anggota
             </h5>
             <div style="overflow-x:auto;border:1px solid var(--gray-200);border-radius:0.5rem;">
                 <table style="width:100%;border-collapse:collapse;">
                     <thead style="background:var(--gray-50);">
                         <tr>
                             <th style="padding:0.75rem;text-align:center;width:50px;">No</th>
-                            <th style="padding:0.75rem;width:180px;">NIK</th>
+                            <th style="padding:0.75rem;width:180px;">No. Anggota</th>
                             <th style="padding:0.75rem;">Nama</th>
                             <th style="padding:0.75rem;width:120px;">Kode</th>
                             <th style="padding:0.75rem;width:150px;">Foto Baru</th>
@@ -136,7 +133,7 @@
                         @foreach($result['preview'] as $index => $preview)
                         <tr style="border-bottom:1px solid var(--gray-100);">
                             <td style="padding:0.5rem;text-align:center;">{{ $index + 1 }}</td>
-                            <td style="padding:0.5rem;"><code style="background:var(--gray-100);padding:0.125rem 0.375rem;border-radius:0.25rem;">{{ $preview['nik'] }}</code></td>
+                            <td style="padding:0.5rem;"><code style="background:var(--gray-100);padding:0.125rem 0.375rem;border-radius:0.25rem;">{{ $preview['nomor_anggota'] ?? '-' }}</code></td>
                             <td style="padding:0.5rem;">{{ $preview['nama'] }}</td>
                             <td style="padding:0.5rem;">{{ $preview['company_kode'] }}</td>
                             <td style="padding:0.5rem;"><strong style="color:var(--success);">{{ $preview['photo_name'] }}</strong></td>

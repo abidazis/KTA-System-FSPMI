@@ -17,9 +17,9 @@
                     </h4>
             <ol style="margin-left:1.5rem;color:var(--gray-700);font-size:1rem;line-height:2;">
                 <li style="margin-bottom:0.5rem;">Download template Excel terlebih dahulu</li>
-                <li style="margin-bottom:0.5rem;">Isi data anggota sesuai kolom yang tersedia</li>
-                <li style="margin-bottom:0.5rem;">Simpan foto anggota dengan nama file sesuai NIK<br>
-                    <span style="color:var(--gray-500);font-size:0.9rem;">Contoh: <code style="background:var(--gray-100);padding:0.125rem 0.375rem;border-radius:0.25rem;">3275010101900001.jpg</code></span>
+                <li style="margin-bottom:0.5rem;">Isi data anggota sesuai kolom yang tersedia. <strong>Nomor Anggota akan dibuat otomatis oleh sistem.</strong></li>
+                <li style="margin-bottom:0.5rem;">Simpan foto anggota dengan nama file sesuai kolom <code>foto</code> di Excel<br>
+                    <span style="color:var(--gray-500);font-size:0.9rem;">Contoh: <code style="background:var(--gray-100);padding:0.125rem 0.375rem;border-radius:0.25rem;">ABC-0001.jpg</code></span>
                 </li>
                 <li style="margin-bottom:0.5rem;">Masukkan file Excel dan folder <code>foto/</code> ke dalam satu file ZIP</li>
                 <li>Upload file ZIP ke sistem</li>
@@ -44,8 +44,8 @@
                 </p>
                 <p style="margin-left:1rem;">├── data.xlsx</p>
                 <p style="margin-left:1rem;">└── <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> foto/</p>
-                <p style="margin-left:2rem;">├── <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> 3275010101900001.jpg</p>
-                <p style="margin-left:2rem;">├── <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> 3275010202910002.jpg</p>
+                <p style="margin-left:2rem;">├── <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> ABC-0001.jpg</p>
+                <p style="margin-left:2rem;">├── <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> ABC-0002.jpg</p>
                 <p style="margin-left:2rem;">└── ...</p>
             </div>
         </div>

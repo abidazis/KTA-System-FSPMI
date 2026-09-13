@@ -28,7 +28,7 @@ class MembersExport implements FromCollection, WithHeadings, WithColumnFormattin
     {
         return [
             'No',
-            'NIK',
+            'No. Anggota',
             'Nama',
             'Tempat Lahir',
             'Tanggal Lahir',
@@ -49,7 +49,7 @@ class MembersExport implements FromCollection, WithHeadings, WithColumnFormattin
     {
         return [
             'A' => NumberFormat::FORMAT_TEXT,  // No
-            'B' => NumberFormat::FORMAT_TEXT,  // NIK - TEXT to prevent scientific notation
+            'B' => NumberFormat::FORMAT_TEXT,  // No. Anggota
             'C' => NumberFormat::FORMAT_TEXT,  // Nama
             'D' => NumberFormat::FORMAT_TEXT,  // Tempat Lahir
             'E' => NumberFormat::FORMAT_TEXT,  // Tanggal Lahir
@@ -120,7 +120,7 @@ class MembersExport implements FromCollection, WithHeadings, WithColumnFormattin
      */
     protected function applyFilters($query): void
     {
-        // Search filter (NIK or nama)
+        // Search filter (No. Anggota or nama)
         if (!empty($this->filters['search'])) {
             $search = $this->filters['search'];
             $query->where(function ($q) use ($search) {

@@ -16,9 +16,11 @@
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
             <div class="form-group">
-                <label for="nik"> NIK (Nomor Induk Kependudukan) *</label>
-                <input type="text" id="nik" name="nik" value="{{ old('nik', $member->nik) }}" required placeholder="16 digit NIK" maxlength="16">
-                @error('nik') <span class="error">{{ $message }}</span> @enderror
+                <label for="nik"> No. Anggota</label>
+                <div style="background:var(--gray-100);padding:0.75rem 1rem;border-radius:0.5rem;font-weight:600;color:var(--gray-800);font-family:monospace;font-size:1.1rem;">
+                    {{ $member->nik }}
+                </div>
+                <small style="color:var(--gray-500);">Nomor anggota tidak dapat diubah</small>
             </div>
             <div class="form-group">
                 <label for="nama"> Nama Lengkap *</label>

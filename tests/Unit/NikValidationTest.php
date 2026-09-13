@@ -2,13 +2,19 @@
 
 namespace Tests\Unit;
 
+use App\Models\Company;
+use App\Models\MemberNumberFormula;
 use App\Services\ImportService;
+use App\Services\MemberNumberGenerator;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class NikValidationTest extends TestCase
 {
+    use RefreshDatabase;
+
     /**
-     * Test normalizeNik with string values.
+     * Test normalizeNik with string values (backward compatibility).
      */
     public function test_normalize_nik_with_string(): void
     {
@@ -55,117 +61,24 @@ class NikValidationTest extends TestCase
     }
 
     /**
-     * Test isValidNik with valid NIKs.
+     * Test that isValidNik now returns true for any value (deprecated).
+     * Member numbers are now auto-generated, so no validation is needed.
      */
-    public function test_is_valid_nik_with_valid_values(): void
+    public function test_is_valid_nik_returns_true_for_any_value(): void
     {
-        // Valid 16-digit NIKs
-        $this->assertTrue(ImportService::isValidNik('3216221612020012'));
-        $this->assertTrue(ImportService::isValidNik('1234567890123456'));
-
-        // Valid 15-digit NIKs
-        $this->assertTrue(ImportService::isValidNik('123456789012345'));
-        $this->assertTrue(ImportService::isValidNik('000123456789012')); // Leading zeros are valid
-    }
-
-    /**
-     * Test isValidNik with invalid NIKs.
-     */
-    public function test_is_valid_nik_with_invalid_values(): void
-    {
-        // Empty values
-        $this->assertFalse(ImportService::isValidNik(''));
-        $this->assertFalse(ImportService::isValidNik('   '));
-
-        // Wrong length - too short
-        $this->assertFalse(ImportService::isValidNik('12345678901234')); // 14 digits
-        $this->assertFalse(ImportService::isValidNik('1234567890')); // 10 digits
-
-        // Wrong length - too long
-        $this->assertFalse(ImportService::isValidNik('12345678901234567')); // 17 digits
-
-        // Contains letters
-        $this->assertFalse(ImportService::isValidNik('32162216120200A2'));
-
-        // Contains spaces
-        $this->assertFalse(ImportService::isValidNik('3216 2216 1202 0012'));
-
-        // Scientific notation (should be rejected)
-        $this->assertFalse(ImportService::isValidNik('3.21622161202001E+15'));
-    }
-
-    /**
-     * Test that 16-digit NIK that would be stored as float in Excel is properly normalized.
-     * This is the key test case for the reported bug.
-     */
-    public function test_sixteen_digit_nik_from_excel_float(): void
-    {
-        // Simulate what Excel does - stores large numbers as float
-        // In real Excel, 3216221612020012 would be stored as float
-        // PhpSpreadsheet would return it as float
-
-        $nikFromExcel = 3216221612020012.0; // Float representation
-
-        // Normalize should convert to proper string
-        $normalized = ImportService::normalizeNik($nikFromExcel);
-
-        // Should be 16 digits, all numeric
-        $this->assertEquals(16, strlen($normalized));
-        $this->assertMatchesRegularExpression('/^\d{16}$/', $normalized);
-        $this->assertEquals('3216221612020012', $normalized);
-
-        // And it should pass validation
-        $this->assertTrue(ImportService::isValidNik($normalized));
-    }
-
-    /**
-     * Test that the full pipeline works correctly.
-     */
-    public function test_full_normalize_and_validate_pipeline(): void
-    {
-        $testCases = [
-            // [input, expected_length, expected_valid]
-            ['3216221612020012', 16, true],   // 16 digit - the reported bug case
-            ['123456789012345', 15, true],     // 15 digit
-            ['3216221612020012.0', 16, true],  // Float 16 digit
-            ['123456789012345.0', 15, true],   // Float 15 digit
-            [3216221612020012.0, 16, true],    // Float (not string)
-            [123456789012345, 15, true],       // Integer
-        ];
-
-        foreach ($testCases as [$input, $expectedLength, $expectedValid]) {
-            $normalized = ImportService::normalizeNik($input);
-            $this->assertEquals(
-                $expectedLength,
-                strlen($normalized),
-                "Input " . json_encode($input) . " should normalize to length $expectedLength, got " . strlen($normalized)
-            );
-            $this->assertMatchesRegularExpression('/^\d+$/', $normalized);
-            $this->assertEquals(
-                $expectedValid,
-                ImportService::isValidNik($normalized),
-                "Input " . json_encode($input) . " normalized to '$normalized' should " . ($expectedValid ? "be valid" : "be invalid")
-            );
-        }
-    }
-
-    /**
-     * Test that empty/whitespace values are properly handled.
-     */
-    public function test_empty_and_whitespace_handling(): void
-    {
-        // All these should normalize to empty string
-        $emptyCases = [null, '', '   ', "\t", "\n", "  \t\n  "];
-        foreach ($emptyCases as $input) {
-            $normalized = ImportService::normalizeNik($input);
-            $this->assertEquals('', $normalized, "Input " . json_encode($input) . " should normalize to empty string");
-            $this->assertFalse(ImportService::isValidNik($normalized));
-        }
+        // All values return true since member numbers are now auto-generated
+        $this->assertTrue(ImportService::isValidNik(''));
+        $this->assertTrue(ImportService::isValidNik('   '));
+        $this->assertTrue(ImportService::isValidNik('12345678901234')); // 14 digits
+        $this->assertTrue(ImportService::isValidNik('1234567890123456')); // 16 digits
+        $this->assertTrue(ImportService::isValidNik('FSPMI-ABC-0001')); // New format
+        $this->assertTrue(ImportService::isValidNik('ABC123')); // Random string
+        $this->assertTrue(ImportService::isValidNik('32162216120200A2')); // With letters
     }
 
     /**
      * Test isInstructionRow detection for template CATATAN rows.
-     * Since isInstructionRow is private, we use reflection.
+     * Now checks 'nama' field instead of 'nik'.
      */
     public function test_is_instruction_row_detection(): void
     {
@@ -179,8 +92,7 @@ class NikValidationTest extends TestCase
 
         // CASE 1: CATATAN row with empty fields - should be detected as instruction row
         $catatanRow = [
-            'nik' => 'CATATAN: Kolom NIK harus berisi 16 digit angka. Jangan rubah format sel.',
-            'nama' => '',
+            'nama' => 'CATATAN: Nomor anggota dibuat otomatis oleh sistem.',
             'tempat_lahir' => '',
             'alamat' => '',
             'jenis_kelamin' => '',
@@ -196,9 +108,8 @@ class NikValidationTest extends TestCase
 
         // CASE 2: CATATAN row but with data in other fields - should NOT be instruction row
         $catatanWithData = [
-            'nik' => 'CATATAN: some note',
-            'nama' => 'John Doe',  // Has actual data
-            'tempat_lahir' => '',
+            'nama' => 'CATATAN: some note',
+            'tempat_lahir' => 'Jakarta',  // Has actual data
             'alamat' => '',
             'jenis_kelamin' => '',
             'agama' => '',
@@ -211,9 +122,8 @@ class NikValidationTest extends TestCase
         ];
         $this->assertFalse($method->invoke($service, $catatanWithData), 'CATATAN row with actual data should NOT be detected as instruction');
 
-        // CASE 3: Valid NIK - should NOT be instruction row
+        // CASE 3: Valid data row - should NOT be instruction row
         $validRow = [
-            'nik' => '3216221612020012',
             'nama' => 'John Doe',
             'tempat_lahir' => 'Jakarta',
             'alamat' => 'Jl. Test',
@@ -224,14 +134,13 @@ class NikValidationTest extends TestCase
             'provinsi' => 'DKI Jakarta',
             'kabupaten_kota' => 'Jakarta Selatan',
             'kecamatan' => 'Kecamatan',
-            'foto' => '3216221612020012.jpg',
+            'foto' => 'ABC-0001.jpg',
         ];
-        $this->assertFalse($method->invoke($service, $validRow), 'Valid NIK row should NOT be detected as instruction');
+        $this->assertFalse($method->invoke($service, $validRow), 'Valid data row should NOT be detected as instruction');
 
         // CASE 4: Case insensitive - lowercase "catatan:"
         $lowercaseCatatan = [
-            'nik' => 'catatan: this is a note',
-            'nama' => '',
+            'nama' => 'catatan: this is a note',
             'tempat_lahir' => '',
             'alamat' => '',
             'jenis_kelamin' => '',
@@ -245,10 +154,9 @@ class NikValidationTest extends TestCase
         ];
         $this->assertTrue($method->invoke($service, $lowercaseCatatan), 'Lowercase "catatan:" should also be detected');
 
-        // CASE 5: Mixed case "Catatan:"
-        $mixedCatatan = [
-            'nik' => 'Catatan: instruction text',
-            'nama' => '',
+        // CASE 5: Row without CATATAN prefix - should NOT be instruction row
+        $notCatatanRow = [
+            'nama' => 'John Doe',
             'tempat_lahir' => '',
             'alamat' => '',
             'jenis_kelamin' => '',
@@ -260,23 +168,182 @@ class NikValidationTest extends TestCase
             'kecamatan' => '',
             'foto' => '',
         ];
-        $this->assertTrue($method->invoke($service, $mixedCatatan), 'Mixed case "Catatan:" should also be detected');
+        $this->assertFalse($method->invoke($service, $notCatatanRow), 'Row without CATATAN prefix should NOT be detected as instruction');
+    }
 
-        // CASE 6: Row with numeric-like NIK but no actual data - should NOT be instruction row
-        $numericNikNoData = [
-            'nik' => '1234567890123456',
-            'nama' => '',
-            'tempat_lahir' => '',
-            'alamat' => '',
-            'jenis_kelamin' => '',
-            'agama' => '',
-            'berlaku_hingga' => '',
-            'tanggal_pembuatan' => '',
-            'provinsi' => '',
-            'kabupaten_kota' => '',
-            'kecamatan' => '',
-            'foto' => '',
-        ];
-        $this->assertFalse($method->invoke($service, $numericNikNoData), 'Numeric NIK with empty fields should NOT be detected as instruction (invalid member data)');
+    /**
+     * Test that member number generator works correctly.
+     */
+    public function test_member_number_generator_requires_active_formula(): void
+    {
+        // Ensure no active formula exists
+        MemberNumberFormula::where('is_active', true)->update(['is_active' => false]);
+
+        $generator = new MemberNumberGenerator();
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Nomor anggota belum dapat dibuat');
+
+        $generator->generate();
+    }
+
+    /**
+     * Test member number generation with active formula.
+     */
+    public function test_member_number_generator_with_active_formula(): void
+    {
+        // Create a company
+        $company = Company::create([
+            'kode' => 'ABC',
+            'name' => 'Test Company',
+            'is_active' => true,
+        ]);
+
+        // Create and activate a formula
+        $formula = MemberNumberFormula::create([
+            'name' => 'Test Formula',
+            'prefix' => 'FSPMI',
+            'separator' => '-',
+            'include_company_code' => true,
+            'sequence_digits' => 4,
+            'is_active' => true,
+            'created_by' => 1,
+        ]);
+
+        try {
+            $generator = new MemberNumberGenerator();
+
+            // Generate a number
+            $number = $generator->generate($company->id);
+
+            // Should match the formula pattern
+            $this->assertMatchesRegularExpression('/^FSPMI-[A-Z]+-\d{4}$/', $number);
+            $this->assertStringEndsWith('-0001', $number);
+        } finally {
+            // Cleanup
+            $formula->delete();
+        }
+    }
+
+    /**
+     * Test: Member number generator is ONLY source of truth.
+     * No other mechanism should generate member numbers.
+     */
+    public function test_generator_is_single_source_of_truth(): void
+    {
+        // Create a company
+        $company = Company::create([
+            'kode' => 'ABC',
+            'name' => 'Test Company',
+            'is_active' => true,
+        ]);
+
+        // Create and activate a formula
+        $formula = MemberNumberFormula::create([
+            'name' => 'Test Formula',
+            'prefix' => 'FSPMI',
+            'separator' => '-',
+            'include_company_code' => true,
+            'sequence_digits' => 4,
+            'is_active' => true,
+            'created_by' => 1,
+        ]);
+
+        $generator = new MemberNumberGenerator();
+
+        // First member
+        $num1 = $generator->generate($company->id);
+        $this->assertEquals('FSPMI-ABC-0001', $num1);
+
+        // Second member
+        $num2 = $generator->generate($company->id);
+        $this->assertEquals('FSPMI-ABC-0002', $num2);
+
+        // Batch generation
+        $batch = $generator->generateBatch([$company->id, $company->id]);
+        $this->assertCount(2, $batch);
+        $this->assertEquals('FSPMI-ABC-0003', $batch[0]);
+        $this->assertEquals('FSPMI-ABC-0004', $batch[1]);
+
+        // Verify all numbers are unique
+        $allNumbers = [$num1, $num2, $batch[0], $batch[1]];
+        $this->assertEquals(count($allNumbers), count(array_unique($allNumbers)));
+    }
+
+    /**
+     * Test: Admin formula determines member number format.
+     */
+    public function test_admin_formula_controls_format(): void
+    {
+        // Create a company
+        $company = Company::create([
+            'kode' => 'XYZ',
+            'name' => 'Test Company',
+            'is_active' => true,
+        ]);
+
+        // Create formula WITHOUT company code
+        $formula1 = MemberNumberFormula::create([
+            'name' => 'Global Format',
+            'prefix' => 'GLOBAL',
+            'separator' => '-',
+            'include_company_code' => false, // No company code
+            'sequence_digits' => 5,
+            'is_active' => true,
+            'created_by' => 1,
+        ]);
+
+        $generator = new MemberNumberGenerator();
+        $num1 = $generator->generate(); // No company ID needed
+        $this->assertEquals('GLOBAL-00001', $num1);
+
+        // Change to WITH company code
+        $formula1->update(['include_company_code' => true]);
+        $num2 = $generator->generate($company->id);
+        $this->assertEquals('GLOBAL-XYZ-00001', $num2);
+    }
+
+    /**
+     * Test: Member number is unique (database constraint).
+     */
+    public function test_member_number_is_unique(): void
+    {
+        $company = Company::create([
+            'kode' => 'ABC',
+            'name' => 'Test Company',
+            'is_active' => true,
+        ]);
+
+        $formula = MemberNumberFormula::create([
+            'name' => 'Test Formula',
+            'prefix' => 'FSPMI',
+            'separator' => '-',
+            'include_company_code' => true,
+            'sequence_digits' => 4,
+            'is_active' => true,
+            'created_by' => 1,
+        ]);
+
+        // Generate number
+        $generator = new MemberNumberGenerator();
+        $number = $generator->generate($company->id);
+
+        // Create a member with this number
+        $member = \App\Models\Member::create([
+            'nik' => $number,
+            'nama' => 'Test Member',
+            'tempat_lahir' => 'Test City',
+            'tanggal_lahir' => '1990-01-01',
+            'alamat' => 'Test Address',
+            'jenis_kelamin' => 'Laki-laki',
+            'agama' => 'Islam',
+            'berlaku_hingga' => '2030-01-01',
+            'tanggal_pembuatan' => '2026-01-01',
+            'company_id' => $company->id,
+        ]);
+
+        // Now check uniqueness
+        $this->assertTrue($generator->numberExists($number));
+        $this->assertFalse($generator->numberExists('FSPMI-ABC-9999'));
     }
 }

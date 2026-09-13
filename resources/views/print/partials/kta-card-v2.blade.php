@@ -90,7 +90,7 @@
         'front' => [
             // Foto sedikit lebih pas di frame kuning
             'foto'          => ['left' => 26.5, 'top' => 30.5, 'width' => 22.5, 'height' => 30.5],
-            // Nama & NIK (Lebar disamakan dengan foto agar center presisi)
+            // Nama & No. Anggota (Lebar disamakan dengan foto agar center presisi)
             'nama'          => ['left' => 25.5, 'top' => 62, 'font_size' => 1.8, 'width' => 24.5],
             'nik'           => ['left' => 25.5, 'top' => 64, 'font_size' => 1.9, 'width' => 24.5],
         ],
@@ -182,7 +182,7 @@
             </div>
         @endif
 
-        {{-- NIK --}}
+        {{-- NO. ANGGOTA --}}
         @if(isset($fieldPositions['nik']))
             <div class="kta-field"
                  style="left:{{ $fieldPositions['nik']['left'] }}mm;
@@ -237,7 +237,7 @@
         {{-- FIELDS DATA ANGGOTA --}}
         @php
             $fields = [
-                ['label' => 'NIK', 'val_key' => 'nik', 'value' => $member->nik ?? '-'],
+                ['label' => 'NO. ANGGOTA', 'val_key' => 'nik', 'value' => $member->nik ?? '-'],
                 ['label' => 'NAMA', 'val_key' => 'nama', 'value' => strtoupper($member->nama ?? '-')],
                 ['label' => 'Tempat/Tgl Lahir', 'val_key' => 'ttl', 'value' => strtoupper($member->tempat_lahir ?? '-') . ' ' . $tanggalLahir],
                 ['label' => 'Alamat', 'val_key' => 'alamat', 'value' => $member->alamat ?? '-'],

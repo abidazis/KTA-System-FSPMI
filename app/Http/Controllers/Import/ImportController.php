@@ -42,22 +42,21 @@ class ImportController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Data Anggota');
 
-        // Set column widths
-        $sheet->getColumnDimension('A')->setWidth(22); // nik
-        $sheet->getColumnDimension('B')->setWidth(25);
-        $sheet->getColumnDimension('C')->setWidth(18);
-        $sheet->getColumnDimension('D')->setWidth(14);
-        $sheet->getColumnDimension('E')->setWidth(30);
-        $sheet->getColumnDimension('F')->setWidth(18);
-        $sheet->getColumnDimension('G')->setWidth(18);
-        $sheet->getColumnDimension('H')->setWidth(18);
-        $sheet->getColumnDimension('I')->setWidth(15);
-        $sheet->getColumnDimension('J')->setWidth(12);
-        $sheet->getColumnDimension('K')->setWidth(16);
-        $sheet->getColumnDimension('L')->setWidth(16);
-        $sheet->getColumnDimension('M')->setWidth(22);
-        $sheet->getColumnDimension('N')->setWidth(15); // kode_perusahaan (NEW)
-        $sheet->getColumnDimension('O')->setWidth(30); // nama_perusahaan (NEW)
+        // Set column widths (now without nik column)
+        $sheet->getColumnDimension('A')->setWidth(25); // nama
+        $sheet->getColumnDimension('B')->setWidth(18); // tempat_lahir
+        $sheet->getColumnDimension('C')->setWidth(14); // tanggal_lahir
+        $sheet->getColumnDimension('D')->setWidth(30); // alamat
+        $sheet->getColumnDimension('E')->setWidth(18); // provinsi
+        $sheet->getColumnDimension('F')->setWidth(18); // kabupaten_kota
+        $sheet->getColumnDimension('G')->setWidth(18); // kecamatan
+        $sheet->getColumnDimension('H')->setWidth(15); // jenis_kelamin
+        $sheet->getColumnDimension('I')->setWidth(12); // agama
+        $sheet->getColumnDimension('J')->setWidth(16); // berlaku_hingga
+        $sheet->getColumnDimension('K')->setWidth(16); // tanggal_pembuatan
+        $sheet->getColumnDimension('L')->setWidth(22); // foto
+        $sheet->getColumnDimension('M')->setWidth(15); // kode_perusahaan
+        $sheet->getColumnDimension('N')->setWidth(30); // nama_perusahaan
 
         // Header row styling
         $headerStyle = [
@@ -65,11 +64,11 @@ class ImportController extends Controller
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'color' => ['rgb' => '1e40af']],
             'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
         ];
-        $sheet->getStyle('A1:O1')->applyFromArray($headerStyle);
+        $sheet->getStyle('A1:N1')->applyFromArray($headerStyle);
 
-        // Headers (including new company columns)
+        // Headers (without nik - it will be auto-generated)
         $headers = [
-            'nik', 'nama', 'tempat_lahir', 'tanggal_lahir', 'alamat',
+            'nama', 'tempat_lahir', 'tanggal_lahir', 'alamat',
             'provinsi', 'kabupaten_kota', 'kecamatan', 'jenis_kelamin',
             'agama', 'berlaku_hingga', 'tanggal_pembuatan', 'foto',
             'kode_perusahaan', 'nama_perusahaan'
@@ -77,28 +76,27 @@ class ImportController extends Controller
         $sheet->fromArray($headers, null, 'A1');
 
         // Example data row
-        $sheet->setCellValueExplicit('A2', "'3275010101900001", \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-        $sheet->setCellValue('B2', 'Nama Lengkap');
-        $sheet->setValue('C2', 'Kota');
-        $sheet->setCellValueExplicit('D2', '1990-01-01', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-        $sheet->setCellValue('E2', 'Alamat Lengkap');
-        $sheet->setCellValue('F2', 'Jawa Barat');
-        $sheet->setCellValue('G2', 'Karawang');
-        $sheet->setCellValue('H2', 'Kecamatan');
-        $sheet->setCellValue('I2', 'Laki-laki');
-        $sheet->setCellValue('J2', 'Islam');
-        $sheet->setCellValueExplicit('K2', '2031-12-31', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-        $sheet->setCellValueExplicit('L2', '2026-01-01', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-        $sheet->setCellValue('M2', 'ABC-0001.jpg'); // foto filename from ZIP
-        $sheet->setCellValue('N2', 'ABC'); // kode_perusahaan (NEW)
-        $sheet->setCellValue('O2', 'PT ABC Indonesia'); // nama_perusahaan (NEW)
+        $sheet->setCellValue('A2', 'Nama Lengkap');
+        $sheet->setCellValue('B2', 'Kota');
+        $sheet->setCellValueExplicit('C2', '1990-01-01', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $sheet->setCellValue('D2', 'Alamat Lengkap');
+        $sheet->setCellValue('E2', 'Jawa Barat');
+        $sheet->setCellValue('F2', 'Karawang');
+        $sheet->setCellValue('G2', 'Kecamatan');
+        $sheet->setCellValue('H2', 'Laki-laki');
+        $sheet->setCellValue('I2', 'Islam');
+        $sheet->setCellValueExplicit('J2', '2031-12-31', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $sheet->setCellValueExplicit('K2', '2026-01-01', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $sheet->setCellValue('L2', 'ABC-0001.jpg'); // foto filename from ZIP
+        $sheet->setCellValue('M2', 'ABC'); // kode_perusahaan
+        $sheet->setCellValue('N2', 'PT ABC Indonesia'); // nama_perusahaan
 
-        // Add note about NIK in cell A4
-        $sheet->setCellValue('A4', 'CATATAN: Kolom NIK harus berisi 16 digit angka. Kolom foto = nama file foto di folder foto/ (cth: ABC-0001.jpg). Kolom kode_perusahaan & nama_perusahaan opsional.');
+        // Add note about auto-generated member number in cell A4
+        $sheet->setCellValue('A4', 'CATATAN: Kolom foto = nama file foto di folder foto/ (cth: ABC-0001.jpg). Kolom kode_perusahaan & nama_perusahaan opsional. No. Anggota dibuat otomatis oleh sistem.');
         $sheet->getStyle('A4')->applyFromArray([
             'font' => ['italic' => true, 'color' => ['rgb' => 'dc2626'], 'size' => 10],
         ]);
-        $sheet->mergeCells('A4:O4');
+        $sheet->mergeCells('A4:N4');
 
         // Freeze header row
         $sheet->freezePane('A2');

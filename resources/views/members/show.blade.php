@@ -44,7 +44,7 @@
 
             <div style="background:var(--gray-50);border-radius:0.5rem;padding:1rem;text-align:left;">
                 <div style="margin-bottom:0.75rem;">
-                    <div style="font-size:0.8rem;color:var(--gray-500);">NIK</div>
+                    <div style="font-size:0.8rem;color:var(--gray-500);">No. Anggota</div>
                     <div style="font-size:1.1rem;font-weight:600;color:var(--primary);">{{ $member->nik }}</div>
                 </div>
                 <div style="margin-bottom:0.75rem;">

@@ -2,7 +2,6 @@
 
 namespace App\Exports;
 
-use App\Models\Member;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -12,7 +11,6 @@ class MemberTemplateExport implements FromCollection, WithHeadings
     public function headings(): array
     {
         return [
-            'nik',
             'nama',
             'tempat_lahir',
             'tanggal_lahir',
@@ -25,6 +23,8 @@ class MemberTemplateExport implements FromCollection, WithHeadings
             'berlaku_hingga',
             'tanggal_pembuatan',
             'foto',
+            'kode_perusahaan',
+            'nama_perusahaan',
         ];
     }
 
@@ -32,7 +32,6 @@ class MemberTemplateExport implements FromCollection, WithHeadings
     {
         return collect([
             [
-                'nik' => '3275010101900001',
                 'nama' => 'Nama Lengkap',
                 'tempat_lahir' => 'Kota',
                 'tanggal_lahir' => '1990-01-01',
@@ -44,7 +43,9 @@ class MemberTemplateExport implements FromCollection, WithHeadings
                 'agama' => 'Islam',
                 'berlaku_hingga' => '2031-12-31',
                 'tanggal_pembuatan' => '2026-01-01',
-                'foto' => '3275010101900001.jpg',
+                'foto' => 'ABC-0001.jpg',
+                'kode_perusahaan' => 'ABC',
+                'nama_perusahaan' => 'PT ABC Indonesia',
             ],
         ]);
     }

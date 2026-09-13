@@ -91,7 +91,7 @@
         {{-- Filter (separate form, not nested) --}}
         <div style="margin-bottom:1rem;">
             <form method="GET" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
-                <input type="text" name="search" placeholder="Cari NIK atau Nama" value="{{ request('search') }}" style="flex:1;min-width:180px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:0.375rem;font-size:0.875rem;">
+                <input type="text" name="search" placeholder="Cari Nomor Anggota atau Nama" value="{{ request('search') }}" style="flex:1;min-width:180px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:0.375rem;font-size:0.875rem;">
                 <select name="status" style="padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:0.375rem;font-size:0.875rem;min-width:140px;">
                     <option value="">Semua Status</option>
                     <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
@@ -119,7 +119,7 @@
             <thead style="position:sticky;top:0;background:#f8fafc;z-index:1;">
                 <tr>
                     <th width="40" style="position:sticky;top:0;background:#f8fafc;"></th>
-                    <th style="position:sticky;top:0;background:#f8fafc;">NIK</th>
+                    <th style="position:sticky;top:0;background:#f8fafc;">No. Anggota</th>
                     <th style="position:sticky;top:0;background:#f8fafc;">Nama</th>
                     <th style="position:sticky;top:0;background:#f8fafc;">Domisili</th>
                     <th style="position:sticky;top:0;background:#f8fafc;">Status</th>

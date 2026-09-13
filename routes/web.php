@@ -12,6 +12,8 @@ use App\Http\Controllers\Member\MemberController;
 use App\Http\Controllers\Print\PrintController;
 use App\Http\Controllers\Region\RegionController;
 use App\Http\Controllers\Setting\CompanyController;
+use App\Http\Controllers\Settings\MemberNumberFormulaController;
+use App\Http\Controllers\Settings\MemberNumberController;
 use App\Http\Controllers\Setting\KtaBackgroundController;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\MediaController;
@@ -96,6 +98,26 @@ Route::middleware('auth')->group(function () {
         Route::get('settings/companies/{company}', [CompanyController::class, 'edit'])->name('settings.companies.edit');
         Route::put('settings/companies/{company}', [CompanyController::class, 'update'])->name('settings.companies.update');
         Route::delete('settings/companies/{company}', [CompanyController::class, 'destroy'])->name('settings.companies.destroy');
+
+        // Formulasi Nomor Anggota
+        Route::middleware('permission:formulasi-nomor-anggota')->group(function () {
+            Route::get('settings/member-number-formulas', [MemberNumberFormulaController::class, 'index'])->name('member-number-formulas.index');
+            Route::get('settings/member-number-formulas/create', [MemberNumberFormulaController::class, 'create'])->name('member-number-formulas.create');
+            Route::post('settings/member-number-formulas', [MemberNumberFormulaController::class, 'store'])->name('member-number-formulas.store');
+            Route::get('settings/member-number-formulas/{formula}/edit', [MemberNumberFormulaController::class, 'edit'])->name('member-number-formulas.edit');
+            Route::put('settings/member-number-formulas/{formula}', [MemberNumberFormulaController::class, 'update'])->name('member-number-formulas.update');
+            Route::delete('settings/member-number-formulas/{formula}', [MemberNumberFormulaController::class, 'destroy'])->name('member-number-formulas.destroy');
+            Route::post('settings/member-number-formulas/{formula}/toggle-active', [MemberNumberFormulaController::class, 'toggleActive'])->name('member-number-formulas.toggle-active');
+        });
+
+        // Master Kelola Nomor Anggota
+        Route::middleware('permission:formulasi-nomor-anggota')->group(function () {
+            Route::get('settings/member-numbers', [MemberNumberController::class, 'index'])->name('member-numbers.index');
+            Route::post('settings/member-numbers/generate', [MemberNumberController::class, 'generate'])->name('member-numbers.generate');
+            Route::post('settings/member-numbers/{memberNumber}/assign', [MemberNumberController::class, 'assign'])->name('member-numbers.assign');
+            Route::get('settings/member-numbers/available-members', [MemberNumberController::class, 'getAvailableMembers'])->name('member-numbers.available-members');
+            Route::get('settings/member-numbers/preview-next', [MemberNumberController::class, 'previewNext'])->name('member-numbers.preview-next');
+        });
     });
 
     // Management Periods

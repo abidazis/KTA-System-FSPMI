@@ -9,12 +9,14 @@ use App\Models\Member;
 use App\Models\Province;
 use App\Models\Regency;
 use App\Models\District;
+use App\Services\MemberNumberGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\MembersExport;
+use RuntimeException;
 
 class MemberController extends Controller
 {
@@ -116,7 +118,6 @@ class MemberController extends Controller
     public function store(Request $request): \Illuminate\Http\RedirectResponse
     {
         $validated = $request->validate([
-            'nik' => ['required', 'string', 'max:20', 'unique:members,nik'],
             'nama' => ['required', 'string', 'max:100'],
             'tempat_lahir' => ['required', 'string', 'max:100'],
             'tanggal_lahir' => ['required', 'date', 'before:today'],
@@ -132,11 +133,22 @@ class MemberController extends Controller
             'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
 
+        // Generate member number automatically
+        try {
+            $generator = new MemberNumberGenerator();
+            $nomorAnggota = $generator->generate($validated['company_id']);
+        } catch (RuntimeException $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
+
         if ($request->hasFile('foto')) {
             $path = $request->file('foto')->store('members/photos', 'local');
             $validated['foto_path'] = $path;
         }
 
+        $validated['nik'] = $nomorAnggota;
         $validated['created_by'] = auth()->id();
         $validated['status'] = 'draft';
 
@@ -150,7 +162,7 @@ class MemberController extends Controller
 
         return redirect()
             ->route('members.show', $member)
-            ->with('success', 'Anggota berhasil ditambahkan.');
+            ->with('success', 'Anggota berhasil ditambahkan. No. Anggota: ' . $nomorAnggota);
     }
 
     public function show(Member $member): View
@@ -183,7 +195,6 @@ class MemberController extends Controller
         $oldData = $member->toArray();
 
         $validated = $request->validate([
-            'nik' => ['required', 'string', 'max:20', 'unique:members,nik,' . $member->id],
             'nama' => ['required', 'string', 'max:100'],
             'tempat_lahir' => ['required', 'string', 'max:100'],
             'tanggal_lahir' => ['required', 'date', 'before:today'],
@@ -207,6 +218,7 @@ class MemberController extends Controller
             $validated['foto_path'] = $path;
         }
 
+        // nik is NOT editable - preserve existing value
         $member->update($validated);
 
         AuditLog::log('update_member', $member, $oldData, $validated);

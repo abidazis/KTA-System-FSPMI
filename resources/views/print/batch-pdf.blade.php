@@ -126,7 +126,7 @@
             object-fit: cover;
         }
 
-        /* Auto-fit (no-JS fallback): smaller default font di template sudah cukup untuk 16 digit NIK */
+        /* Auto-fit (no-JS fallback): smaller default font di template sudah cukup */
         .kta-field-autofit {
             white-space: nowrap;
             overflow: hidden;

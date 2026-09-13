@@ -15,9 +15,12 @@
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
             <div class="form-group">
-                <label for="nik"> NIK (Nomor Induk Kependudukan) *</label>
-                <input type="text" id="nik" name="nik" value="{{ old('nik') }}" required placeholder="16 digit NIK" maxlength="16">
-                @error('nik') <span class="error">{{ $message }}</span> @enderror
+                <label> No. Anggota</label>
+                <div style="background:var(--gray-100);padding:0.75rem 1rem;border-radius:0.5rem;color:var(--gray-600);font-style:italic;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;margin-right:0.5rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M11 25H9v-2m0-14h2m10 0h2M9 11h6m-3-9v2m0 14v2m0-6h2m-2 0h2m-4 4h8m-8 0v2m8-2v2m0-6h2m-2 0h2m-4 4h8m-8 0v2m8-2v2m-4 4h4m-4 0h4m0-8h2m-2 0h2m0 4h2m-2 0h2m0 4h2"></path></svg>
+                    Nomor anggota akan dibuat otomatis berdasarkan formula aktif
+                </div>
+                <small style="color:var(--gray-500);">Admin tidak dapat mengisi nomor anggota secara manual</small>
             </div>
             <div class="form-group">
                 <label for="nama"> Nama Lengkap *</label>

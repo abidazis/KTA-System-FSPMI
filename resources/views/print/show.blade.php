@@ -76,7 +76,7 @@
         <thead>
             <tr>
                 <th>No</th>
-                <th>NIK</th>
+                <th>No. Anggota</th>
                 <th>Nama</th>
                 <th>Domisili</th>
             </tr>
