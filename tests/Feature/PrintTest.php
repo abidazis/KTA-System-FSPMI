@@ -133,20 +133,22 @@ class PrintTest extends TestCase
 
     public function test_pdf_page_count_matches_member_count(): void
     {
-        // 4 KTA per A4 landscape page (2 rows x 2 cols)
-        // Each member has FRONT + BACK, but PDF combines them
-        $this->assertEquals(1, $this->calculatePageCount(1));
-        $this->assertEquals(1, $this->calculatePageCount(4));
-        $this->assertEquals(2, $this->calculatePageCount(5));
-        $this->assertEquals(2, $this->calculatePageCount(8));
-        $this->assertEquals(3, $this->calculatePageCount(9));
-        $this->assertEquals(3, $this->calculatePageCount(10));
+        // 5 KTA per A4 landscape page (all front OR all back per page)
+        // Each batch of 5 = 2 pages (1 front page + 1 back page)
+        // Total = ceil(n/5) * 2
+        $this->assertEquals(2, $this->calculatePageCount(1));   // 1 member: 1 front + 1 back = 2
+        $this->assertEquals(2, $this->calculatePageCount(4));  // 4 members: still 1 batch = 2 pages
+        $this->assertEquals(2, $this->calculatePageCount(5));  // 5 members: 1 full batch = 2 pages
+        $this->assertEquals(4, $this->calculatePageCount(8));  // 8 members: 2 batches = 4 pages
+        $this->assertEquals(4, $this->calculatePageCount(9));  // 9 members: 2 batches = 4 pages
+        $this->assertEquals(4, $this->calculatePageCount(10)); // 10 members: 2 batches = 4 pages
     }
 
     public function test_pdf_real_page_count_for_each_size(): void
     {
-        // 4 KTA per A4 landscape page (2 rows x 2 cols)
-        $expectedPages = [1 => 1, 4 => 1, 5 => 2, 8 => 2, 9 => 3, 10 => 3];
+        // 5 KTA per A4 landscape page (1 side per page)
+        // Each batch of 5 = 2 pages (1 front + 1 back)
+        $expectedPages = [1 => 2, 4 => 2, 5 => 2, 8 => 4, 9 => 4, 10 => 4];
         foreach ($expectedPages as $n => $expected) {
             $batch = $this->createBatchWithMembers($n);
 
@@ -174,14 +176,16 @@ class PrintTest extends TestCase
     }
 
     /**
-     * Calculate expected page count for N members (4 KTA per A4 landscape page).
+     * Calculate expected page count for N members (5 KTA per A4 landscape page).
+     * Each batch of 5 = 2 pages (front page + back page).
+     * Total = ceil(n/5) * 2
      */
     private function calculatePageCount(int $n): int
     {
-        return (int) ceil($n / 4);
+        return (int) ceil($n / 5) * 2;
     }
 
-    public function test_pdf_uses_a4_portrait_paper(): void
+    public function test_pdf_uses_a4_landscape_paper(): void
     {
         $batch = $this->createBatchWithMembers(1);
 
@@ -190,14 +194,14 @@ class PrintTest extends TestCase
 
         $content = $response->getContent();
 
-        // A4 portrait in points: width 595.28, height 841.89
-        // DOMPDF may compress streams, so we check that *some* MediaBox with
-        // these dimensions appears in the PDF metadata.
-        $hasWidth = preg_match('/MediaBox\s*\[[^\]]*595(?:\.\d+)?/', $content);
-        $hasHeight = preg_match('/MediaBox\s*\[[^\]]*841(?:\.\d+)?/', $content);
+        // A4 landscape in points: width 841.89, height 595.28
+        // DOMPDF MediaBox format: [0 0 width height]
+        // Landscape: [0 0 841.89 595.28]
+        $hasWidth = preg_match('/MediaBox\s*\[[^\]]*841(?:\.\d+)?/', $content);
+        $hasHeight = preg_match('/MediaBox\s*\[[^\]]*595(?:\.\d+)?/', $content);
 
-        $this->assertTrue((bool) $hasWidth, 'PDF should have MediaBox width ~595.28 (A4 portrait)');
-        $this->assertTrue((bool) $hasHeight, 'PDF should have MediaBox height ~841.89 (A4 portrait)');
+        $this->assertTrue((bool) $hasWidth, 'PDF should have MediaBox width ~841.89 (A4 landscape)');
+        $this->assertTrue((bool) $hasHeight, 'PDF should have MediaBox height ~595.28 (A4 landscape)');
     }
 
     public function test_duplex_long_edge_reverses_back_order(): void
@@ -229,22 +233,22 @@ class PrintTest extends TestCase
 
     public function test_one_batch_produces_both_front_and_back_pdf(): void
     {
-        // Satu batch untuk banyak anggota, tanpa side selection
+        // Satu batch untuk banyak anggota menghasilkan PDF dengan front + back pages
+        // Layout 5-up: setiap 5 anggota = 2 halaman (1 front + 1 back)
         $batch = $this->createBatchWithMembers(10);
 
-        // Front PDF
-        $responseFront = $this->get('/print/' . $batch->id . '/pdf?side=front');
-        $responseFront->assertStatus(200);
-        $responseFront->assertHeader('Content-Type', 'application/pdf');
+        $response = $this->get('/print/' . $batch->id . '/pdf');
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/pdf');
 
-        // Back PDF (same batch, different query param)
-        $responseBack = $this->get('/print/' . $batch->id . '/pdf?side=back');
-        $responseBack->assertStatus(200);
-        $responseBack->assertHeader('Content-Type', 'application/pdf');
+        // PDF should be non-empty and contain multiple pages (front + back)
+        $this->assertGreaterThan(1000, strlen($response->getContent()));
 
-        // Both PDFs should contain the same batch's members but with opposite side
-        $this->assertGreaterThan(1000, strlen($responseFront->getContent()));
-        $this->assertGreaterThan(1000, strlen($responseBack->getContent()));
+        // Verify page count: 10 members = 2 batches of 5 = 4 pages total
+        $content = $response->getContent();
+        preg_match_all('~/Type\s*/Page[^s]~', $content, $pages);
+        $actualPages = count($pages[0]);
+        $this->assertEquals(4, $actualPages, '10 members should produce 4 PDF pages (2 front + 2 back)');
     }
 
     public function test_default_side_is_front_when_no_param(): void
@@ -275,7 +279,7 @@ class PrintTest extends TestCase
 
     public function test_pdf_uses_kta_v2_design(): void
     {
-        // Verify PDF uses kta-card-v2 partial
+        // Verify PDF uses kta-card-v2-scaled partial for 5-up layout
         $batch = $this->createBatchWithMembers(1);
         $response = $this->get('/print/' . $batch->id . '/pdf?side=front');
         $response->assertStatus(200);

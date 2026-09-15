@@ -261,7 +261,8 @@ class PrintController extends Controller
         // Ambil background aktif
         $background = KtaBackground::getActive();
 
-        $pdf = Pdf::loadView('print.batch-pdf', [
+        // 5 KTA per A4 landscape page (5-up layout)
+        $pdf = Pdf::loadView('print.batch-pdf-5up', [
             'members' => $ktaData,
             'batch' => $batch,
             'ketua' => $ketua,
@@ -271,7 +272,7 @@ class PrintController extends Controller
             'background' => $background,
         ]);
 
-        // A4 Landscape — 297x210mm — 5 KTA per page (3 top + 2 bottom)
+        // A4 Landscape — 297x210mm — 5 KTA per page
         $pdf->setPaper('a4', 'landscape');
 
         $filename = $batch->batch_number . '-KTA.pdf';
