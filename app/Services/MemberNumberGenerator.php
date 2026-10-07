@@ -223,6 +223,9 @@ class MemberNumberGenerator
      */
     private function getOrCreateSequenceWithLock(int $formulaId, ?int $companyId, string $prefixValue): MemberNumberSequence
     {
+        // Normalize prefixValue to empty string if null (handles legacy data)
+        $prefixValue = $prefixValue ?? '';
+
         // Try to find existing sequence with lock
         $sequence = MemberNumberSequence::where('formula_id', $formulaId)
             ->where('company_id', $companyId)
@@ -238,8 +241,9 @@ class MemberNumberGenerator
                 'prefix_value' => $prefixValue,
             ]);
         } else {
-            // Update prefix value if changed
-            if ($sequence->prefix_value !== $prefixValue) {
+            // Update prefix value if changed (handle null → empty string migration)
+            $existingPrefix = $sequence->prefix_value ?? '';
+            if ($existingPrefix !== $prefixValue) {
                 $sequence->update(['prefix_value' => $prefixValue]);
             }
         }
