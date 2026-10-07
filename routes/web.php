@@ -142,8 +142,11 @@ Route::middleware('auth')->group(function () {
         Route::get('regions', [RegionController::class, 'index'])->name('regions.index');
         Route::get('regions/create', [RegionController::class, 'create'])->name('regions.create');
         Route::post('regions', [RegionController::class, 'store'])->name('regions.store');
+        Route::get('regions/template', [RegionController::class, 'downloadTemplate'])->name('regions.template');
         Route::post('regions/import', [RegionController::class, 'import'])->name('regions.import');
         Route::get('regions/{province}', [RegionController::class, 'show'])->name('regions.show');
+        Route::get('regions/{province}/edit', [RegionController::class, 'edit'])->name('regions.edit');
+        Route::put('regions/{province}', [RegionController::class, 'update'])->name('regions.update');
         Route::delete('regions/{province}', [RegionController::class, 'destroy'])->name('regions.destroy');
     });
 
