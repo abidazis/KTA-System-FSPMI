@@ -33,7 +33,7 @@
         <ol style="margin:0.5rem 0 0 1.5rem;">
 
             <li>
-                PDF menggunakan format <strong>A4 Landscape</strong> dengan <strong>4 KTA per halaman</strong> (2 atas + 2 bawah).
+                PDF menggunakan format <strong>A4 Landscape</strong> dengan <strong>5 KTA per halaman</strong> (5 atas + 5 bawah).
             </li>
 
             <li>

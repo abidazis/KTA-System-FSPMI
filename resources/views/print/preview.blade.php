@@ -4,10 +4,10 @@
 <style>
 /*
 |--------------------------------------------------------------------------
-| PREVIEW PAGE - 4 KTA PER PAGE (A4 LANDSCAPE)
+| PREVIEW PAGE - 5 KTA PER PAGE (A4 LANDSCAPE)
 | Layout: A4 landscape
-| Row 1: 4 KTA DEPAN berjejer horizontal
-| Row 2: 4 KTA BELAKANG berjejer horizontal
+| Row 1: 5 KTA DEPAN berjejer horizontal
+| Row 2: 5 KTA BELAKANG berjejer horizontal
 |--------------------------------------------------------------------------
 */
 
@@ -184,7 +184,7 @@
     <div class="info-banner">
         <strong>Format Cetak:</strong>
         <ul style="margin:0.5rem 0 0 1.5rem;">
-            <li>A4 Landscape — <strong>4 KTA per halaman</strong> (4 depan + 4 belakang)</li>
+            <li>A4 Landscape — <strong>5 KTA per halaman</strong> (5 depan + 5 belakang)</li>
             <li>Baris atas: <strong>DEPAN</strong> · Baris bawah: <strong>BELAKANG</strong></li>
             <li>Cetak dengan ukuran <strong>Actual Size / 100%</strong></li>
         </ul>
@@ -194,14 +194,14 @@
         $isPdf = false;
     @endphp
 
-    {{-- 4 KTA per page: row 1 front + row 2 back --}}
-    @foreach($members->chunk(4) as $pageIndex => $pageMembers)
+    {{-- 5 KTA per page: row 1 front + row 2 back --}}
+    @foreach($members->chunk(5) as $pageIndex => $pageMembers)
         @php $pageMembersArray = $pageMembers->values()->all(); @endphp
         <div class="page-wrapper" id="page-{{ $pageIndex + 1 }}" style="margin-bottom:2rem;">
             <div class="preview-page">
 
-                {{-- ROW 1: 4 KTA DEPAN berjejer horizontal --}}
-                @foreach([0, 1, 2, 3] as $i)
+                {{-- ROW 1: 5 KTA DEPAN berjejer horizontal --}}
+                @foreach([0, 1, 2, 3, 4] as $i)
                     @if(isset($pageMembersArray[$i]))
                         @php
                             $kta = $pageMembersArray[$i];
@@ -214,14 +214,14 @@
                             $stempel_path = $kta['stempel_path'] ?? null;
                             $side = 'front';
                         @endphp
-                        <div style="position:absolute; left:{{ 2.25 + $i * 6.6 }}cm; top:1.5cm;">
+                        <div style="position:absolute; left:{{ 0.5 + $i * 5.8 }}cm; top:0.8cm;">
                             @include('print.partials.kta-card-v2')
                         </div>
                     @endif
                 @endforeach
 
-                {{-- ROW 2: 4 KTA BELAKANG berjejer horizontal --}}
-                @foreach([0, 1, 2, 3] as $i)
+                {{-- ROW 2: 5 KTA BELAKANG berjejer horizontal --}}
+                @foreach([0, 1, 2, 3, 4] as $i)
                     @if(isset($pageMembersArray[$i]))
                         @php
                             $kta = $pageMembersArray[$i];
@@ -234,7 +234,7 @@
                             $stempel_path = $kta['stempel_path'] ?? null;
                             $side = 'back';
                         @endphp
-                        <div style="position:absolute; left:{{ 2.25 + $i * 6.6 }}cm; top:11cm;">
+                        <div style="position:absolute; left:{{ 0.5 + $i * 5.8 }}cm; top:11cm;">
                             @include('print.partials.kta-card-v2')
                         </div>
                     @endif
