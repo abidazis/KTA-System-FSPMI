@@ -214,7 +214,7 @@
                             $stempel_path = $kta['stempel_path'] ?? null;
                             $side = 'front';
                         @endphp
-                        <div style="position:absolute; left:{{ 0.5 + $i * 5.8 }}cm; top:0.8cm;">
+                        <div style="position:absolute; left:{{ 0.5 + $i * 5.8 }}cm; top:1.2cm;">
                             @include('print.partials.kta-card-v2')
                         </div>
                     @endif
@@ -234,7 +234,7 @@
                             $stempel_path = $kta['stempel_path'] ?? null;
                             $side = 'back';
                         @endphp
-                        <div style="position:absolute; left:{{ 0.5 + $i * 5.8 }}cm; top:11cm;">
+                        <div style="position:absolute; left:{{ 0.5 + $i * 5.8 }}cm; top:10.1cm;">
                             @include('print.partials.kta-card-v2')
                         </div>
                     @endif

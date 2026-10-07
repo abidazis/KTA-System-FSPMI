@@ -95,34 +95,32 @@
             'nik'           => ['left' => 25.5, 'top' => 64, 'font_size' => 1.9, 'width' => 24.5],
         ],
         'back' => [
-            // Nama PT dinaikkan karena teks PUK SPAMK sudah nempel di background
-            'perusahaan'       => ['left' => 0, 'top' => 8, 'font_size' => 1.8, 'width' => 54],
-            // Alamat perusahaan - auto-wrap via PHP, no height restriction
-            'alamat_perusahaan'=> ['left' => 4, 'top' => 11, 'font_size' => 1.5, 'width' => 46],
+            // Nama PT - diposisikan persis di bawah PUK SPAMK FSPMI di background
+            'perusahaan'       => ['left' => 0, 'top' => 8.5, 'font_size' => 1.4, 'width' => 54],
+            // Alamat perusahaan - diposisikan di bawah nama perusahaan
+            'alamat_perusahaan'=> ['left' => 4, 'top' => 11, 'font_size' => 1.2, 'width' => 46],
 
-            // Data Anggota - Interval ditekan ke 3.2mm per baris agar rapat
-            'nik_label'     => ['left' => 3, 'top' => 20, 'font_size' => 1.75, 'width' => 14],
-            'nik'           => ['left' => 17, 'top' => 20, 'font_size' => 1.75, 'width' => 34],
+            // Data Anggota - Interval ditekan agar tetap proporsional
+            'nik_label'     => ['left' => 3, 'top' => 18, 'font_size' => 1.75, 'width' => 14],
+            'nik'           => ['left' => 17, 'top' => 18, 'font_size' => 1.75, 'width' => 34],
 
-            'nama_label'    => ['left' => 3, 'top' => 23.2, 'font_size' => 1.75, 'width' => 14],
-            'nama'          => ['left' => 17, 'top' => 23.2, 'font_size' => 1.75, 'width' => 34],
+            'nama_label'    => ['left' => 3, 'top' => 21.2, 'font_size' => 1.75, 'width' => 14],
+            'nama'          => ['left' => 17, 'top' => 21.2, 'font_size' => 1.75, 'width' => 34],
 
-            'ttl_label'     => ['left' => 3, 'top' => 26.4, 'font_size' => 1.75, 'width' => 14],
-            'ttl'           => ['left' => 17, 'top' => 26.4, 'font_size' => 1.75, 'width' => 34],
+            'ttl_label'     => ['left' => 3, 'top' => 24.4, 'font_size' => 1.75, 'width' => 14],
+            'ttl'           => ['left' => 17, 'top' => 24.4, 'font_size' => 1.75, 'width' => 34],
 
-            'alamat_label'  => ['left' => 3, 'top' => 29.6, 'font_size' => 1.75, 'width' => 14],
-            // Alamat auto-wrap, font disamain dengan field lain (1.75mm)
-            'alamat'        => ['left' => 17, 'top' => 29.6, 'font_size' => 1.75, 'width' => 34, 'height' => 8],
+            'alamat_label'  => ['left' => 3, 'top' => 27.6, 'font_size' => 1.75, 'width' => 14],
+            'alamat'        => ['left' => 17, 'top' => 27.6, 'font_size' => 1.75, 'width' => 34, 'height' => 8],
 
-            // Jarak khusus (gap) antara Alamat ke Jenis Kelamin (Sesuai KTA Asli)
-            'jk_label'      => ['left' => 3, 'top' => 36, 'font_size' => 1.75, 'width' => 14],
-            'jk'            => ['left' => 17, 'top' => 36, 'font_size' => 1.75, 'width' => 34],
+            'jk_label'      => ['left' => 3, 'top' => 34, 'font_size' => 1.75, 'width' => 14],
+            'jk'            => ['left' => 17, 'top' => 34, 'font_size' => 1.75, 'width' => 34],
 
-            'agama_label'   => ['left' => 3, 'top' => 39, 'font_size' => 1.75, 'width' => 14],
-            'agama'         => ['left' => 17, 'top' => 39, 'font_size' => 1.75, 'width' => 34],
+            'agama_label'   => ['left' => 3, 'top' => 37, 'font_size' => 1.75, 'width' => 14],
+            'agama'         => ['left' => 17, 'top' => 37, 'font_size' => 1.75, 'width' => 34],
 
-            'berlaku_label' => ['left' => 3, 'top' => 42, 'font_size' => 1.75, 'width' => 14],
-            'berlaku'       => ['left' => 17, 'top' => 42, 'font_size' => 1.75, 'width' => 34],
+            'berlaku_label' => ['left' => 3, 'top' => 40, 'font_size' => 1.75, 'width' => 14],
+            'berlaku'       => ['left' => 17, 'top' => 40, 'font_size' => 1.75, 'width' => 34],
 
             // Footer (Tanggal, Pimpinan Pusat, TTD) - Posisinya dinaikkan sedikit agar tidak mentok bawah
             'tanggal_ttd'   => ['left' => 0, 'top' => 50, 'font_size' => 1.75, 'width' => 54],
@@ -216,7 +214,7 @@
                         top:{{ $fieldPositions['perusahaan']['top'] }}mm;
                         font-size:{{ $fieldPositions['perusahaan']['font_size'] }}mm;
                         width:{{ $fieldPositions['perusahaan']['width'] }}mm;
-                        color:#4B0082; font-weight:900;">
+                        color:#000; font-weight:bold;">
                 {{ strtoupper($member->company?->name ?? '-') }}
             </div>
         @endif
@@ -228,9 +226,9 @@
                         top:{{ $fieldPositions['alamat_perusahaan']['top'] }}mm;
                         font-size:{{ $fieldPositions['alamat_perusahaan']['font_size'] }}mm;
                         width:{{ $fieldPositions['alamat_perusahaan']['width'] }}mm;
-                        color:#4B0082; font-weight:bold;
-                        line-height: 1.2; text-align:center;">
-                {!! $wrapText($member->company?->full_address ?? '-', 42) !!}
+                        color:#000; font-weight:bold;
+                        line-height: 1.1; text-align:center;">
+                {!! $wrapText($member->company?->full_address ?? '-', 45) !!}
             </div>
         @endif
 
