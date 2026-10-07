@@ -6,6 +6,11 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Sistem KTA Federasi')</title>
     <link href="{{ asset('build/assets/app-C0sIAfS7.css') }}?v=20240908" rel="stylesheet">
+    {{-- Flatpickr Date Picker --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/languages/id.js"></script>
     <style>
         /* ============================================
            CLEAN & PROFESSIONAL DESIGN SYSTEM
@@ -585,6 +590,48 @@
         .fspmi-modal-footer .btn-confirm.success:hover {
             background: #065f46;
         }
+
+        /* ===== FLATPICKR CUSTOM STYLING ===== */
+        .fspmi-flatpickr .flatpickr-calendar {
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border: none;
+        }
+        .fspmi-flatpickr .flatpickr-months {
+            background: var(--primary);
+            border-radius: 12px 12px 0 0;
+        }
+        .fspmi-flatpickr .flatpickr-month,
+        .fspmi-flatpickr .flatpickr-current-month {
+            color: white;
+        }
+        .fspmi-flatpickr .flatpickr-prev-month,
+        .fspmi-flatpickr .flatpickr-next-month {
+            fill: white;
+        }
+        .fspmi-flatpickr .flatpickr-weekday {
+            color: var(--gray-600);
+            font-weight: 600;
+        }
+        .fspmi-flatpickr .flatpickr-day {
+            border-radius: 8px;
+            margin: 2px;
+        }
+        .fspmi-flatpickr .flatpickr-day:hover {
+            background: var(--gray-200);
+        }
+        .fspmi-flatpickr .flatpickr-day.selected {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        .fspmi-flatpickr .flatpickr-day.today {
+            border: 2px solid var(--primary);
+            background: var(--gray-100);
+        }
+        /* Hide native date input, show only flatpickr styled version */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            opacity: 0;
+        }
     </style>
     @stack('styles')
 </head>
@@ -951,6 +998,28 @@
             form.removeAttribute('onsubmit');
         });
     })();
+    })();
+
+    // ===== FLATPICKR DATE PICKER INITIALIZATION =====
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set Indonesian locale for Flatpickr
+        flatpickr.localize(flatpickr.languages.id);
+
+        // Initialize Flatpickr for all date inputs
+        flatpickr('input[type="date"]', {
+            dateFormat: 'Y-m-d',
+            altInput: true,
+            altFormat: 'dd F Y',
+            locale: 'id',
+            allowInput: true,
+            disableMobile: true,
+            theme: 'material_blue',
+            onReady: function(selectedDates, dateStr, instance) {
+                // Add custom styling to match FSPMI design
+                instance.calendarContainer.classList.add('fspmi-flatpickr');
+            }
+        });
+    });
     </script>
     @stack('scripts')
 </body>
