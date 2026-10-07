@@ -11,6 +11,7 @@ class MemberTemplateExport implements FromCollection, WithHeadings
     public function headings(): array
     {
         return [
+            'nomor_anggota',
             'nama',
             'tempat_lahir',
             'tanggal_lahir',
@@ -32,6 +33,7 @@ class MemberTemplateExport implements FromCollection, WithHeadings
     {
         return collect([
             [
+                'nomor_anggota' => '1.02.01.038.0123',
                 'nama' => 'Nama Lengkap',
                 'tempat_lahir' => 'Kota',
                 'tanggal_lahir' => '1990-01-01',

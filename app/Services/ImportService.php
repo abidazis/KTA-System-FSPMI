@@ -61,12 +61,15 @@ class ImportService
         // Normalize headers
         $headers = array_map(fn($h) => strtolower(trim((string) ($h ?? ''))), $rows[0]);
 
-        // Check required headers (NIK is no longer required - will be auto-generated)
+        // Check required headers - nomor_anggota is now optional (can be auto-generated or manual)
         $requiredHeaders = [
             'nama', 'tempat_lahir', 'tanggal_lahir',
             'alamat', 'jenis_kelamin', 'agama',
             'berlaku_hingga', 'tanggal_pembuatan',
         ];
+
+        // nomor_anggota is optional - add validation if present
+        $hasNomorAnggota = in_array('nomor_anggota', $headers);
 
         foreach ($requiredHeaders as $required) {
             if (!in_array($required, $headers)) {
@@ -103,7 +106,8 @@ class ImportService
                 $processedNikHashes,
                 $extractPath,
                 $photosData,
-                $companyData
+                $companyData,
+                $hasNomorAnggota
             );
 
             // Set company_id from companyData (validateRowData doesn't modify $rowData)
@@ -125,8 +129,8 @@ class ImportService
             }
         }
 
-        // Generate preview data including generated member numbers
-        $previewData = $this->generatePreviewData($validData, $companyData, $photosData);
+        // Pass hasNomorAnggota to preview generation
+        $previewData = $this->generatePreviewData($validData, $companyData, $photosData, $hasNomorAnggota);
 
         $total = count($validData) + count($errors);
 
@@ -184,8 +188,15 @@ class ImportService
             }
 
             foreach ($data as $index => $row) {
-                $nomorAnggota = $memberNumbers[$index] ?? null;
                 $preview = $previewData[$index] ?? null;
+
+                // Use manual nomor from preview if available, otherwise use auto-generated
+                $manualNomor = trim($row['nomor_anggota'] ?? '');
+                if (!empty($manualNomor)) {
+                    $nomorAnggota = $manualNomor;
+                } else {
+                    $nomorAnggota = $memberNumbers[$index] ?? null;
+                }
 
                 if (!$nomorAnggota) {
                     throw new RuntimeException("Nomor anggota tidak dapat dibuat untuk baris #" . ($index + 1));
@@ -318,9 +329,26 @@ class ImportService
         array &$processedNikHashes,
         string $extractPath,
         array &$photosData,
-        array &$companyData
+        array &$companyData,
+        bool $hasNomorAnggota = false
     ): array {
-        $errors = []; // nik is no longer required
+        $errors = [];
+
+        // Validate nomor anggota if provided
+        if ($hasNomorAnggota && !empty($row['nomor_anggota'])) {
+            $nomorAnggota = trim($row['nomor_anggota']);
+            // Remove dots for duplicate check
+            $nikCheck = str_replace('.', '', $nomorAnggota);
+            if (Member::where('nik', $nomorAnggota)->exists() || Member::where('nik', $nikCheck)->exists()) {
+                $errors[] = "Nomor anggota '$nomorAnggota' sudah terdaftar";
+            }
+            // Validate format: X.XX.XX.XXX.XXXX
+            if (!preg_match('/^[0-9]{1,2}\.[0-9]{2}\.[0-9]{2}\.[0-9]{3}\.[0-9]{4}$/', $nomorAnggota)) {
+                $errors[] = "Format nomor anggota tidak valid (contoh: 1.02.01.038.0123)";
+            }
+        } elseif ($hasNomorAnggota && empty($row['nomor_anggota'])) {
+            // nomor_anggota column exists but empty - that's OK, will auto-generate
+        }
 
         // Other field validations
         if (empty($row['nama'])) {
@@ -541,7 +569,7 @@ class ImportService
     /**
      * Generate preview data including generated member numbers and photo names.
      */
-    private function generatePreviewData(array $validData, array $companyData, array $photosData): array
+    private function generatePreviewData(array $validData, array $companyData, array $photosData, bool $hasNomorAnggota = false): array
     {
         $preview = [];
         $companySequenceCounters = [];
@@ -550,15 +578,20 @@ class ImportService
         $formula = MemberNumberFormula::getActive();
         $generator = new MemberNumberGenerator();
 
-        // First pass: reserve numbers for preview
+        // First pass: reserve numbers for preview (only for rows without manual nomor)
         $companyIds = [];
+        $hasManualNomor = [];
         foreach ($validData as $index => $row) {
             $rowNum = $index + 2; // Excel row number
             $companyInfo = $companyData[$rowNum] ?? null;
             $companyIds[$index] = $companyInfo['id'] ?? null;
+
+            // Check if this row has manual nomor_anggota
+            $manualNomor = trim($row['nomor_anggota'] ?? '');
+            $hasManualNomor[$index] = !empty($manualNomor);
         }
 
-        // Reserve numbers based on company
+        // Reserve numbers only for rows without manual nomor
         $reservations = $generator->reserveForPreview($companyIds);
 
         foreach ($validData as $index => $row) {
@@ -566,8 +599,14 @@ class ImportService
             $companyInfo = $companyData[$rowNum] ?? null;
             $reservation = $reservations[$index] ?? null;
 
-            // Use reserved number for preview
-            $nomorAnggota = $reservation['preview_number'] ?? 'PENDING';
+            // Use manual nomor if provided, otherwise use reserved number
+            $manualNomor = trim($row['nomor_anggota'] ?? '');
+            if (!empty($manualNomor)) {
+                $nomorAnggota = $manualNomor; // Use manual nomor from Excel
+            } else {
+                // Use reserved number for preview
+                $nomorAnggota = $reservation['preview_number'] ?? 'PENDING';
+            }
 
             // Get photo data
             $fotoColumn = $row['foto'] ?? null;
@@ -595,6 +634,7 @@ class ImportService
 
             $preview[] = [
                 'nomor_anggota' => $nomorAnggota,
+                'is_manual' => !empty($manualNomor),
                 'nama' => $row['nama'],
                 'company_kode' => $companyKode,
                 'company_name' => $companyInfo['name'] ?? null,
