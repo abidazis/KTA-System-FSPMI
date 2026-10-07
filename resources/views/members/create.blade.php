@@ -202,15 +202,16 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 0.25rem;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                         Tanggal Pembuatan <span class="text-danger">*</span>
                     </label>
-                    <input type="date" id="tanggal_pembuatan" name="tanggal_pembuatan" value="{{ old('tanggal_pembuatan', now()->format('Y-m-d')) }}" required>
+                    <input type="date" id="tanggal_pembuatan" name="tanggal_pembuatan" value="{{ old('tanggal_pembuatan', now()->format('Y-m-d')) }}" required onchange="calculateBerlakuUntil()">
                     @error('tanggal_pembuatan') <span class="error">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="berlaku_hingga" style="font-weight: 500; color: var(--gray-700); margin-bottom: 0.5rem;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 0.25rem;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                         Berlaku Hingga <span class="text-danger">*</span>
+                        <small style="font-weight: normal; color: var(--gray-500);"> (Otomatis {{ $ktaMasaBerlaku }} tahun)</small>
                     </label>
-                    <input type="date" id="berlaku_hingga" name="berlaku_hingga" value="{{ old('berlaku_hingga') }}" required>
+                    <input type="date" id="berlaku_hingga" name="berlaku_hingga" value="{{ old('berlaku_hingga') }}" readonly style="cursor: not-allowed;" title="Otomatis dihitung dari tanggal pembuatan">
                     @error('berlaku_hingga') <span class="error">{{ $message }}</span> @enderror
                 </div>
             </div>
@@ -235,7 +236,7 @@
                     </small>
                     @error('foto') <span class="error">{{ $message }}</span> @enderror
                 </div>
-                <div id="photo-preview" style="width: 150px; height: 200px; border: 2px dashed var(--gray-300); border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--gray-100);">
+                <div id="photo-preview" style="width: 150px; height: 200px; border: 2px dashed var(--gray-300); border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--gray-100);">
                     <div style="text-align: center; color: var(--gray-400);">
                         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                         <small style="display: block; margin-top: 0.5rem;">Preview</small>
@@ -325,6 +326,33 @@ document.getElementById('nik').addEventListener('blur', function(e) {
     } else {
         e.target.setCustomValidity('');
     }
+});
+
+// Auto-calculate berlaku hingga based on tanggal pembuatan + masa berlaku settings
+const masaBerlaku = {{ $ktaMasaBerlaku }}; // From settings
+
+function calculateBerlakuUntil() {
+    const tanggalPembuatan = document.getElementById('tanggal_pembuatan').value;
+    if (tanggalPembuatan) {
+        const date = new Date(tanggalPembuatan);
+        date.setFullYear(date.getFullYear() + masaBerlaku);
+        // Set to last day of that month/year
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        date.setDate(lastDay);
+
+        // Format to YYYY-MM-DD
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        document.getElementById('berlaku_hingga').value = `${yyyy}-${mm}-${dd}`;
+    }
+}
+
+// Calculate on page load
+document.addEventListener('DOMContentLoaded', function() {
+    calculateBerlakuUntil();
 });
 
 document.getElementById('province_id').addEventListener('change', function() {

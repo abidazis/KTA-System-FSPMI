@@ -9,6 +9,7 @@ use App\Models\Member;
 use App\Models\Province;
 use App\Models\Regency;
 use App\Models\District;
+use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -90,6 +91,9 @@ class MemberController extends Controller
         $religions = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu'];
         $companies = Company::where('is_active', true)->orderBy('name')->get();
 
+        // Get KTA settings from new Setting model
+        $ktaMasaBerlaku = Setting::getKtaValidityYears();
+
         // Pre-load regencies and districts if coming from validation error
         $regencies = collect();
         $districts = collect();
@@ -110,6 +114,7 @@ class MemberController extends Controller
             'companies' => $companies,
             'regencies' => $regencies,
             'districts' => $districts,
+            'ktaMasaBerlaku' => $ktaMasaBerlaku,
         ]);
     }
 

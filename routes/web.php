@@ -12,6 +12,7 @@ use App\Http\Controllers\Member\MemberController;
 use App\Http\Controllers\Print\PrintController;
 use App\Http\Controllers\Region\RegionController;
 use App\Http\Controllers\Setting\CompanyController;
+use App\Http\Controllers\Settings\KtaSettingController;
 use App\Http\Controllers\Settings\MemberNumberFormulaController;
 use App\Http\Controllers\Settings\MemberNumberController;
 use App\Http\Controllers\Setting\KtaBackgroundController;
@@ -99,6 +100,13 @@ Route::middleware('auth')->group(function () {
         Route::put('settings/companies/{company}', [CompanyController::class, 'update'])->name('settings.companies.update');
         Route::delete('settings/companies/{company}', [CompanyController::class, 'destroy'])->name('settings.companies.destroy');
 
+        // Master Pengaturan KTA
+        Route::get('settings/kta', [KtaSettingController::class, 'index'])->name('settings.kta.index');
+        Route::post('settings/kta', [KtaSettingController::class, 'store'])->name('settings.kta.store');
+        Route::put('settings/kta/{setting}', [KtaSettingController::class, 'update'])->name('settings.kta.update');
+        Route::delete('settings/kta/{setting}', [KtaSettingController::class, 'destroy'])->name('settings.kta.destroy');
+        Route::put('settings/kta/{setting}/toggle', [KtaSettingController::class, 'toggle'])->name('settings.kta.toggle');
+
         // Formulasi Nomor Anggota - DISABLED
         // Route::middleware('permission:formulasi-nomor-anggota')->group(function () {
         //     Route::get('settings/member-number-formulas', [MemberNumberFormulaController::class, 'index'])->name('member-number-formulas.index');
@@ -148,6 +156,12 @@ Route::middleware('auth')->group(function () {
         Route::get('regions/{province}/edit', [RegionController::class, 'edit'])->name('regions.edit');
         Route::put('regions/{province}', [RegionController::class, 'update'])->name('regions.update');
         Route::delete('regions/{province}', [RegionController::class, 'destroy'])->name('regions.destroy');
+    });
+
+    // Settings
+    Route::middleware('permission:pengurus')->group(function () {
+        Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
     });
 
     // Media - serve files from local storage
