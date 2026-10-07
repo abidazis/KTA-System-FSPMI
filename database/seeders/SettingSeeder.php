@@ -38,6 +38,14 @@ class SettingSeeder extends Seeder
                 'label' => 'Jumlah KTA Per Halaman',
                 'description' => 'Berapa KTA yang dicetak per halaman A4. Default: 5.',
             ],
+            [
+                'key' => 'max_photo_size_kb',
+                'value' => '2048',
+                'type' => 'number',
+                'group' => 'kta',
+                'label' => 'Ukuran Maksimal Foto (KB)',
+                'description' => 'Ukuran maksimal file foto upload dalam kilobyte (KB). Default: 2048 KB (2 MB).',
+            ],
 
             // Member Settings
             [

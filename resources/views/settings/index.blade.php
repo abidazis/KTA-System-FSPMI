@@ -53,6 +53,18 @@
                             Berapa KTA yang dicetak per halaman A4.
                         </small>
                     </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-weight: 500; color: var(--gray-700); margin-bottom: 0.5rem; display: block;">
+                            Ukuran Maksimal Foto (KB)
+                        </label>
+                        <input type="number" name="settings[max_photo_size_kb]" class="form-control"
+                            value="{{ $settings->where('key', 'max_photo_size_kb')->first()?->value ?? 2048 }}"
+                            min="100" max="10240" style="max-width: 150px;">
+                        <small style="color: var(--gray-500); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                            Ukuran maksimal file foto upload (100 KB - 10 MB). Default: 2048 KB (2 MB).
+                        </small>
+                    </div>
                 </div>
             </div>
 

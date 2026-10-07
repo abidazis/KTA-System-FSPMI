@@ -213,7 +213,7 @@
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 0.25rem;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                         Tanggal Pembuatan <span class="text-danger">*</span>
                     </label>
-                    <input type="date" id="tanggal_pembuatan" name="tanggal_pembuatan" value="{{ old('tanggal_pembuatan', $member->tanggal_pembuatan->format('Y-m-d')) }}" required>
+                    <input type="date" id="tanggal_pembuatan" name="tanggal_pembuatan" value="{{ old('tanggal_pembuatan', $member->tanggal_pembuatan->format('Y-m-d')) }}" required onchange="calculateBerlakuUntil()">
                     @error('tanggal_pembuatan') <span class="error">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group" style="margin-bottom: 0;">
@@ -392,5 +392,27 @@ document.getElementById('foto').addEventListener('change', function() {
         reader.readAsDataURL(this.files[0]);
     }
 });
+
+// Masa berlaku KTA dari setting
+const masaBerlaku = {{ $ktaMasaBerlaku ?? 5 }};
+
+function calculateBerlakuUntil() {
+    const tanggalPembuatan = document.getElementById('tanggal_pembuatan').value;
+    if (tanggalPembuatan) {
+        const date = new Date(tanggalPembuatan);
+        date.setFullYear(date.getFullYear() + masaBerlaku);
+        // Set to last day of that month/year
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        date.setDate(lastDay);
+
+        // Format to YYYY-MM-DD
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        document.getElementById('berlaku_hingga').value = `${yyyy}-${mm}-${dd}`;
+    }
+}
 </script>
 @endpush

@@ -9,6 +9,7 @@ use App\Models\Member;
 use App\Models\Province;
 use App\Models\Regency;
 use App\Models\District;
+use App\Models\KtaSetting;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -91,8 +92,10 @@ class MemberController extends Controller
         $religions = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu'];
         $companies = Company::where('is_active', true)->orderBy('name')->get();
 
-        // Get KTA settings from new Setting model
-        $ktaMasaBerlaku = Setting::getKtaValidityYears();
+        // Get KTA settings from KtaSetting model (primary)
+        $ktaMasaBerlaku = (int) KtaSetting::getInt('kta_masa_berlaku_tahun', 5);
+        // Also sync to new Setting model for future use
+        Setting::set('kta_validity_years', $ktaMasaBerlaku, 'number');
 
         // Pre-load regencies and districts if coming from validation error
         $regencies = collect();
@@ -120,6 +123,11 @@ class MemberController extends Controller
 
     public function store(Request $request): \Illuminate\Http\RedirectResponse
     {
+        // Get max photo size from KtaSetting (primary) or Setting
+        $maxPhotoSizeKb = (int) KtaSetting::getInt('max_photo_size_kb', 2048);
+        if ($maxPhotoSizeKb < 100) $maxPhotoSizeKb = 2048;
+        Setting::set('max_photo_size_kb', $maxPhotoSizeKb, 'number');
+
         $validated = $request->validate([
             'nik' => ['required', 'string', 'max:50', 'unique:members,nik'],
             'nama' => ['required', 'string', 'max:100'],
@@ -134,7 +142,7 @@ class MemberController extends Controller
             'berlaku_hingga' => ['required', 'date', 'after:today'],
             'tanggal_pembuatan' => ['required', 'date'],
             'company_id' => ['required', 'exists:companies,id'],
-            'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:' . $maxPhotoSizeKb],
         ]);
 
         if ($request->hasFile('foto')) {
@@ -181,12 +189,16 @@ class MemberController extends Controller
             'districts' => $districts,
             'religions' => $religions,
             'companies' => $companies,
+            'ktaMasaBerlaku' => Setting::getKtaValidityYears(),
         ]);
     }
 
     public function update(Request $request, Member $member): \Illuminate\Http\RedirectResponse
     {
         $oldData = $member->toArray();
+        // Get max photo size from KtaSetting (primary) or Setting
+        $maxPhotoSizeKb = (int) KtaSetting::getInt('max_photo_size_kb', 2048);
+        if ($maxPhotoSizeKb < 100) $maxPhotoSizeKb = 2048;
 
         $validated = $request->validate([
             'nik' => ['required', 'string', 'max:50', 'unique:members,nik,' . $member->id],
@@ -202,7 +214,7 @@ class MemberController extends Controller
             'berlaku_hingga' => ['required', 'date'],
             'tanggal_pembuatan' => ['required', 'date'],
             'company_id' => ['required', 'exists:companies,id'],
-            'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'foto' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:' . $maxPhotoSizeKb],
         ]);
 
         if ($request->hasFile('foto')) {

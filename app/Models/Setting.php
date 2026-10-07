@@ -50,4 +50,20 @@ class Setting extends Model
     {
         return (int) static::get('kta_validity_years', 5);
     }
+
+    /**
+     * Get max photo size in KB
+     */
+    public static function getMaxPhotoSizeKb(): int
+    {
+        return (int) static::get('max_photo_size_kb', 2048);
+    }
+
+    /**
+     * Get max photo size in kilobytes for validation rule
+     */
+    public static function getMaxPhotoSizeForValidation(): int
+    {
+        return static::getMaxPhotoSizeKb();
+    }
 }

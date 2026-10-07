@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             RegionSeeder::class,
             ManagementPeriodSeeder::class,
             MemberSeeder::class,
+            KtaSettingSeeder::class,
         ]);
     }
 }

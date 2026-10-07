@@ -19,6 +19,14 @@ class KtaSettingSeeder extends Seeder
                 'is_active' => true,
             ],
             [
+                'key' => 'max_photo_size_kb',
+                'label' => 'Ukuran Maksimal Foto',
+                'value' => '2048',
+                'type' => 'number',
+                'description' => 'Ukuran maksimal file foto upload dalam KB (100 - 10240)',
+                'is_active' => true,
+            ],
+            [
                 'key' => 'kta_aktivasi_otomatis',
                 'label' => 'Aktivasi Otomatis',
                 'value' => '1',
