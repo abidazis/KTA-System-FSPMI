@@ -1002,7 +1002,6 @@
             form.removeAttribute('onsubmit');
         });
     })();
-    })();
 
     // ===== FLATPICKR DATE PICKER INITIALIZATION =====
     document.addEventListener('DOMContentLoaded', function() {

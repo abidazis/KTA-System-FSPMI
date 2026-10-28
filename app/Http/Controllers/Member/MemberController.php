@@ -238,7 +238,7 @@ class MemberController extends Controller
             ->with('success', 'Data anggota berhasil diperbarui.');
     }
 
-    public function destroy(Member $member): \Illuminate\Http\RedirectResponse
+    public function destroy(Request $request, Member $member): \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $oldData = $member->toArray();
 
@@ -249,6 +249,13 @@ class MemberController extends Controller
         $member->delete();
 
         AuditLog::log('delete_member', null, $oldData, null);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Anggota berhasil dihapus.',
+            ]);
+        }
 
         return redirect()
             ->route('members.index')

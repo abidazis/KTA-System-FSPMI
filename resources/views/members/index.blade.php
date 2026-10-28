@@ -171,13 +171,9 @@
                             <a href="{{ route('members.edit', $member) }}" class="btn btn-sm btn-primary" title="Edit" style="padding:0.25rem 0.375rem;">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                             </a>
-                            <form method="POST" action="{{ route('members.destroy', $member) }}" style="display:inline;">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger" title="Hapus" style="padding:0.25rem 0.375rem;" onclick="FSPMIModal.confirmDelete('Yakin ingin menghapus anggota ini?').then(function(ok){ if(!ok){event.preventDefault();} });">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                </button>
-                            </form>
+                            <button type="button" class="btn btn-sm btn-danger js-delete-member" data-member-id="{{ $member->id }}" data-member-nama="{{ $member->nama }}" title="Hapus" style="padding:0.25rem 0.375rem;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -622,6 +618,49 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
         });
     }
+
+    // ====== SINGLE DELETE ======
+    var deleteButtons = document.querySelectorAll('.js-delete-member');
+    deleteButtons.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var memberId = this.dataset.memberId;
+            var nama = this.dataset.memberNama || '';
+            if (!memberId) return;
+
+            var self = this;
+            FSPMIModal.confirmDelete('Yakin ingin menghapus anggota "' + nama + '"? Data yang dihapus tidak dapat dikembalikan.').then(function(ok) {
+                if (!ok) return;
+
+                self.disabled = true;
+
+                fetch('/members/' + memberId, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(function(r) {
+                    if (r.status === 200 || r.status === 204) {
+                        return r.json().catch(function() { return { success: true }; });
+                    }
+                    if (r.status === 403) throw new Error('Anda tidak memiliki izin menghapus anggota.');
+                    if (r.status === 419) throw new Error('Sesi habis, silakan muat ulang halaman.');
+                    throw new Error('Status: ' + r.status);
+                })
+                .then(function(data) {
+                    FSPMIModal.success(data.message || 'Anggota berhasil dihapus!').then(function() {
+                        window.location.reload();
+                    });
+                })
+                .catch(function(err) {
+                    FSPMIModal.error('Gagal menghapus: ' + err.message, 'Error');
+                    self.disabled = false;
+                });
+            });
+        });
+    });
 
     // ====== INLINE STATUS UPDATE ======
     var statusSelects = document.querySelectorAll('.status-select');

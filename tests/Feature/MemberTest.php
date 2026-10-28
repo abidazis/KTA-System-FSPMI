@@ -193,4 +193,30 @@ class MemberTest extends TestCase
         $response->assertRedirect('/members');
         $this->assertSoftDeleted('members', ['id' => $member->id]);
     }
+
+    public function test_can_delete_member_via_json(): void
+    {
+        $user = User::factory()->create()->givePermissionTo(['anggota-view', 'anggota-delete']);
+        $this->actingAs($user);
+
+        $company = Company::create([
+            'kode' => 'TST',
+            'name' => 'Test Company',
+            'is_active' => true,
+        ]);
+
+        $member = Member::factory()->create([
+            'company_id' => $company->id,
+            'nik' => 'FSPMI-TST-0002',
+        ]);
+
+        $response = $this->deleteJson("/members/{$member->id}");
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+            'message' => 'Anggota berhasil dihapus.',
+        ]);
+        $this->assertSoftDeleted('members', ['id' => $member->id]);
+    }
 }

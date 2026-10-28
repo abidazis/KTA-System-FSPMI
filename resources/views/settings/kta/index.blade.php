@@ -124,10 +124,10 @@
                                 @endif
                             </button>
                         </form>
-                        <form action="{{ route('settings.kta.destroy', $setting) }}" method="POST" style="display: inline;" onsubmit="return confirm('Yakin hapus pengaturan ini?');">
+                        <form action="{{ route('settings.kta.destroy', $setting) }}" method="POST" style="display: inline;" id="delete-kta-setting-form-{{ $setting->id }}">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-outline" title="Hapus">
+                            <button type="button" class="btn btn-sm btn-outline" title="Hapus" onclick="FSPMIModal.confirmDelete('Yakin hapus pengaturan ini?').then(function(ok){ if(ok){document.getElementById('delete-kta-setting-form-{{ $setting->id }}').submit();} });">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                             </button>
                         </form>
