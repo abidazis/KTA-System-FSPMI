@@ -107,7 +107,7 @@
             <p style="color:var(--gray-600);margin:0;font-size:0.95rem;">
                 {{ count($result['preview']) }} Foto Valid |
                 0 Foto Duplicate |
-                No. Anggota dibuat otomatis
+                No. Anggota: isi manual dipakai apa adanya, kolom kosong dibuat otomatis
             </p>
         </div>
 
@@ -133,7 +133,13 @@
                         @foreach($result['preview'] as $index => $preview)
                         <tr style="border-bottom:1px solid var(--gray-100);">
                             <td style="padding:0.5rem;text-align:center;">{{ $index + 1 }}</td>
-                            <td style="padding:0.5rem;"><code style="background:var(--gray-100);padding:0.125rem 0.375rem;border-radius:0.25rem;">{{ $preview['nomor_anggota'] ?? '-' }}</code></td>
+                            <td style="padding:0.5rem;"><code style="background:var(--gray-100);padding:0.125rem 0.375rem;border-radius:0.25rem;">{{ $preview['nomor_anggota'] ?? '-' }}</code>
+                                @if(!empty($preview['is_manual']))
+                                <span class="badge" style="background:var(--info-light);color:var(--info);margin-left:0.25rem;">Manual</span>
+                                @else
+                                <span class="badge" style="background:var(--gray-100);color:var(--gray-600);margin-left:0.25rem;">Auto</span>
+                                @endif
+                            </td>
                             <td style="padding:0.5rem;">{{ $preview['nama'] }}</td>
                             <td style="padding:0.5rem;">{{ $preview['company_kode'] }}</td>
                             <td style="padding:0.5rem;"><strong style="color:var(--success);">{{ $preview['photo_name'] }}</strong></td>

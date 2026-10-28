@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Company;
 use App\Models\District;
 use App\Models\Member;
+use App\Models\MemberNumber;
 use App\Models\MemberNumberFormula;
 use App\Models\MemberNumberSequence;
 use App\Models\MemberPhoto;
@@ -28,6 +29,7 @@ class ImportService
         $photosData = [];
         $companyData = [];
         $processedNikHashes = []; // Track photo hashes in current batch
+        $seenNomorAnggota = []; // Track manual member numbers in current batch
 
         // Check if active formula exists
         $formula = MemberNumberFormula::getActive();
@@ -60,6 +62,17 @@ class ImportService
 
         // Normalize headers
         $headers = array_map(fn($h) => strtolower(trim((string) ($h ?? ''))), $rows[0]);
+
+        // Accept common spellings of the optional member-number column
+        $headerAliases = [
+            'no. anggota' => 'nomor_anggota',
+            'no.anggota' => 'nomor_anggota',
+            'no anggota' => 'nomor_anggota',
+            'no_anggota' => 'nomor_anggota',
+            'nomor anggota' => 'nomor_anggota',
+            'nomor anggota (opsional)' => 'nomor_anggota',
+        ];
+        $headers = array_map(fn($h) => $headerAliases[$h] ?? $h, $headers);
 
         // Check required headers - nomor_anggota is now optional (can be auto-generated or manual)
         $requiredHeaders = [
@@ -98,6 +111,11 @@ class ImportService
                 continue;
             }
 
+            // Skip rows that hold no member data (leftover notes, stray formatting)
+            if ($this->isBlankDataRow($rowData)) {
+                continue;
+            }
+
             // Validate this row
             $rowErrors = $this->validateRowData(
                 $rowData,
@@ -107,7 +125,8 @@ class ImportService
                 $extractPath,
                 $photosData,
                 $companyData,
-                $hasNomorAnggota
+                $hasNomorAnggota,
+                $seenNomorAnggota
             );
 
             // Set company_id from companyData (validateRowData doesn't modify $rowData)
@@ -120,11 +139,13 @@ class ImportService
                 $errors[] = [
                     'row' => $rowNum,
                     'nik' => '-',
-                    'nama' => $rowData['nama'] ?? '-',
-                    'perusahaan' => $rowData['kode_perusahaan'] ?? $rowData['nama_perusahaan'] ?? '-',
+                    'nama' => ($rowData['nama'] ?? '') ?: '-',
+                    'perusahaan' => ($rowData['kode_perusahaan'] ?? '') ?: (($rowData['nama_perusahaan'] ?? '') ?: '-'),
                     'errors' => $rowErrors,
                 ];
             } else {
+                // Keep the original Excel row number - skipped rows shift the index
+                $rowData['_row_num'] = $rowNum;
                 $validData[] = $rowData;
             }
         }
@@ -169,22 +190,39 @@ class ImportService
         try {
             DB::beginTransaction();
 
-            // Generate all member numbers for the batch
-            $companyIds = array_map(fn($row) => $row['company_id'] ?? null, $data);
+            // Only generate numbers for rows without a manual nomor_anggota
+            $companyIds = [];
+            $rowIndexes = [];
+            foreach ($data as $index => $row) {
+                if (trim($row['nomor_anggota'] ?? '') !== '') {
+                    continue;
+                }
+                $companyIds[] = $row['company_id'] ?? null;
+                $rowIndexes[] = $index;
+            }
+
             $generator = new MemberNumberGenerator();
 
-            try {
-                $memberNumbers = $generator->generateBatch($companyIds);
-            } catch (RuntimeException $e) {
-                DB::rollBack();
-                return [
-                    'success' => false,
-                    'total' => count($data),
-                    'imported' => 0,
-                    'errors' => [
-                        ['row' => '-', 'nik' => '-', 'errors' => ['Gagal generate nomor anggota: ' . $e->getMessage()]],
-                    ],
-                ];
+            $generatedNumbers = [];
+            if (!empty($companyIds)) {
+                try {
+                    $generatedNumbers = $generator->generateBatch($companyIds);
+                } catch (RuntimeException $e) {
+                    DB::rollBack();
+                    return [
+                        'success' => false,
+                        'total' => count($data),
+                        'imported' => 0,
+                        'errors' => [
+                            ['row' => '-', 'nik' => '-', 'errors' => ['Gagal generate nomor anggota: ' . $e->getMessage()]],
+                        ],
+                    ];
+                }
+            }
+
+            $memberNumbers = [];
+            foreach ($rowIndexes as $i => $index) {
+                $memberNumbers[$index] = $generatedNumbers[$i] ?? null;
             }
 
             foreach ($data as $index => $row) {
@@ -252,6 +290,11 @@ class ImportService
 
                 $createdMembers[] = $member;
 
+                // Register manual nomor in master (auto-generated ones already registered by the generator)
+                if (!empty($manualNomor)) {
+                    $this->registerManualNumber($manualNomor, $member, $formula, $company?->id);
+                }
+
                 // Create photo record with hash
                 if ($fotoPath && $photoHash) {
                     MemberPhoto::create([
@@ -316,7 +359,41 @@ class ImportService
         $data['kode_perusahaan'] = $data['kode_perusahaan'] ?? null;
         $data['nama_perusahaan'] = $data['nama_perusahaan'] ?? $data['perusahaan'] ?? null;
 
+        // Normalize manual member number (Excel may store it as a number)
+        if (isset($data['nomor_anggota'])) {
+            $data['nomor_anggota'] = trim($this->normalizeMemberNumber($data['nomor_anggota']));
+        }
+
         return $data;
+    }
+
+    /**
+     * Normalize member number value coming from Excel.
+     * Numeric cells may arrive as float (e.g. 1.02010380123E+12) or with trailing .0.
+     */
+    private function normalizeMemberNumber(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        if (is_float($value)) {
+            // Whole numbers (e.g. 1020103800123) must not become "1.02E+12"
+            if (fmod($value, 1.0) === 0.0) {
+                return sprintf('%.0F', $value);
+            }
+
+            return (string) $value;
+        }
+
+        $value = trim((string) $value);
+
+        // Strip Excel's ".0" suffix on whole numbers
+        if (preg_match('/^\d+\.0+$/', $value)) {
+            return preg_replace('/\.0+$/', '', $value);
+        }
+
+        return $value;
     }
 
     /**
@@ -330,19 +407,30 @@ class ImportService
         string $extractPath,
         array &$photosData,
         array &$companyData,
-        bool $hasNomorAnggota = false
+        bool $hasNomorAnggota = false,
+        array &$seenNomorAnggota = []
     ): array {
         $errors = [];
 
         // Validate nomor anggota if provided
         if ($hasNomorAnggota && !empty($row['nomor_anggota'])) {
             $nomorAnggota = trim($row['nomor_anggota']);
-            // Remove dots for duplicate check
-            $nikCheck = str_replace('.', '', $nomorAnggota);
-            if (Member::where('nik', $nomorAnggota)->exists() || Member::where('nik', $nikCheck)->exists()) {
+
+            // Check duplicate against database (including soft-deleted members,
+            // since the unique index on nik still covers them)
+            if (Member::withTrashed()->where('nik', $nomorAnggota)->exists()) {
                 $errors[] = "Nomor anggota '$nomorAnggota' sudah terdaftar";
+            } elseif (MemberNumber::where('number', $nomorAnggota)
+                ->where('status', MemberNumber::STATUS_USED)
+                ->exists()) {
+                $errors[] = "Nomor anggota '$nomorAnggota' sudah dipakai anggota lain";
+            } elseif (isset($seenNomorAnggota[$nomorAnggota])) {
+                $errors[] = "Nomor anggota '$nomorAnggota' duplikat dengan baris {$seenNomorAnggota[$nomorAnggota]}";
+            } else {
+                $seenNomorAnggota[$nomorAnggota] = $rowNum;
             }
-            // Validate format: X.XX.XX.XXX.XXXX
+
+            // Validate format, same rule as the member create/edit form
             if (!preg_match('/^[0-9]{1,2}\.[0-9]{2}\.[0-9]{2}\.[0-9]{3}\.[0-9]{4}$/', $nomorAnggota)) {
                 $errors[] = "Format nomor anggota tidak valid (contoh: 1.02.01.038.0123)";
             }
@@ -574,28 +662,32 @@ class ImportService
         $preview = [];
         $companySequenceCounters = [];
 
-        // Get active formula
-        $formula = MemberNumberFormula::getActive();
-        $generator = new MemberNumberGenerator();
-
-        // First pass: reserve numbers for preview (only for rows without manual nomor)
+        // First pass: build company id list for rows WITHOUT manual nomor
         $companyIds = [];
-        $hasManualNomor = [];
+        $autoRowIndexes = [];
         foreach ($validData as $index => $row) {
-            $rowNum = $index + 2; // Excel row number
+            $rowNum = $row['_row_num'] ?? ($index + 2); // Excel row number
             $companyInfo = $companyData[$rowNum] ?? null;
-            $companyIds[$index] = $companyInfo['id'] ?? null;
 
-            // Check if this row has manual nomor_anggota
-            $manualNomor = trim($row['nomor_anggota'] ?? '');
-            $hasManualNomor[$index] = !empty($manualNomor);
+            if (trim($row['nomor_anggota'] ?? '') !== '') {
+                continue; // manual number, no reservation needed
+            }
+
+            $companyIds[] = $companyInfo['id'] ?? null;
+            $autoRowIndexes[] = $index;
         }
 
         // Reserve numbers only for rows without manual nomor
-        $reservations = $generator->reserveForPreview($companyIds);
+        $generator = new MemberNumberGenerator();
+        $generatedReservations = $generator->reserveForPreview($companyIds);
+
+        $reservations = [];
+        foreach ($autoRowIndexes as $i => $index) {
+            $reservations[$index] = $generatedReservations[$i] ?? null;
+        }
 
         foreach ($validData as $index => $row) {
-            $rowNum = $index + 2; // Excel row number
+            $rowNum = $row['_row_num'] ?? ($index + 2); // Excel row number
             $companyInfo = $companyData[$rowNum] ?? null;
             $reservation = $reservations[$index] ?? null;
 
@@ -678,6 +770,46 @@ class ImportService
         }
 
         return $summary;
+    }
+
+    /**
+     * Register a manually supplied member number in the member_numbers master.
+     * If the number already exists and is still available, mark it as used.
+     */
+    private function registerManualNumber(
+        string $number,
+        Member $member,
+        ?MemberNumberFormula $formula,
+        ?int $companyId
+    ): void {
+        $existing = MemberNumber::where('number', $number)->first();
+
+        if ($existing) {
+            if ($existing->isAvailable()) {
+                $existing->markAsUsed($member);
+            }
+
+            if (!$existing->company_id && $companyId) {
+                $existing->update(['company_id' => $companyId]);
+            }
+
+            return;
+        }
+
+        $sequence = 0;
+        if ($formula) {
+            $sequence = (int) substr($number, -$formula->sequence_digits);
+        }
+
+        MemberNumber::create([
+            'number' => $number,
+            'status' => MemberNumber::STATUS_USED,
+            'member_id' => $member->id,
+            'company_id' => $companyId,
+            'formula_id' => $formula?->id,
+            'prefix_value' => '',
+            'sequence' => $sequence,
+        ]);
     }
 
     /**
@@ -769,27 +901,56 @@ class ImportService
     }
 
     /**
-     * Check if a row is an instruction row.
+     * Check if a row is an instruction row (e.g. the CATATAN note in the template).
+     * The note may sit in any column, so every cell is checked instead of only 'nama'.
      */
     private function isInstructionRow(array $rowData): bool
     {
-        // Check if this looks like a note/catalog row by checking the CATATAN pattern
-        $nama = $rowData['nama'] ?? '';
-        if (!empty($nama) && is_string($nama)) {
-            $namaLower = strtolower(trim($nama));
-            if (str_starts_with($namaLower, 'catatan:')) {
-                // Verify this is truly an instruction row (no real data)
-                $requiredFields = ['tempat_lahir', 'alamat', 'jenis_kelamin', 'agama'];
-                foreach ($requiredFields as $field) {
-                    $value = $rowData[$field] ?? '';
-                    if (!empty(trim((string) $value))) {
-                        return false;
-                    }
-                }
-                return true;
+        $catatanKey = null;
+
+        foreach ($rowData as $key => $value) {
+            if (!is_string($value)) {
+                continue;
+            }
+
+            if (str_starts_with(strtolower(ltrim($value)), 'catatan')) {
+                $catatanKey = $key;
+                break;
             }
         }
-        return false;
+
+        if ($catatanKey === null) {
+            return false;
+        }
+
+        // Verify this is truly an instruction row (no real member data besides the note itself)
+        foreach ($rowData as $field => $value) {
+            if ($field === $catatanKey) {
+                continue;
+            }
+
+            if (!empty(trim((string) $value))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if a row carries no member data at all.
+     * Such rows (stray formatting) should be skipped, not rejected.
+     * A row with any filled cell is kept so the user still sees what is missing.
+     */
+    private function isBlankDataRow(array $rowData): bool
+    {
+        foreach ($rowData as $value) {
+            if (!empty(trim((string) $value))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

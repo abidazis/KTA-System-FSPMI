@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Setting extends Model
 {
@@ -29,10 +30,24 @@ class Setting extends Model
      */
     public static function set($key, $value, $type = 'string')
     {
-        return static::updateOrCreate(
+        // label wajib terisi (NOT NULL). Saat baris belum ada, pakai default
+        // agar firstOrCreate tidak gagal di instalasi baru.
+        $setting = static::firstOrCreate(
             ['key' => $key],
-            ['value' => $value, 'type' => $type]
+            [
+                'value' => $value,
+                'type' => $type,
+                'label' => Str::headline($key),
+                'group' => 'general',
+            ]
         );
+
+        // Jangan menimpa label/group yang sudah diatur lewat seeder/pengaturan.
+        if (! $setting->wasRecentlyCreated) {
+            $setting->update(['value' => $value, 'type' => $type]);
+        }
+
+        return $setting;
     }
 
     /**

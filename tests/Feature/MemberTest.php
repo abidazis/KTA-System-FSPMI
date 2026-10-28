@@ -55,7 +55,7 @@ class MemberTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_can_create_member_with_auto_generated_number(): void
+    public function test_can_create_member_with_manual_number(): void
     {
         // Create a company first
         $company = Company::create([
@@ -68,6 +68,7 @@ class MemberTest extends TestCase
         $this->actingAs($user);
 
         $response = $this->post('/members', [
+            'nik' => '1.02.01.038.0001',
             'nama' => 'Test Member',
             'tempat_lahir' => 'Jakarta',
             'tanggal_lahir' => '1990-01-01',
@@ -82,17 +83,14 @@ class MemberTest extends TestCase
         // Should redirect to member show page
         $response->assertRedirect();
 
-        // Member should be created with auto-generated nik
+        // Member should be created with the manually entered nik
         $member = Member::where('nama', 'Test Member')->first();
         $this->assertNotNull($member);
-        $this->assertEquals('FSPMI-TST-0001', $member->nik);
+        $this->assertEquals('1.02.01.038.0001', $member->nik);
     }
 
-    public function test_cannot_create_member_without_formula(): void
+    public function test_cannot_create_member_without_nik(): void
     {
-        // Deactivate all formulas
-        MemberNumberFormula::query()->update(['is_active' => false]);
-
         $company = Company::create([
             'kode' => 'TST',
             'name' => 'Test Company',
@@ -114,12 +112,8 @@ class MemberTest extends TestCase
             'company_id' => $company->id,
         ]);
 
-        // Should redirect back with error
-        $response->assertRedirect();
-        $response->assertSessionHas('error');
-        $response->assertSessionHas('error', 'Nomor anggota belum dapat dibuat karena formula nomor anggota belum dikonfigurasi oleh administrator.');
-
-        // Member should NOT be created
+        // Nomor anggota kini diinput manual, sehingga wajib diisi
+        $response->assertSessionHasErrors('nik');
         $this->assertDatabaseMissing('members', ['nama' => 'Test Member']);
     }
 

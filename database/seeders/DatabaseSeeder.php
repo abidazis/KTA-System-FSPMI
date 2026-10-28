@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             ManagementPeriodSeeder::class,
             MemberSeeder::class,
             KtaSettingSeeder::class,
+            SettingSeeder::class,
         ]);
     }
 }

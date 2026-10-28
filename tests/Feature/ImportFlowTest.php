@@ -190,21 +190,265 @@ class ImportFlowTest extends TestCase
     }
 
     /**
-     * Helper: Create a test Excel file with member data (without nik column).
+     * Test: manual nomor_anggota from Excel is used as-is on import.
      */
-    protected function createTestExcel(array $rows): string
+    public function test_import_uses_manual_nomor_anggota_from_excel(): void
+    {
+        $user = User::factory()->create()->givePermissionTo('import');
+        $this->actingAs($user);
+
+        $zipPath = $this->createTestZip([
+            'data.xlsx' => $this->createTestExcel([
+                ['nomor_anggota' => '1.02.01.038.0777', 'nama' => 'Manual Number', 'tempat_lahir' => 'Jakarta',
+                 'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Merdeka 1',
+                 'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
+                 'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
+                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
+                 'foto' => 'MAN-0001.jpg', 'kode_perusahaan' => 'ABC', 'nama_perusahaan' => 'PT ABC Indonesia'],
+            ], includeNomorAnggota: true),
+            'foto/MAN-0001.jpg' => $this->createTestImage(),
+        ]);
+
+        $response = $this->post('/import/validate', [
+            'file' => new UploadedFile($zipPath, 'import.zip', 'application/zip', null, true),
+        ]);
+        $response->assertStatus(200);
+        $response->assertSeeText('1.02.01.038.0777');
+        $response->assertSeeText('Manual');
+
+        $token = session('import_token');
+        $this->post('/import', ['import_token' => $token])->assertRedirect('/members');
+
+        $member = Member::where('nama', 'Manual Number')->first();
+        $this->assertNotNull($member);
+        $this->assertEquals('1.02.01.038.0777', $member->nik);
+
+        // Manual number must be registered in the master list as used
+        $this->assertDatabaseHas('member_numbers', [
+            'number' => '1.02.01.038.0777',
+            'status' => 'used',
+            'member_id' => $member->id,
+        ]);
+
+        @unlink($zipPath);
+    }
+
+    /**
+     * Test: empty nomor_anggota cell falls back to auto-generation.
+     */
+    public function test_import_auto_generates_when_nomor_anggota_empty(): void
+    {
+        $user = User::factory()->create()->givePermissionTo('import');
+        $this->actingAs($user);
+
+        $zipPath = $this->createTestZip([
+            'data.xlsx' => $this->createTestExcel([
+                ['nomor_anggota' => '', 'nama' => 'Auto Number', 'tempat_lahir' => 'Jakarta',
+                 'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Merdeka 1',
+                 'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
+                 'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
+                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
+                 'foto' => 'AUT-0001.jpg', 'kode_perusahaan' => 'ABC', 'nama_perusahaan' => 'PT ABC Indonesia'],
+            ], includeNomorAnggota: true),
+            'foto/AUT-0001.jpg' => $this->createTestImage(),
+        ]);
+
+        $this->post('/import/validate', [
+            'file' => new UploadedFile($zipPath, 'import.zip', 'application/zip', null, true),
+        ])->assertSeeText('Auto');
+
+        $token = session('import_token');
+        $this->post('/import', ['import_token' => $token])->assertRedirect('/members');
+
+        $member = Member::where('nama', 'Auto Number')->first();
+        $this->assertNotNull($member);
+        $this->assertMatchesRegularExpression('/^FSPMI-ABC-\d{4}$/', $member->nik);
+
+        @unlink($zipPath);
+    }
+
+    /**
+     * Test: duplicate manual nomor_anggota within the same file is rejected.
+     */
+    public function test_duplicate_manual_nomor_anggota_in_batch_is_rejected(): void
+    {
+        $user = User::factory()->create()->givePermissionTo('import');
+        $this->actingAs($user);
+
+        $row = ['nomor_anggota' => '1.02.01.038.0888', 'tempat_lahir' => 'Jakarta',
+                'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Merdeka 1',
+                'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
+                'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
+                'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
+                'kode_perusahaan' => 'ABC', 'nama_perusahaan' => 'PT ABC Indonesia'];
+
+        $zipPath = $this->createTestZip([
+            'data.xlsx' => $this->createTestExcel([
+                $row + ['nama' => 'Member Satu', 'foto' => 'DUP-0001.jpg'],
+                $row + ['nama' => 'Member Dua', 'foto' => 'DUP-0002.jpg'],
+            ], includeNomorAnggota: true),
+            'foto/DUP-0001.jpg' => $this->createTestImage(),
+            'foto/DUP-0002.jpg' => $this->createTestImage('png'),
+        ]);
+
+        $response = $this->post('/import/validate', [
+            'file' => new UploadedFile($zipPath, 'import.zip', 'application/zip', null, true),
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertSeeText('duplikat dengan baris');
+        $response->assertDontSeeText('Validasi Berhasil');
+
+        @unlink($zipPath);
+    }
+
+    /**
+     * Test: manual nomor_anggota that already exists in database is rejected.
+     */
+    public function test_existing_manual_nomor_anggota_is_rejected(): void
+    {
+        $user = User::factory()->create()->givePermissionTo('import');
+        $this->actingAs($user);
+
+        Member::create([
+            'nik' => '1.02.01.038.0999',
+            'nama' => 'Existing Member',
+            'tempat_lahir' => 'Bandung',
+            'tanggal_lahir' => '1990-01-01',
+            'alamat' => 'Alamat',
+            'jenis_kelamin' => 'Laki-laki',
+            'agama' => 'Islam',
+            'berlaku_hingga' => '2030-01-01',
+            'tanggal_pembuatan' => '2025-01-01',
+            'company_id' => Company::where('kode', 'ABC')->first()->id,
+        ]);
+
+        $zipPath = $this->createTestZip([
+            'data.xlsx' => $this->createTestExcel([
+                ['nomor_anggota' => '1.02.01.038.0999', 'nama' => 'New Member', 'tempat_lahir' => 'Jakarta',
+                 'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Merdeka 1',
+                 'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
+                 'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
+                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
+                 'foto' => 'EXT-0001.jpg', 'kode_perusahaan' => 'ABC', 'nama_perusahaan' => 'PT ABC Indonesia'],
+            ], includeNomorAnggota: true),
+            'foto/EXT-0001.jpg' => $this->createTestImage(),
+        ]);
+
+        $response = $this->post('/import/validate', [
+            'file' => new UploadedFile($zipPath, 'import.zip', 'application/zip', null, true),
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertSeeText('sudah terdaftar');
+
+        @unlink($zipPath);
+    }
+
+    /**
+     * Test: the CATATAN note row from the template is skipped, not validated as data.
+     */
+    public function test_template_note_row_is_not_validated_as_data(): void
+    {
+        $user = User::factory()->create()->givePermissionTo('import');
+        $this->actingAs($user);
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $headers = [
+            'nomor_anggota', 'nama', 'tempat_lahir', 'tanggal_lahir', 'alamat',
+            'provinsi', 'kabupaten_kota', 'kecamatan', 'jenis_kelamin',
+            'agama', 'berlaku_hingga', 'tanggal_pembuatan', 'foto',
+            'kode_perusahaan', 'nama_perusahaan'
+        ];
+        $sheet->fromArray($headers, null, 'A1');
+        $sheet->fromArray([
+            '', 'Budi Santoso', 'Jakarta', '2020-12-16', 'Jl. Merdeka 1',
+            'DKI Jakarta', 'Jakarta Selatan', 'Kecamatan', 'Laki-laki',
+            'Islam', '2031-12-31', '2026-01-01', 'NOTE-0001.jpg',
+            'ABC', 'PT ABC Indonesia',
+        ], null, 'A2');
+        // Template note sits in row 4, under the nomor_anggota column
+        $sheet->setCellValue('A4', 'CATATAN: Kolom nomor_anggota opsional — kosongkan agar dibuat otomatis oleh sistem.');
+
+        $zipPath = $this->createTestZip([
+            'data.xlsx' => $this->saveSpreadsheet($spreadsheet),
+            'foto/NOTE-0001.jpg' => $this->createTestImage(),
+        ]);
+
+        $response = $this->post('/import/validate', [
+            'file' => new UploadedFile($zipPath, 'import.zip', 'application/zip', null, true),
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertSeeText('Validasi Berhasil');
+        $response->assertSeeText('1 Valid');
+        $response->assertDontSeeText('Format nomor anggota tidak valid');
+
+        $token = session('import_token');
+        $this->post('/import', ['import_token' => $token])->assertRedirect('/members');
+        $this->assertDatabaseHas('members', ['nama' => 'Budi Santoso']);
+
+        @unlink($zipPath);
+    }
+
+    /**
+     * Test: a row with no member data at all is skipped instead of rejected.
+     */
+    public function test_blank_data_row_is_skipped(): void
+    {
+        $user = User::factory()->create()->givePermissionTo('import');
+        $this->actingAs($user);
+
+        $zipPath = $this->createTestZip([
+            'data.xlsx' => $this->createTestExcel([
+                ['nama' => 'Budi Santoso', 'tempat_lahir' => 'Jakarta',
+                 'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Merdeka 1',
+                 'provinsi' => 'DKI Jakarta', 'kabupaten_kota' => 'Jakarta Selatan',
+                 'kecamatan' => 'Kecamatan', 'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
+                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
+                 'foto' => 'BLANK-0001.jpg', 'kode_perusahaan' => 'ABC', 'nama_perusahaan' => 'PT ABC Indonesia'],
+                ['nama' => '', 'tempat_lahir' => '', 'tanggal_lahir' => '', 'alamat' => '',
+                 'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '', 'jenis_kelamin' => '',
+                 'agama' => '', 'berlaku_hingga' => '', 'tanggal_pembuatan' => '', 'foto' => '',
+                 'kode_perusahaan' => '', 'nama_perusahaan' => ''],
+            ]),
+            'foto/BLANK-0001.jpg' => $this->createTestImage(),
+        ]);
+
+        $response = $this->post('/import/validate', [
+            'file' => new UploadedFile($zipPath, 'import.zip', 'application/zip', null, true),
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertSeeText('Validasi Berhasil');
+        $response->assertSeeText('1 Valid');
+
+        @unlink($zipPath);
+    }
+
+    /**
+     * Helper: Create a test Excel file with member data.
+     * Pass $includeNomorAnggota = true to add the optional nomor_anggota column.
+     */
+    protected function createTestExcel(array $rows, bool $includeNomorAnggota = false): string
     {
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Data Anggota');
 
-        // Headers (without nik - auto-generated)
         $headers = [
             'nama', 'tempat_lahir', 'tanggal_lahir', 'alamat',
             'provinsi', 'kabupaten_kota', 'kecamatan', 'jenis_kelamin',
             'agama', 'berlaku_hingga', 'tanggal_pembuatan', 'foto',
             'kode_perusahaan', 'nama_perusahaan'
         ];
+
+        if ($includeNomorAnggota) {
+            array_unshift($headers, 'nomor_anggota');
+        }
+
         $sheet->fromArray($headers, null, 'A1');
 
         // Add data rows

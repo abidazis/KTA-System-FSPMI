@@ -1005,15 +1005,21 @@
 
     // ===== FLATPICKR DATE PICKER INITIALIZATION =====
     document.addEventListener('DOMContentLoaded', function() {
-        // Set Indonesian locale for Flatpickr
-        flatpickr.localize(flatpickr.languages.id);
+        if (typeof flatpickr === 'undefined') {
+            return;
+        }
+
+        // Set Indonesian locale for Flatpickr (language file may fail to load from CDN)
+        var hasIndonesianLocale = flatpickr.languages && flatpickr.languages.id;
+        if (hasIndonesianLocale) {
+            flatpickr.localize(flatpickr.languages.id);
+        }
 
         // Initialize Flatpickr for all date inputs
-        flatpickr('input[type="date"]', {
+        var config = {
             dateFormat: 'Y-m-d',
             altInput: true,
             altFormat: 'dd F Y',
-            locale: 'id',
             allowInput: true,
             disableMobile: true,
             theme: 'material_blue',
@@ -1021,7 +1027,13 @@
                 // Add custom styling to match FSPMI design
                 instance.calendarContainer.classList.add('fspmi-flatpickr');
             }
-        });
+        };
+
+        if (hasIndonesianLocale) {
+            config.locale = 'id';
+        }
+
+        flatpickr('input[type="date"]', config);
     });
     </script>
     @stack('scripts')
