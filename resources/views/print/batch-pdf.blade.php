@@ -150,18 +150,36 @@
                 print-color-adjust: exact !important;
             }
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | MIRROR OUTPUT (khusus kebutuhan cetak tertentu)
+        |--------------------------------------------------------------------------
+        | Seluruh halaman dicerminkan kiri-kanan (mirror) mengelilingi sumbu
+        | vertikal tengah halaman. Urutan kartu otomatis terbalik secara visual,
+        | persis seperti opsi "Mirror Image" pada driver printer.
+        | DomPDF 3.x mendukung CSS transform scaleX().
+        |--------------------------------------------------------------------------
+        */
+        .page-mirror {
+            transform: scaleX(-1);
+            -webkit-transform: scaleX(-1);
+            transform-origin: center center;
+            -webkit-transform-origin: center center;
+        }
     </style>
 </head>
 <body>
 
 @php
     $isPdf = true;
+    $mirror = $mirror ?? false;
 @endphp
 
 {{-- 5 KTA per page: row 1 front + row 2 back --}}
 @foreach($members->chunk(5) as $pageIndex => $pageMembers)
 @php $pageMembersArray = $pageMembers->values()->all(); @endphp
-<div class="page">
+<div class="page{{ $mirror ? ' page-mirror' : '' }}">
 
     {{-- ROW 1: 5 KTA DEPAN berjejer horizontal --}}
     @foreach([0, 1, 2, 3, 4] as $i)

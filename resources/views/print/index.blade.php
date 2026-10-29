@@ -61,6 +61,10 @@
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                             PDF
                         </a>
+                        <a href="{{ route('print.pdf.mirror', $batch) }}" class="btn btn-sm btn-outline" title="Download PDF versi mirror (cermin)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3v18"></path><path d="M8 7L3 12l5 5V7z"></path><path d="M16 7l5 5-5 5V7z"></path></svg>
+                            MIRROR
+                        </a>
                     </div>
                 </td>
             </tr>

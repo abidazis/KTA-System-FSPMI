@@ -321,4 +321,73 @@ class PrintTest extends TestCase
 
         $this->assertEquals($initialCount, $batch->members()->count());
     }
+
+    public function test_mirror_pdf_is_horizontally_flipped(): void
+    {
+        $batch = $this->createBatchWithMembers(1);
+
+        $response = $this->get('/print/' . $batch->id . '/pdf/mirror');
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/pdf');
+
+        // A horizontal flip is emitted as a negative x-scale in the PDF matrix:
+        //   -1.000 0.000 0.000 1.000 <pageWidth> 0.000 cm
+        $content = $this->decodePdfStreams($response->getContent());
+        $this->assertMatchesRegularExpression(
+            '/-\d+(?:\.\d+)?\s+0(?:\.0+)?\s+0(?:\.0+)?\s+1(?:\.0+)?\s+[\d.]+\s+0(?:\.0+)?\s+cm/',
+            $content,
+            'MIRROR PDF should contain a horizontal flip transform'
+        );
+    }
+
+    public function test_normal_pdf_is_not_flipped(): void
+    {
+        $batch = $this->createBatchWithMembers(1);
+
+        $response = $this->get('/print/' . $batch->id . '/pdf');
+        $response->assertStatus(200);
+
+        $content = $this->decodePdfStreams($response->getContent());
+        $this->assertDoesNotMatchRegularExpression(
+            '/-\d+(?:\.\d+)?\s+0(?:\.0+)?\s+0(?:\.0+)?\s+1(?:\.0+)?\s+[\d.]+\s+0(?:\.0+)?\s+cm/',
+            $content,
+            'Normal PDF must not contain a horizontal flip transform'
+        );
+    }
+
+    public function test_mirror_pdf_filename_is_distinct(): void
+    {
+        $batch = $this->createBatchWithMembers(1);
+
+        $normal = $this->get('/print/' . $batch->id . '/pdf');
+        $mirror = $this->get('/print/' . $batch->id . '/pdf/mirror');
+
+        $this->assertStringNotContainsString(
+            'MIRROR',
+            (string) $normal->headers->get('Content-Disposition')
+        );
+        $this->assertStringContainsString(
+            'MIRROR',
+            (string) $mirror->headers->get('Content-Disposition')
+        );
+    }
+
+    /**
+     * Decode every FlateDecode stream in a PDF so its drawing operators can be asserted on.
+     */
+    private function decodePdfStreams(string $pdf): string
+    {
+        preg_match_all('/stream\r?\n(.*?)\r?\nendstream/s', $pdf, $matches);
+
+        $decoded = '';
+        foreach ($matches[1] as $stream) {
+            $inflated = @gzuncompress($stream);
+            if ($inflated === false) {
+                $inflated = @gzinflate($stream);
+            }
+            $decoded .= ($inflated === false ? $stream : $inflated) . "\n";
+        }
+
+        return $decoded;
+    }
 }

@@ -232,6 +232,21 @@ class PrintController extends Controller
 
     public function downloadPdf(Request $request, PrintBatch $batch): \Symfony\Component\HttpFoundation\Response
     {
+        return $this->buildBatchPdf($request, $batch, false);
+    }
+
+    /**
+     * Download the same batch as a horizontally mirrored PDF.
+     * Used when the printer/paper requires a mirror image for the physical result
+     * to read correctly (e.g. printing onto transfer media).
+     */
+    public function downloadPdfMirror(Request $request, PrintBatch $batch): \Symfony\Component\HttpFoundation\Response
+    {
+        return $this->buildBatchPdf($request, $batch, true);
+    }
+
+    private function buildBatchPdf(Request $request, PrintBatch $batch, bool $mirror): \Symfony\Component\HttpFoundation\Response
+    {
         $batch->load(['period', 'printer', 'members.company']);
 
         $officials = $batch->period->activeOfficials()->get();
@@ -270,14 +285,18 @@ class PrintController extends Controller
             'stempel_path' => $batch->period->stempel_path ? storage_path('app/private/' . $batch->period->stempel_path) : null,
             'duplexMode' => $duplexMode,
             'background' => $background,
+            'mirror' => $mirror,
         ]);
 
         // A4 Landscape — 297x210mm — 5 KTA per baris (10 KTA per halaman)
         $pdf->setPaper('a4', 'landscape');
 
-        $filename = $batch->batch_number . '-KTA.pdf';
+        $filename = $batch->batch_number . '-KTA' . ($mirror ? '-MIRROR' : '') . '.pdf';
 
-        AuditLog::log('download_print_batch_pdf', $batch, null, ['duplex' => $duplexMode]);
+        AuditLog::log('download_print_batch_pdf', $batch, null, [
+            'duplex' => $duplexMode,
+            'mirror' => $mirror,
+        ]);
 
         return response($pdf->output(), 200, [
             'Content-Type' => 'application/pdf',

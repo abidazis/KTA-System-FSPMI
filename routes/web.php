@@ -16,6 +16,7 @@ use App\Http\Controllers\Settings\KtaSettingController;
 use App\Http\Controllers\Settings\MemberNumberFormulaController;
 use App\Http\Controllers\Settings\MemberNumberController;
 use App\Http\Controllers\Setting\KtaBackgroundController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\User\UserController;
 use App\Http\Controllers\MediaController;
 use Illuminate\Support\Facades\Route;
@@ -82,6 +83,7 @@ Route::middleware('auth')->group(function () {
         Route::post('print', [PrintController::class, 'store'])->name('print.store');
         Route::get('print/{batch}', [PrintController::class, 'show'])->name('print.show');
         Route::get('print/{batch}/pdf', [PrintController::class, 'downloadPdf'])->name('print.pdf');
+        Route::get('print/{batch}/pdf/mirror', [PrintController::class, 'downloadPdfMirror'])->name('print.pdf.mirror');
         Route::delete('print/{batch}', [PrintController::class, 'destroy'])->name('print.destroy');
     });
 
