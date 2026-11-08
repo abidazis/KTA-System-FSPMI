@@ -515,11 +515,8 @@ class ImportService
             return ['errors' => [], 'data' => ['kode' => null, 'name' => null, 'is_new' => false]];
         }
 
-        // Find existing company by kode
-        $existingByKode = null;
-        if ($kode) {
-            $existingByKode = Company::where('kode', $kode)->first();
-        }
+        // Find existing company by kode (case-insensitive)
+        $existingByKode = Company::findByKode($kode);
 
         if ($existingByKode) {
             // Company exists - check if data matches
@@ -824,12 +821,10 @@ class ImportService
             return null;
         }
 
-        // Find by kode
-        if ($kode) {
-            $company = Company::where('kode', $kode)->first();
-            if ($company) {
-                return $company;
-            }
+        // Find by kode (case-insensitive) - kode acts as the data puller
+        $company = Company::findByKode($kode);
+        if ($company) {
+            return $company;
         }
 
         // Create new company

@@ -17,6 +17,7 @@
         <thead>
             <tr>
                 <th width="50">No</th>
+                <th width="90">Kode</th>
                 <th>Nama Perusahaan</th>
                 <th>Alamat</th>
                 <th>Kota</th>
@@ -29,6 +30,13 @@
             @forelse($companies as $company)
             <tr>
                 <td>{{ $loop->iteration + ($companies->currentPage() - 1) * $companies->perPage() }}</td>
+                <td>
+                    @if($company->kode)
+                        <strong style="color:var(--primary);">{{ $company->kode }}</strong>
+                    @else
+                        <span style="color:var(--gray-400);">—</span>
+                    @endif
+                </td>
                 <td><strong style="color:var(--primary);">{{ $company->name }}</strong></td>
                 <td>{{ $company->address ?? '-' }}</td>
                 <td>{{ $company->city ?? '-' }}</td>
@@ -58,7 +66,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="7" class="empty-state">
+                <td colspan="8" class="empty-state">
                     <p>Belum ada data perusahaan.</p>
                     <a href="{{ route('settings.companies.create') }}" class="btn btn-primary">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>

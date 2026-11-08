@@ -7,12 +7,13 @@ use App\Models\Company;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\Rule;
 
 class CompanyController extends Controller
 {
     public function index(): View
     {
-        $companies = Company::orderBy('name')->paginate(10);
+        $companies = Company::orderBy('kode')->orderBy('name')->paginate(10);
         return view('settings.companies.index', compact('companies'));
     }
 
@@ -23,7 +24,15 @@ class CompanyController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $request->merge(['kode' => strtoupper(trim($request->input('kode') ?? ''))]);
+
         $validated = $request->validate([
+            'kode' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique('companies', 'kode')->whereNotNull('kode'),
+            ],
             'name' => 'required|string|max:255',
             'address' => 'nullable|string|max:500',
             'city' => 'nullable|string|max:100',
@@ -34,6 +43,7 @@ class CompanyController extends Controller
             'is_active' => 'nullable|boolean',
         ]);
 
+        $validated['kode'] = ($validated['kode'] ?? '') !== '' ? $validated['kode'] : null;
         $validated['is_active'] = $request->boolean('is_active', true);
 
         Company::create($validated);
@@ -55,7 +65,15 @@ class CompanyController extends Controller
 
     public function update(Request $request, Company $company): RedirectResponse
     {
+        $request->merge(['kode' => strtoupper(trim($request->input('kode') ?? ''))]);
+
         $validated = $request->validate([
+            'kode' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique('companies', 'kode')->ignore($company->id)->whereNotNull('kode'),
+            ],
             'name' => 'required|string|max:255',
             'address' => 'nullable|string|max:500',
             'city' => 'nullable|string|max:100',
@@ -66,6 +84,7 @@ class CompanyController extends Controller
             'is_active' => 'nullable|boolean',
         ]);
 
+        $validated['kode'] = ($validated['kode'] ?? '') !== '' ? $validated['kode'] : null;
         $validated['is_active'] = $request->boolean('is_active', true);
 
         $company->update($validated);

@@ -18,6 +18,12 @@
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;">
             <div class="form-group">
+                <label for="kode">Kode Perusahaan</label>
+                <input type="text" id="kode" name="kode" value="{{ old('kode') }}" maxlength="20" placeholder="cth: KBY" style="text-transform:uppercase;">
+                @error('kode') <span class="error">{{ $message }}</span> @enderror
+                <small style="color:var(--gray-500);font-size:0.8rem;">Kode unik penarik data saat import Excel (kolom kode_perusahaan). Kosongkan jika tidak diisi.</small>
+            </div>
+            <div class="form-group">
                 <label for="name">Nama Perusahaan *</label>
                 <input type="text" id="name" name="name" value="{{ old('name') }}" required placeholder="Nama perusahaan">
                 @error('name') <span class="error">{{ $message }}</span> @enderror

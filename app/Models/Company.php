@@ -34,6 +34,21 @@ class Company extends Model
         return $query->where('is_active', true);
     }
 
+    /**
+     * Find a company by its unique kode (case-insensitive, exact match).
+     * Used as the data puller (penarik data) during Excel import.
+     */
+    public static function findByKode(?string $kode): ?self
+    {
+        if ($kode === null || trim($kode) === '') {
+            return null;
+        }
+
+        return static::withoutGlobalScopes()
+            ->whereRaw('UPPER(kode) = ?', [mb_strtoupper(trim($kode))])
+            ->first();
+    }
+
     public function members(): HasMany
     {
         return $this->hasMany(Member::class);
