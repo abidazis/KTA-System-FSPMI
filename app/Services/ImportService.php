@@ -19,10 +19,43 @@ use RuntimeException;
 class ImportService
 {
     /**
+     * Columns the import cannot run without.
+     */
+    private const REQUIRED_HEADERS = [
+        'nama', 'tempat_lahir', 'tanggal_lahir',
+        'alamat', 'jenis_kelamin', 'agama',
+        'berlaku_hingga', 'tanggal_pembuatan',
+    ];
+
+    /**
+     * Accepted spellings for each column. Raw header cells are normalized
+     * (lowercase, separators -> space) before being matched here.
+     */
+    private const HEADER_ALIASES = [
+        'nama' => ['nama', 'nama lengkap', 'nama anggota', 'nama karyawan', 'nama pegawai', 'name', 'full name', 'fullname'],
+        'tempat_lahir' => ['tempat lahir', 'tempatlahir', 'birth place', 'birthplace'],
+        'tanggal_lahir' => ['tanggal lahir', 'tgl lahir', 'tgllahir', 'birth date', 'birthdate', 'dob'],
+        'alamat' => ['alamat', 'alamat lengkap', 'address'],
+        'provinsi' => ['provinsi', 'propinsi', 'province'],
+        'kabupaten_kota' => ['kabupaten kota', 'kabupaten', 'kota', 'kab kota', 'kabupatenkota', 'regency', 'city'],
+        'kecamatan' => ['kecamatan', 'district'],
+        'jenis_kelamin' => ['jenis kelamin', 'kelamin', 'gender', 'jk', 'l p'],
+        'agama' => ['agama', 'religion'],
+        'berlaku_hingga' => ['berlaku hingga', 'berlaku sampai', 'berlaku', 'valid until', 'masa berlaku', 'masa berlaku hingga'],
+        'tanggal_pembuatan' => ['tanggal pembuatan', 'tgl pembuatan', 'tanggal buat', 'tgl buat', 'tanggal cetak', 'tgl cetak', 'issue date', 'tanggal terbit'],
+        'foto' => ['foto', 'photo', 'file foto', 'nama foto', 'nama file foto', 'photo file'],
+        'kode_perusahaan' => ['kode perusahaan', 'kode pt', 'kode company', 'kode kantor', 'company code', 'kode'],
+        'nama_perusahaan' => ['nama perusahaan', 'nama pt', 'perusahaan', 'nama kantor', 'company', 'company name'],
+        'nomor_anggota' => ['nomor anggota', 'no anggota', 'nomor kartu', 'member number'],
+    ];
+
+    /**
      * Validate all import data before any database write.
      * Returns array with validation results.
+     *
+     * @param string|array $excelFiles One Excel path, or a list of candidate paths from the ZIP.
      */
-    public function validateImport(string $excelFile, string $extractPath, array $allZipNames): array
+    public function validateImport(string|array $excelFiles, string $extractPath, array $allZipNames = []): array
     {
         $errors = [];
         $validData = [];
@@ -31,62 +64,49 @@ class ImportService
         $processedNikHashes = []; // Track photo hashes in current batch
         $seenNomorAnggota = []; // Track manual member numbers in current batch
 
-        // Check if active formula exists
-        $formula = MemberNumberFormula::getActive();
-        if (!$formula) {
-            return $this->formatError('Formula nomor anggota belum dikonfigurasi. Silakan hubungi administrator untuk mengatur formula.');
+        // Parse Excel. Several files may be present in the ZIP (Office lock files,
+        // a stray copy, etc.), so every candidate is tried and the best match wins.
+        $parsed = $this->readSpreadsheet((array) $excelFiles);
+
+        if (!$parsed['ok']) {
+            return $this->formatError($parsed['message']);
         }
 
-        // Parse Excel
-        try {
-            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($excelFile);
-            $sheet = $spreadsheet->getActiveSheet();
-            $rows = [];
+        $headers = $parsed['headers'];
+        $rows = $parsed['rows'];
 
-            foreach ($sheet->getRowIterator() as $row) {
-                $cellIterator = $row->getCellIterator();
-                $cellIterator->setIterateOnlyExistingCells(false);
-                $rowData = [];
-                foreach ($cellIterator as $cell) {
-                    $rowData[] = $cell->getValue();
-                }
-                $rows[] = $rowData;
+        // nomor_anggota is optional - add validation if present
+        $hasNomorAnggota = in_array('nomor_anggota', $headers, true);
+
+        $missingHeaders = [];
+        foreach (self::REQUIRED_HEADERS as $required) {
+            if (!in_array($required, $headers, true)) {
+                $missingHeaders[] = $required;
             }
-        } catch (\Exception $e) {
-            return $this->formatError('File Excel tidak valid: ' . $e->getMessage());
         }
 
-        if (count($rows) < 2) {
+        if (!empty($missingHeaders)) {
+            return $this->formatError($this->missingHeadersMessage($missingHeaders, $parsed));
+        }
+
+        if (empty($rows)) {
             return $this->formatError('File Excel kosong atau tidak memiliki data.');
         }
 
-        // Normalize headers
-        $headers = array_map(fn($h) => strtolower(trim((string) ($h ?? ''))), $rows[0]);
-
-        // Accept common spellings of the optional member-number column
-        $headerAliases = [
-            'no. anggota' => 'nomor_anggota',
-            'no.anggota' => 'nomor_anggota',
-            'no anggota' => 'nomor_anggota',
-            'no_anggota' => 'nomor_anggota',
-            'nomor anggota' => 'nomor_anggota',
-            'nomor anggota (opsional)' => 'nomor_anggota',
-        ];
-        $headers = array_map(fn($h) => $headerAliases[$h] ?? $h, $headers);
-
-        // Check required headers - nomor_anggota is now optional (can be auto-generated or manual)
-        $requiredHeaders = [
-            'nama', 'tempat_lahir', 'tanggal_lahir',
-            'alamat', 'jenis_kelamin', 'agama',
-            'berlaku_hingga', 'tanggal_pembuatan',
-        ];
-
-        // nomor_anggota is optional - add validation if present
-        $hasNomorAnggota = in_array('nomor_anggota', $headers);
-
-        foreach ($requiredHeaders as $required) {
-            if (!in_array($required, $headers)) {
-                return $this->formatError("Kolom '$required' tidak ditemukan dalam Excel.");
+        // Formula is only needed when at least one row has no manual nomor anggota.
+        $formula = MemberNumberFormula::getActive();
+        if (!$formula) {
+            foreach ($rows as $row) {
+                $mapped = $this->mapRowData($headers, $row);
+                if ($this->isInstructionRow($mapped) || $this->isBlankDataRow($mapped)) {
+                    continue;
+                }
+                if (trim((string) ($mapped['nomor_anggota'] ?? '')) === '') {
+                    return $this->formatError(
+                        'Formula nomor anggota belum dikonfigurasi. Buka menu Pengaturan → Nomor Anggota untuk membuat formula aktif, '
+                        . 'atau isi kolom nomor_anggota di Excel agar nomor dipakai apa adanya.'
+                    );
+                }
             }
         }
 
@@ -94,10 +114,8 @@ class ImportService
         $existingPhotoHashes = MemberPhoto::pluck('photo_hash', 'photo_hash')->filter()->flip()->toArray();
 
         // First pass: Parse all data and validate without database writes
-        for ($i = 1; $i < count($rows); $i++) {
-            $row = $rows[$i];
-            $rowNum = $i + 1;
-
+        // Keys are the real Excel row numbers, so the reported row always matches the file.
+        foreach ($rows as $rowNum => $row) {
             // Skip empty rows
             if (empty(array_filter($row))) {
                 continue;
@@ -167,6 +185,223 @@ class ImportService
     }
 
     /**
+     * Read the first spreadsheet among $files that contains a usable header row.
+     *
+     * A ZIP often carries more than one spreadsheet-looking entry (Excel lock
+     * files "~$data.xlsx", a stray copy, a file in a sub-folder). Instead of
+     * blindly taking the first one, every candidate is loaded and the sheet with
+     * the best header match is used.
+     *
+     * @param array<int, string|array{path?: string}> $files
+     */
+    private function readSpreadsheet(array $files): array
+    {
+        $loadErrors = [];
+        $best = null;
+        $loaded = false;
+
+        foreach ($files as $file) {
+            $path = is_array($file) ? (string) ($file['path'] ?? '') : (string) $file;
+
+            if ($path === '' || !is_file($path)) {
+                continue;
+            }
+
+            try {
+                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
+            } catch (\Throwable $e) {
+                $loadErrors[] = basename($path) . ' — ' . $e->getMessage();
+                continue;
+            }
+
+            $loaded = true;
+
+            foreach ($spreadsheet->getAllSheets() as $sheet) {
+                $sheetRows = $this->worksheetToArray($sheet);
+                if (empty($sheetRows)) {
+                    continue;
+                }
+
+                $candidate = $this->detectHeaderRow($sheetRows);
+                if ($candidate === null) {
+                    continue;
+                }
+
+                $candidate['file'] = basename($path);
+                $candidate['sheet'] = $sheet->getTitle();
+
+                if ($best === null || $candidate['score'] > $best['score']) {
+                    $best = $candidate;
+                }
+            }
+
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+
+            if ($best !== null && $best['score'] >= count(self::REQUIRED_HEADERS)) {
+                break;
+            }
+        }
+
+        if ($best === null) {
+            if (!$loaded) {
+                $detail = empty($loadErrors) ? '' : ' (' . implode(' | ', array_slice($loadErrors, 0, 3)) . ')';
+
+                return ['ok' => false, 'message' => 'File Excel tidak dapat dibaca' . $detail];
+            }
+
+            return ['ok' => false, 'message' => 'File Excel kosong atau tidak memiliki data.'];
+        }
+
+        return ['ok' => true] + $best;
+    }
+
+    /**
+     * Convert a worksheet to a map of [excel row number => cell values].
+     */
+    private function worksheetToArray(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet): array
+    {
+        // getHighestDataRow()/Column() only count real data, so a template with
+        // formatted-but-empty rows does not make us read a million blank rows.
+        $highestRow = method_exists($sheet, 'getHighestDataRow')
+            ? $sheet->getHighestDataRow()
+            : $sheet->getHighestRow();
+
+        if ($highestRow < 1) {
+            return [];
+        }
+
+        $highestColumn = method_exists($sheet, 'getHighestDataColumn')
+            ? $sheet->getHighestDataColumn()
+            : $sheet->getHighestColumn();
+
+        $range = 'A1:' . $highestColumn . $highestRow;
+        $values = $sheet->rangeToArray($range, null, true, false, false);
+
+        $rows = [];
+        foreach ($values as $index => $rowValues) {
+            $rows[$index + 1] = $rowValues;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Find the header row inside a worksheet (typically row 1, but users often
+     * leave a blank/title row above it). Returns the best scoring candidate.
+     */
+    private function detectHeaderRow(array $sheetRows): ?array
+    {
+        $best = null;
+        $fallback = null;
+
+        $rowNumbers = array_slice(array_keys($sheetRows), 0, 20);
+
+        foreach ($rowNumbers as $rowNum) {
+            $rawHeaders = $sheetRows[$rowNum];
+            $headers = array_map(fn($value) => $this->canonicalHeader($value), $rawHeaders);
+
+            if (empty(array_filter($headers))) {
+                continue;
+            }
+
+            $score = 0;
+            foreach (self::REQUIRED_HEADERS as $required) {
+                if (in_array($required, $headers, true)) {
+                    $score++;
+                }
+            }
+
+            $candidate = [
+                'score' => $score,
+                'headers' => $headers,
+                'raw_headers' => $rawHeaders,
+                'header_row' => $rowNum,
+            ];
+
+            if (!in_array('nama', $headers, true)) {
+                if ($fallback === null || $score > $fallback['score']) {
+                    $fallback = $candidate;
+                }
+                continue;
+            }
+
+            if ($best === null || $score > $best['score']) {
+                $best = $candidate;
+            }
+        }
+
+        $chosen = $best ?? $fallback;
+
+        if ($chosen === null) {
+            return null;
+        }
+
+        // Every row below the header is data; real Excel row numbers are kept.
+        $dataRows = [];
+        foreach ($sheetRows as $dataRowNumber => $values) {
+            if ($dataRowNumber > $chosen['header_row']) {
+                $dataRows[$dataRowNumber] = $values;
+            }
+        }
+
+        $chosen['rows'] = $dataRows;
+
+        return $chosen;
+    }
+
+    /**
+     * Turn a raw header cell into its canonical column name.
+     * "Jenis Kelamin", "JENIS_KELAMIN", "Jenis Kelamin (L/P)" all become "jenis_kelamin".
+     */
+    private function canonicalHeader(mixed $raw): string
+    {
+        $header = strtolower(trim((string) ($raw ?? '')));
+
+        if ($header === '') {
+            return '';
+        }
+
+        $header = str_replace(['_', '.', '-', '/', '\\'], ' ', $header);
+        $header = trim((string) preg_replace('/\s+/u', ' ', $header));
+        $header = trim((string) preg_replace('/\s*\([^)]*\)\s*/u', ' ', $header));
+
+        foreach (self::HEADER_ALIASES as $canonical => $aliases) {
+            if (in_array($header, $aliases, true)) {
+                return $canonical;
+            }
+        }
+
+        return str_replace(' ', '_', $header);
+    }
+
+    /**
+     * Build a message that shows what the system actually read from the file.
+     */
+    private function missingHeadersMessage(array $missing, array $parsed): string
+    {
+        $message = "Kolom '{$missing[0]}' tidak ditemukan dalam Excel.";
+
+        if (count($missing) > 1) {
+            $message .= ' Kolom lain yang juga tidak ditemukan: ' . implode(', ', array_slice($missing, 1)) . '.';
+        }
+
+        $detected = array_values(array_filter(
+            array_map(fn($value) => trim((string) ($value ?? '')), $parsed['raw_headers'] ?? []),
+            fn($value) => $value !== ''
+        ));
+
+        if (!empty($detected)) {
+            $message .= ' Header terbaca di baris ' . $parsed['header_row'] . ' pada sheet "'
+                . $parsed['sheet'] . '": ' . implode(', ', array_slice($detected, 0, 20)) . '.';
+        }
+
+        $message .= ' Gunakan template resmi dari menu Import (Download Template Excel) agar nama kolom sesuai.';
+
+        return $message;
+    }
+
+    /**
      * Process the validated import with atomic transaction.
      */
     public function processImport(array $data, array $previewData, string $extractPath): array
@@ -174,18 +409,9 @@ class ImportService
         $imported = 0;
         $createdMembers = [];
 
-        // Check if active formula exists
+        // Only needed for auto-generated numbers and manual-number registration.
+        // Rows that already carry a nomor anggota can be imported without a formula.
         $formula = MemberNumberFormula::getActive();
-        if (!$formula) {
-            return [
-                'success' => false,
-                'total' => count($data),
-                'imported' => 0,
-                'errors' => [
-                    ['row' => '-', 'nik' => '-', 'errors' => ['Formula nomor anggota belum dikonfigurasi.']],
-                ],
-            ];
-        }
 
         try {
             DB::beginTransaction();

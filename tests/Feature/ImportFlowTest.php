@@ -429,6 +429,116 @@ class ImportFlowTest extends TestCase
     }
 
     /**
+     * Test: headers written with spaces / mixed case are still recognized.
+     */
+    public function test_validate_accepts_friendly_header_names(): void
+    {
+        $user = User::factory()->create()->givePermissionTo('import');
+        $this->actingAs($user);
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            'Nama Lengkap', 'Tempat Lahir', 'Tanggal Lahir', 'Alamat', 'Provinsi',
+            'Kabupaten/Kota', 'Kecamatan', 'Jenis Kelamin', 'Agama',
+            'Berlaku Hingga', 'Tanggal Pembuatan', 'Foto',
+            'Kode Perusahaan', 'Nama Perusahaan',
+        ], null, 'A1');
+        $sheet->fromArray([
+            'Budi Santoso', 'Jakarta', '2020-12-16', 'Jl. Merdeka 1', 'DKI Jakarta',
+            'Jakarta Selatan', 'Kecamatan', 'Laki-laki', 'Islam',
+            '2031-12-31', '2026-01-01', 'FR-0001.jpg', 'ABC', 'PT ABC Indonesia',
+        ], null, 'A2');
+
+        $zipPath = $this->createTestZip([
+            'data.xlsx' => $this->saveSpreadsheet($spreadsheet),
+            'foto/FR-0001.jpg' => $this->createTestImage(),
+        ]);
+
+        $response = $this->post('/import/validate', [
+            'file' => new UploadedFile($zipPath, 'import.zip', 'application/zip', null, true),
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertSeeText('Validasi Berhasil');
+        $response->assertSeeText('1 Valid');
+
+        @unlink($zipPath);
+    }
+
+    /**
+     * Test: header row below a title row is detected automatically.
+     */
+    public function test_validate_detects_header_row_below_title(): void
+    {
+        $user = User::factory()->create()->givePermissionTo('import');
+        $this->actingAs($user);
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'DATA ANGGOTA FSPMI 2026');
+        $sheet->fromArray([
+            'nomor_anggota', 'nama', 'tempat_lahir', 'tanggal_lahir', 'alamat',
+            'provinsi', 'kabupaten_kota', 'kecamatan', 'jenis_kelamin',
+            'agama', 'berlaku_hingga', 'tanggal_pembuatan', 'foto',
+            'kode_perusahaan', 'nama_perusahaan',
+        ], null, 'A3');
+        $sheet->fromArray([
+            '', 'Siti Rahayu', 'Bandung', '2021-05-20', 'Jl. Asia 2',
+            'Jawa Barat', 'Bandung', 'Kecamatan', 'Perempuan',
+            'Islam', '2031-12-31', '2026-01-01', 'TTL-0001.jpg',
+            'ABC', 'PT ABC Indonesia',
+        ], null, 'A4');
+
+        $zipPath = $this->createTestZip([
+            'data.xlsx' => $this->saveSpreadsheet($spreadsheet),
+            'foto/TTL-0001.jpg' => $this->createTestImage(),
+        ]);
+
+        $response = $this->post('/import/validate', [
+            'file' => new UploadedFile($zipPath, 'import.zip', 'application/zip', null, true),
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertSeeText('Validasi Berhasil');
+        $response->assertSeeText('1 Valid');
+
+        @unlink($zipPath);
+    }
+
+    /**
+     * Test: an Office lock file ("~$data.xlsx") inside the ZIP is ignored.
+     */
+    public function test_office_lock_file_in_zip_is_ignored(): void
+    {
+        $user = User::factory()->create()->givePermissionTo('import');
+        $this->actingAs($user);
+
+        $zipPath = $this->createTestZip([
+            '~$data.xlsx' => 'office lock file, not a workbook',
+            'data.xlsx' => $this->createTestExcel([
+                ['nama' => 'Andi Wijaya', 'tempat_lahir' => 'Jakarta',
+                 'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Merdeka 1',
+                 'provinsi' => 'DKI Jakarta', 'kabupaten_kota' => 'Jakarta Selatan',
+                 'kecamatan' => 'Kecamatan', 'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
+                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
+                 'foto' => 'LOCK-0001.jpg', 'kode_perusahaan' => 'ABC', 'nama_perusahaan' => 'PT ABC Indonesia'],
+            ]),
+            'foto/LOCK-0001.jpg' => $this->createTestImage(),
+        ]);
+
+        $response = $this->post('/import/validate', [
+            'file' => new UploadedFile($zipPath, 'import.zip', 'application/zip', null, true),
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertSeeText('Validasi Berhasil');
+        $response->assertSeeText('1 Valid');
+
+        @unlink($zipPath);
+    }
+
+    /**
      * Helper: Create a test Excel file with member data.
      * Pass $includeNomorAnggota = true to add the optional nomor_anggota column.
      */

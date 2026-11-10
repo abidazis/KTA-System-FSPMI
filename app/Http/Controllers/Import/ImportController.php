@@ -134,39 +134,68 @@ class ImportController extends Controller
             ]);
         }
 
-        $zip->extractTo($extractPath);
-        $zip->close();
-
-        // Step 3: Find Excel file
-        $excelFile = null;
-        $allZipNames = [];
-
-        $zip = new ZipArchive;
-        if ($zip->open($zipPath) === true) {
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $name = $zip->getNameIndex($i);
-                $allZipNames[] = $name;
-                $normalizedName = str_replace('/', DIRECTORY_SEPARATOR, $name);
-                $fullPath = $extractPath . DIRECTORY_SEPARATOR . $normalizedName;
-                $baseName = pathinfo($normalizedName, PATHINFO_BASENAME);
-                $ext = strtolower(pathinfo($baseName, PATHINFO_EXTENSION));
-                if (in_array($ext, ['xlsx', 'xls']) && $excelFile === null) {
-                    $excelFile = $fullPath;
-                }
-            }
+        if (!$zip->extractTo($extractPath)) {
             $zip->close();
-        }
-
-        if (!$excelFile) {
             $this->cleanupTempDir($tempDir);
             return view('imports.validation', [
-                'result' => $this->formatError('File Excel (.xlsx/.xls) tidak ditemukan dalam ZIP.'),
+                'result' => $this->formatError('Gagal mengekstrak file ZIP. Pastikan file tidak rusak lalu upload ulang.'),
+                'importToken' => null,
+            ]);
+        }
+
+        // Step 3: Collect every spreadsheet candidate in the ZIP.
+        // Office lock files ("~$data.xlsx"), macOS metadata and hidden files are
+        // skipped, and shallow paths are preferred so the real workbook wins.
+        $allZipNames = [];
+        $excelCandidates = [];
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $name = $zip->getNameIndex($i);
+            if ($name === false) {
+                continue;
+            }
+
+            $allZipNames[] = $name;
+
+            if ($this->isIgnoredZipEntry($name)) {
+                continue;
+            }
+
+            $normalizedName = str_replace('/', DIRECTORY_SEPARATOR, $name);
+            $fullPath = $extractPath . DIRECTORY_SEPARATOR . $normalizedName;
+            $baseName = pathinfo($normalizedName, PATHINFO_BASENAME);
+            $ext = strtolower(pathinfo($baseName, PATHINFO_EXTENSION));
+
+            if (!in_array($ext, ['xlsx', 'xls', 'xlsm', 'xltx', 'ods'], true)) {
+                continue;
+            }
+
+            $excelCandidates[] = [
+                'name' => $name,
+                'path' => $fullPath,
+                'depth' => substr_count($name, '/'),
+            ];
+        }
+        $zip->close();
+
+        usort($excelCandidates, fn($a, $b) => [$a['depth'], $a['name']] <=> [$b['depth'], $b['name']]);
+
+        if (empty($excelCandidates)) {
+            $this->cleanupTempDir($tempDir);
+            return view('imports.validation', [
+                'result' => $this->formatError(
+                    'File Excel (.xlsx/.xls) tidak ditemukan dalam ZIP.' . $this->zipContentHint($allZipNames)
+                ),
                 'importToken' => null,
             ]);
         }
 
         // Step 4: Validate using ImportService
-        $validationResult = $this->importService->validateImport($excelFile, $extractPath, $allZipNames);
+        $validationResult = $this->importService->validateImport(
+            array_column($excelCandidates, 'path'),
+            $extractPath,
+            $allZipNames
+        );
 
         // Step 5: Store token + paths in session
         session([
@@ -238,6 +267,51 @@ class ImportController extends Controller
         return redirect()
             ->route('imports.index')
             ->with('error', 'Import gagal: ' . ($importResult['errors'][0]['errors'][0] ?? 'Kesalahan tidak diketahui.'));
+    }
+
+    /**
+     * Entries that must never be treated as the data workbook.
+     * Office keeps a "~$name.xlsx" lock file next to an open workbook and macOS
+     * adds "._name.xlsx" metadata; both are common when a folder is zipped.
+     */
+    private function isIgnoredZipEntry(string $name): bool
+    {
+        $normalized = str_replace('\\', '/', $name);
+        $baseName = pathinfo($normalized, PATHINFO_BASENAME);
+
+        if ($baseName === '' || $baseName === '.DS_Store' || $baseName === 'Thumbs.db') {
+            return true;
+        }
+
+        if (str_starts_with($baseName, '~$') || str_starts_with($baseName, '._')) {
+            return true;
+        }
+
+        return str_contains($normalized, '__MACOSX/');
+    }
+
+    /**
+     * Show what the ZIP actually contained when no workbook was found.
+     */
+    private function zipContentHint(array $allZipNames): string
+    {
+        $visible = array_values(array_filter(
+            $allZipNames,
+            fn($name) => !str_ends_with((string) $name, '/')
+        ));
+
+        if (empty($visible)) {
+            return ' ZIP tidak berisi file apa pun.';
+        }
+
+        $sample = array_slice($visible, 0, 15);
+        $hint = ' Isi ZIP: ' . implode(', ', $sample);
+
+        if (count($visible) > count($sample)) {
+            $hint .= ', ... (' . count($visible) . ' file)';
+        }
+
+        return $hint . '.';
     }
 
     /**
