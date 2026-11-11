@@ -25,7 +25,6 @@ class MemberTemplateExport implements FromCollection, WithHeadings
             'tanggal_pembuatan',
             'foto',
             'kode_perusahaan',
-            'nama_perusahaan',
         ];
     }
 
@@ -41,13 +40,12 @@ class MemberTemplateExport implements FromCollection, WithHeadings
                 'provinsi' => 'Jawa Barat',
                 'kabupaten_kota' => 'Karawang',
                 'kecamatan' => 'Kecamatan',
-                'jenis_kelamin' => 'Laki-laki',
+                'jenis_kelamin' => '1',
                 'agama' => 'Islam',
                 'berlaku_hingga' => '2031-12-31',
                 'tanggal_pembuatan' => '2026-01-01',
-                'foto' => 'ABC-0001.jpg',
+                'foto' => 'ABC-0001',
                 'kode_perusahaan' => 'ABC',
-                'nama_perusahaan' => 'PT ABC Indonesia',
             ],
         ]);
     }

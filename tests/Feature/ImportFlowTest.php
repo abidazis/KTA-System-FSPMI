@@ -55,6 +55,29 @@ class ImportFlowTest extends TestCase
         $response->assertRedirect('/login');
     }
 
+    /**
+     * Test: the downloaded template reflects the current import format -
+     * kode_perusahaan only (no nama_perusahaan), jenis_kelamin 1/2, and a
+     * photo filename without an extension.
+     */
+    public function test_download_template_uses_current_format(): void
+    {
+        $user = User::factory()->create()->givePermissionTo('import');
+        $this->actingAs($user);
+
+        $response = $this->get('/import/template');
+        $response->assertOk();
+
+        $templatePath = $response->baseResponse->getFile()->getPathname();
+        $sheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($templatePath)->getActiveSheet();
+
+        $this->assertSame('foto', $sheet->getCell('M1')->getValue());
+        $this->assertSame('kode_perusahaan', $sheet->getCell('N1')->getValue());
+        $this->assertNull($sheet->getCell('O1')->getValue());
+        $this->assertSame('1', (string) $sheet->getCell('I2')->getValue());
+        $this->assertSame('ABC-0001', $sheet->getCell('M2')->getValue());
+    }
+
     public function test_validate_import_shows_error_for_empty_zip(): void
     {
         $user = User::factory()->create()->givePermissionTo('import');
@@ -502,6 +525,48 @@ class ImportFlowTest extends TestCase
         $response->assertStatus(200);
         $response->assertSeeText('Validasi Berhasil');
         $response->assertSeeText('1 Valid');
+
+        @unlink($zipPath);
+    }
+
+    /**
+     * Test: jenis_kelamin accepts the 1/2 option numbers.
+     */
+    public function test_jenis_kelamin_accepts_option_numbers(): void
+    {
+        $user = User::factory()->create()->givePermissionTo('import');
+        $this->actingAs($user);
+
+        $zipPath = $this->createTestZip([
+            'data.xlsx' => $this->createTestExcel([
+                ['nama' => 'Laki Member', 'tempat_lahir' => 'Jakarta',
+                 'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Merdeka 1',
+                 'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
+                 'jenis_kelamin' => '1', 'agama' => 'Islam',
+                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
+                 'foto' => 'GND-0001.jpg', 'kode_perusahaan' => 'ABC'],
+                ['nama' => 'Perempuan Member', 'tempat_lahir' => 'Bandung',
+                 'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Merdeka 2',
+                 'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
+                 'jenis_kelamin' => '2', 'agama' => 'Islam',
+                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
+                 'foto' => 'GND-0002.jpg', 'kode_perusahaan' => 'ABC'],
+            ]),
+            'foto/GND-0001.jpg' => $this->createTestImage(),
+            'foto/GND-0002.png' => $this->createTestImage('png'),
+        ]);
+
+        $response = $this->post('/import/validate', [
+            'file' => new UploadedFile($zipPath, 'import.zip', 'application/zip', null, true),
+        ]);
+        $response->assertStatus(200);
+        $response->assertSeeText('Validasi Berhasil');
+
+        $token = session('import_token');
+        $this->post('/import', ['import_token' => $token])->assertRedirect('/members');
+
+        $this->assertDatabaseHas('members', ['nama' => 'Laki Member', 'jenis_kelamin' => 'Laki-laki']);
+        $this->assertDatabaseHas('members', ['nama' => 'Perempuan Member', 'jenis_kelamin' => 'Perempuan']);
 
         @unlink($zipPath);
     }

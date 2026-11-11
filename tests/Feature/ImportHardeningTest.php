@@ -221,32 +221,24 @@ class ImportHardeningTest extends TestCase
     }
 
     /**
-     * Test: company with same kode but different name is rejected
+     * Test: companies are resolved by kode only. An unknown kode is created
+     * automatically and uses the kode as its placeholder name.
      */
-    public function test_company_kode_conflict_is_rejected(): void
+    public function test_unknown_company_kode_is_created_with_kode_as_name(): void
     {
         $user = User::factory()->create()->givePermissionTo('import');
         $this->actingAs($user);
 
-        // Create existing company with kode ABC
-        Company::create([
-            'kode' => 'ABC',
-            'name' => 'PT ABC Indonesia',
-            'is_active' => true,
-        ]);
-
-        // Try to import with same kode but different name
         $zipPath = $this->createTestZip([
             'data.xlsx' => $this->createTestExcel([
                 ['nama' => 'New Member', 'tempat_lahir' => 'Jakarta',
                  'tanggal_lahir' => '2020-12-16', 'alamat' => 'Jl. Baru 1',
                  'provinsi' => '', 'kabupaten_kota' => '', 'kecamatan' => '',
-                 'jenis_kelamin' => 'Laki-laki', 'agama' => 'Islam',
+                 'jenis_kelamin' => '1', 'agama' => 'Islam',
                  'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
-                 'kode_perusahaan' => 'ABC', 'nama_perusahaan' => 'PT ABC Manufacturing',
-                 'foto' => 'ABC-0001.jpg'], // Different name!
+                 'kode_perusahaan' => 'NEW', 'foto' => 'NEW-0001'],
             ]),
-            'foto/ABC-0001.jpg' => $this->createTestImage('member_conflict'),
+            'foto/NEW-0001.JPG' => $this->createTestImage('member_new_company'),
         ]);
 
         $response = $this->post('/import/validate', [
@@ -254,8 +246,18 @@ class ImportHardeningTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        // Should show error about company conflict
-        $response->assertSeeText('berbeda');
+        $response->assertSeeText('Validasi Berhasil');
+
+        $token = session('import_token');
+        $this->post('/import', ['import_token' => $token])->assertRedirect('/members');
+
+        $company = Company::where('kode', 'NEW')->first();
+        $this->assertNotNull($company);
+        $this->assertSame('NEW', $company->name);
+
+        $member = Member::where('nama', 'New Member')->first();
+        $this->assertNotNull($member);
+        $this->assertEquals($company->id, $member->company_id);
 
         @unlink($zipPath);
     }

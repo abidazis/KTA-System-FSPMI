@@ -168,16 +168,14 @@
                 <table style="width:100%;border-collapse:collapse;">
                     <thead style="background:var(--gray-50);">
                         <tr>
-                            <th style="padding:0.75rem;width:100px;">Kode</th>
-                            <th style="padding:0.75rem;">Nama Perusahaan</th>
-                            <th style="padding:0.75rem;width:150px;">Aksi</th>
+                            <th style="padding:0.75rem;width:160px;">Kode Perusahaan</th>
+                            <th style="padding:0.75rem;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($result['company_summary'] as $company)
                         <tr style="border-bottom:1px solid var(--gray-100);">
                             <td style="padding:0.5rem;"><code style="background:var(--gray-100);padding:0.125rem 0.375rem;border-radius:0.25rem;">{{ $company['kode'] }}</code></td>
-                            <td style="padding:0.5rem;">{{ $company['nama'] }}</td>
                             <td style="padding:0.5rem;">
                                 @if($company['is_new'])
                                 <span class="badge" style="background:var(--warning-light);color:var(--warning);">Akan dibuat baru</span>

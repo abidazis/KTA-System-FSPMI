@@ -23,8 +23,8 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
             @php $steps = [
                 ['num' => 1, 'title' => 'Download Template', 'desc' => 'Download template Excel terlebih dahulu', 'icon' => 'download'],
-                ['num' => 2, 'title' => 'Isi Data', 'desc' => 'Lengkapi data anggota. Isi nomor anggota jika sudah punya, atau kosongkan untuk auto-generate.', 'icon' => 'edit'],
-                ['num' => 3, 'title' => 'Siapkan Foto', 'desc' => 'Simpan foto dengan nama sesuai kolom foto di Excel', 'icon' => 'camera'],
+                ['num' => 2, 'title' => 'Isi Data', 'desc' => 'Lengkapi data anggota. Nomor anggota opsional (kosong = auto-generate). Jenis kelamin cukup isi 1 = Laki-laki atau 2 = Perempuan.', 'icon' => 'edit'],
+                ['num' => 3, 'title' => 'Siapkan Foto', 'desc' => 'Isi kolom foto cukup nama filenya. Sistem otomatis mengenali .jpg/.jpeg/.png, huruf besar/kecil tidak berpengaruh.', 'icon' => 'camera'],
                 ['num' => 4, 'title' => 'Kompres ZIP', 'desc' => 'Masukkan Excel dan folder foto/ ke dalam file ZIP', 'icon' => 'folder'],
                 ['num' => 5, 'title' => 'Upload', 'desc' => 'Upload file ZIP ke sistem', 'icon' => 'upload'],
             ]; @endphp
@@ -62,6 +62,16 @@
                     </p>
                 </div>
             </div>
+        </div>
+
+        {{-- Info Box: Aturan Kolom Jenis Kelamin, Foto & Perusahaan --}}
+        <div style="background: var(--success-light); border: 1px solid var(--success); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem;">
+            <h4 style="margin: 0 0 0.75rem 0; color: var(--success); font-size: 1rem;">Aturan Kolom Penting</h4>
+            <ul style="margin: 0; padding-left: 1.25rem; color: var(--gray-700); font-size: 0.9rem; line-height: 1.7;">
+                <li><strong>Jenis kelamin:</strong> isi <code>1</code> untuk Laki-laki atau <code>2</code> untuk Perempuan. Tulisan <em>Laki-laki</em>/<em>Perempuan</em> juga tetap diterima.</li>
+                <li><strong>Foto:</strong> cukup nama filenya, misalnya <code>ABC-0001</code>. Boleh juga dengan ekstensi (<code>ABC-0001.JPG</code>). Ekstensi <code>.jpg</code>, <code>.jpeg</code>, <code>.png</code> dikenali otomatis dan tidak case sensitive.</li>
+                <li><strong>Perusahaan:</strong> cukup isi <code>kode_perusahaan</code> — kolom nama perusahaan tidak diperlukan. Kode yang belum terdaftar akan dibuat otomatis.</li>
+            </ul>
         </div>
 
         {{-- Struktur File ZIP --}}

@@ -76,20 +76,32 @@ class MemberTemplateExportTest extends TestCase
     }
 
     /**
-     * Test: Member template has company columns.
+     * Test: Member template identifies companies by kode only.
      */
-    public function test_template_has_company_columns(): void
+    public function test_template_has_company_code_column_only(): void
     {
         $export = new MemberTemplateExport();
         $headings = $export->headings();
 
         $this->assertContains('kode_perusahaan', $headings);
-        $this->assertContains('nama_perusahaan', $headings);
+        $this->assertNotContains('nama_perusahaan', $headings);
     }
 
     /**
-     * Test: Member template example uses correct photo filename format.
-     * Photo should use company code + sequence, not nik.
+     * Test: jenis_kelamin example uses the 1/2 option.
+     */
+    public function test_template_jenis_kelamin_example_uses_option_number(): void
+    {
+        $export = new MemberTemplateExport();
+        $firstRow = $export->collection()->first();
+
+        $this->assertSame('1', $firstRow['jenis_kelamin']);
+    }
+
+    /**
+     * Test: Member template example uses the photo filename without extension.
+     * Photo should use company code + sequence, not nik, and the extension is
+     * detected automatically by the importer.
      */
     public function test_template_uses_correct_photo_format(): void
     {
@@ -100,8 +112,8 @@ class MemberTemplateExportTest extends TestCase
         // Example should NOT use old NIK format for photo
         $this->assertNotEquals('3275010101900001.jpg', $firstRow['foto']);
 
-        // Should use company-based format
+        // Should use company-based format, without forcing an extension
         $this->assertStringContainsString('ABC', $firstRow['foto']);
-        $this->assertStringContainsString('.jpg', $firstRow['foto']);
+        $this->assertSame('ABC-0001', $firstRow['foto']);
     }
 }

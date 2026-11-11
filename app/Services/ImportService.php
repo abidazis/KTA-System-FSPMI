@@ -45,9 +45,22 @@ class ImportService
         'tanggal_pembuatan' => ['tanggal pembuatan', 'tgl pembuatan', 'tanggal buat', 'tgl buat', 'tanggal cetak', 'tgl cetak', 'issue date', 'tanggal terbit'],
         'foto' => ['foto', 'photo', 'file foto', 'nama foto', 'nama file foto', 'photo file'],
         'kode_perusahaan' => ['kode perusahaan', 'kode pt', 'kode company', 'kode kantor', 'company code', 'kode'],
-        'nama_perusahaan' => ['nama perusahaan', 'nama pt', 'perusahaan', 'nama kantor', 'company', 'company name'],
         'nomor_anggota' => ['nomor anggota', 'no anggota', 'nomor kartu', 'member number'],
     ];
+
+    /**
+     * Photo formats the import understands. Matching is extension-agnostic and
+     * case-insensitive: "ABC-0001", "abc-0001.JPG" and "Abc-0001.jpeg" all find
+     * the same photo.
+     */
+    private const PHOTO_EXTENSIONS = ['jpg', 'jpeg', 'png'];
+
+    /**
+     * Values accepted for jenis_kelamin. "1" and "2" are the recommended input;
+     * the text spellings stay supported so older sheets keep working.
+     */
+    private const GENDER_LAKI_LAKI = ['1', 'l', 'lk', 'laki laki', 'laki-laki', 'lakilaki', 'male', 'm', 'pria'];
+    private const GENDER_PEREMPUAN = ['2', 'p', 'pr', 'perempuan', 'female', 'f', 'wanita'];
 
     /**
      * Validate all import data before any database write.
@@ -113,6 +126,10 @@ class ImportService
         // Get existing photo hashes for duplicate detection
         $existingPhotoHashes = MemberPhoto::pluck('photo_hash', 'photo_hash')->filter()->flip()->toArray();
 
+        // Index every photo in the ZIP once so per-row lookups stay fast and
+        // every extension (".JPG", ".jpeg", ".png", or none at all) is recognized.
+        $photoIndex = $this->indexPhotoFiles($extractPath);
+
         // First pass: Parse all data and validate without database writes
         // Keys are the real Excel row numbers, so the reported row always matches the file.
         foreach ($rows as $rowNum => $row) {
@@ -140,7 +157,7 @@ class ImportService
                 $rowNum,
                 $existingPhotoHashes,
                 $processedNikHashes,
-                $extractPath,
+                $photoIndex,
                 $photosData,
                 $companyData,
                 $hasNomorAnggota,
@@ -158,7 +175,7 @@ class ImportService
                     'row' => $rowNum,
                     'nik' => '-',
                     'nama' => ($rowData['nama'] ?? '') ?: '-',
-                    'perusahaan' => ($rowData['kode_perusahaan'] ?? '') ?: (($rowData['nama_perusahaan'] ?? '') ?: '-'),
+                    'perusahaan' => ($rowData['kode_perusahaan'] ?? '') ?: '-',
                     'errors' => $rowErrors,
                 ];
             } else {
@@ -581,9 +598,17 @@ class ImportService
             }
         }
 
-        // Map company columns (support both old and new format)
+        // Companies are identified by kode only.
         $data['kode_perusahaan'] = $data['kode_perusahaan'] ?? null;
-        $data['nama_perusahaan'] = $data['nama_perusahaan'] ?? $data['perusahaan'] ?? null;
+
+        // Accept "1"/"2" (and the old text spellings) for jenis_kelamin.
+        // An unrecognized value is kept as-is so validation can report it.
+        if (isset($data['jenis_kelamin'])) {
+            $normalizedGender = $this->normalizeGender($data['jenis_kelamin']);
+            if ($normalizedGender !== null) {
+                $data['jenis_kelamin'] = $normalizedGender;
+            }
+        }
 
         // Normalize manual member number (Excel may store it as a number)
         if (isset($data['nomor_anggota'])) {
@@ -591,6 +616,38 @@ class ImportService
         }
 
         return $data;
+    }
+
+    /**
+     * Map a jenis_kelamin cell to the canonical value.
+     * "1" = Laki-laki, "2" = Perempuan; matching is case-insensitive and also
+     * accepts the older text spellings ("Laki-laki", "PEREMPUAN", "L", "P", ...).
+     * Returns null when the value is empty or not recognized.
+     */
+    private function normalizeGender(mixed $value): ?string
+    {
+        $gender = mb_strtolower(trim((string) ($value ?? '')));
+
+        if ($gender === '') {
+            return null;
+        }
+
+        // Numeric cells may arrive as "1.0" or " 2 ".
+        if (preg_match('/^([12])(?:\.0+)?$/', $gender, $matches)) {
+            $gender = $matches[1];
+        }
+
+        $gender = trim((string) preg_replace('/\s+/u', ' ', $gender));
+
+        if (in_array($gender, self::GENDER_LAKI_LAKI, true)) {
+            return 'Laki-laki';
+        }
+
+        if (in_array($gender, self::GENDER_PEREMPUAN, true)) {
+            return 'Perempuan';
+        }
+
+        return null;
     }
 
     /**
@@ -630,7 +687,7 @@ class ImportService
         int $rowNum,
         array $existingPhotoHashes,
         array &$processedNikHashes,
-        string $extractPath,
+        array $photoIndex,
         array &$photosData,
         array &$companyData,
         bool $hasNomorAnggota = false,
@@ -681,8 +738,8 @@ class ImportService
         }
         if (empty($row['jenis_kelamin'])) {
             $errors[] = 'Jenis kelamin kosong';
-        } elseif (!in_array($row['jenis_kelamin'], ['Laki-laki', 'Perempuan'])) {
-            $errors[] = "Jenis kelamin harus 'Laki-laki' atau 'Perempuan'";
+        } elseif (!in_array($row['jenis_kelamin'], ['Laki-laki', 'Perempuan'], true)) {
+            $errors[] = 'Jenis kelamin harus diisi 1 (Laki-laki) atau 2 (Perempuan)';
         }
         if (empty($row['agama'])) {
             $errors[] = 'Agama kosong';
@@ -699,7 +756,7 @@ class ImportService
         }
 
         // Company validation
-        $companyValidation = $this->validateCompany($row, $rowNum);
+        $companyValidation = $this->validateCompany($row);
         if (!empty($companyValidation['errors'])) {
             $errors = array_merge($errors, $companyValidation['errors']);
         }
@@ -709,9 +766,9 @@ class ImportService
         }
 
         // Photo validation (REQUIRED for import)
-        $fotoColumn = $row['foto'] ?? null;
-        $searchKey = $fotoColumn ?? $rowNum; // Use foto column or row number as key
-        $photoResult = $this->findAndValidatePhoto($extractPath, $searchKey, $fotoColumn, $rowNum, $existingPhotoHashes, $processedNikHashes);
+        $fotoColumn = isset($row['foto']) ? trim((string) $row['foto']) : null;
+        $searchKey = ($fotoColumn !== null && $fotoColumn !== '') ? $fotoColumn : $rowNum;
+        $photoResult = $this->findAndValidatePhoto($photoIndex, $searchKey, $fotoColumn, $rowNum, $existingPhotoHashes, $processedNikHashes);
 
         if (!empty($photoResult['errors'])) {
             $errors = array_merge($errors, $photoResult['errors']);
@@ -728,77 +785,50 @@ class ImportService
     /**
      * Validate company data.
      */
-    private function validateCompany(array $row, int $rowNum): array
+    private function validateCompany(array $row): array
     {
-        $errors = [];
-        $companyData = [];
-
         $kode = !empty($row['kode_perusahaan']) ? strtoupper(trim($row['kode_perusahaan'])) : null;
-        $nama = !empty($row['nama_perusahaan']) ? trim($row['nama_perusahaan']) : null;
 
-        if (empty($kode) && empty($nama)) {
+        if (empty($kode)) {
             // No company specified - that's fine
             return ['errors' => [], 'data' => ['kode' => null, 'name' => null, 'is_new' => false]];
         }
 
-        // Find existing company by kode (case-insensitive)
-        $existingByKode = Company::findByKode($kode);
+        // A company is identified by its kode alone; the name is never read from Excel.
+        $existing = Company::findByKode($kode);
 
-        if ($existingByKode) {
-            // Company exists - check if data matches
-            if ($nama && $existingByKode->name !== $nama) {
-                $errors[] = "Kode perusahaan \"$kode\" sudah terdaftar dengan nama \"{$existingByKode->name}\". "
-                    . "Nama yang diimport \"$nama\" berbeda dengan data yang tersimpan. "
-                    . "Silakan periksa kembali data perusahaan.";
-            }
-            $companyData = [
-                'id' => $existingByKode->id,
-                'kode' => $existingByKode->kode,
-                'name' => $existingByKode->name,
+        if ($existing) {
+            return ['errors' => [], 'data' => [
+                'id' => $existing->id,
+                'kode' => $existing->kode,
+                'name' => $existing->name,
                 'is_new' => false,
-            ];
-        } else {
-            // Company doesn't exist - can be created on import
-            if ($kode && Company::where('name', $nama)->exists()) {
-                // Name exists but kode is different - this is a conflict
-                $existingByName = Company::where('name', $nama)->first();
-                $errors[] = "Nama perusahaan \"$nama\" sudah terdaftar dengan kode \"{$existingByName->kode}\". "
-                    . "Silakan gunakan kode yang sesuai atau hubungi administrator.";
-            } else {
-                $companyData = [
-                    'kode' => $kode,
-                    'name' => $nama,
-                    'is_new' => true,
-                ];
-            }
+            ]];
         }
 
-        return ['errors' => $errors, 'data' => $companyData];
+        // Unknown kode - create a company using the kode as its placeholder name.
+        return ['errors' => [], 'data' => [
+            'kode' => $kode,
+            'name' => $kode,
+            'is_new' => true,
+        ]];
     }
 
     /**
-     * Find photo by foto column and validate it.
+     * Index every photo in the extracted ZIP, keyed by lowercased basename:
+     * ["abc-0001" => ["jpg" => "/path/ABC-0001.JPG", "png" => ...]].
+     * The extension and letter case never matter during lookup.
      */
-    private function findAndValidatePhoto(
-        string $extractPath,
-        string $searchKey,
-        ?string $fotoColumn,
-        int $rowNum,
-        array $existingPhotoHashes,
-        array $processedNikHashes
-    ): array {
-        $extensions = ['jpg', 'jpeg', 'png'];
-        $foundFile = null;
-        $foundHash = null;
+    private function indexPhotoFiles(string $extractPath): array
+    {
+        $index = [];
 
-        // Determine search filename: use foto column value if provided, otherwise use search key
-        $searchFileName = !empty($fotoColumn) ? trim($fotoColumn) : $searchKey;
-
-        // Remove extension from search filename for matching
-        $searchBaseName = pathinfo($searchFileName, PATHINFO_FILENAME);
+        if (!is_dir($extractPath)) {
+            return $index;
+        }
 
         $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($extractPath, \RecursiveDirectoryIterator::SKIP_DOTS),
+            new \RecursiveDirectoryIterator($extractPath, \FilesystemIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::LEAVES_ONLY
         );
 
@@ -808,73 +838,111 @@ class ImportService
             }
 
             $extension = strtolower($file->getExtension());
-            if (!in_array($extension, $extensions, true)) {
+            if (!in_array($extension, self::PHOTO_EXTENSIONS, true)) {
                 continue;
             }
 
-            $baseName = pathinfo($file->getFilename(), PATHINFO_FILENAME);
+            $baseName = mb_strtolower(pathinfo($file->getFilename(), PATHINFO_FILENAME));
+            $index[$baseName][$extension] = $file->getPathname();
+        }
 
-            // Match against foto column filename or search key
-            if (strcasecmp($baseName, $searchBaseName) === 0 || strcasecmp($baseName, $searchKey) === 0) {
-                // Calculate hash
-                $hash = hash_file('sha256', $file->getPathname());
+        return $index;
+    }
 
-                // Check duplicate with existing database photos
-                if (isset($existingPhotoHashes[$hash])) {
-                    $existingPhoto = MemberPhoto::where('photo_hash', $hash)->with('member')->first();
-                    return [
-                        'errors' => [
-                            "FOTO DUPLICATE: Foto yang diupload memiliki isi yang sama dengan foto anggota lain. "
-                            . "NIK: {$existingPhoto->member->nik}, Nama: {$existingPhoto->member->nama}, File: " . basename($existingPhoto->photo_path)
-                        ],
-                    ];
-                }
+    /**
+     * Find photo by foto column and validate it.
+     *
+     * The foto column may hold the full filename ("ABC-0001.JPG") or only the
+     * name without extension ("ABC-0001"). Matching ignores case, so ".JPG",
+     * ".jpg", ".jpeg" and ".png" are all found for the same base name.
+     */
+    private function findAndValidatePhoto(
+        array $photoIndex,
+        string $searchKey,
+        ?string $fotoColumn,
+        int $rowNum,
+        array $existingPhotoHashes,
+        array $processedNikHashes
+    ): array {
+        $requested = trim((string) (!empty($fotoColumn) ? $fotoColumn : $searchKey));
+        $requested = trim($requested, " \t\n\r\0\x0B\"'");
+        $requested = str_replace('\\', '/', $requested);
 
-                // Check duplicate within current batch
-                if (isset($processedNikHashes[$hash])) {
-                    return [
-                        'errors' => [
-                            "FOTO DUPLICATE DALAM BATCH: Foto pada baris $rowNum memiliki isi yang sama dengan foto pada "
-                            . "baris lain dalam file yang sama. Gunakan foto yang berbeda."
-                        ],
-                    ];
-                }
+        $requestedExtension = strtolower(pathinfo($requested, PATHINFO_EXTENSION));
+        $hasKnownExtension = in_array($requestedExtension, self::PHOTO_EXTENSIONS, true);
 
-                // Valid photo found
-                $foundFile = [
-                    'source_name' => $file->getFilename(), // original filename in ZIP
-                    'path' => $file->getPathname(),
-                    'hash' => $hash,
-                    'extension' => $extension,
-                ];
-                $foundHash = $hash;
+        // Keep only the base name, so "foto/ABC-0001.JPG" and "ABC-0001" both
+        // become "ABC-0001" for matching.
+        $requestedBaseName = $hasKnownExtension
+            ? pathinfo($requested, PATHINFO_FILENAME)
+            : basename($requested);
+        $requestedBaseName = basename($requestedBaseName);
+
+        $candidates = $photoIndex[mb_strtolower($requestedBaseName)] ?? [];
+
+        // Prefer the extension the user typed; otherwise try jpg -> jpeg -> png.
+        $preferredExtensions = $hasKnownExtension
+            ? array_values(array_unique(array_merge([$requestedExtension], self::PHOTO_EXTENSIONS)))
+            : self::PHOTO_EXTENSIONS;
+
+        $foundPath = null;
+        foreach ($preferredExtensions as $extension) {
+            if (isset($candidates[$extension])) {
+                $foundPath = $candidates[$extension];
                 break;
             }
         }
 
-        if (!$foundFile) {
-            $searchHint = !empty($fotoColumn)
-                ? $searchFileName
-                : "{$searchKey}.jpg / {$searchKey}.jpeg / {$searchKey}.png";
+        if ($foundPath === null) {
+            $searchHint = $requestedBaseName . '.jpg / ' . $requestedBaseName . '.jpeg / ' . $requestedBaseName . '.png';
             return [
                 'errors' => [
                     "FOTO TIDAK DITEMUKAN (cari: {$searchHint}) — "
-                    . 'Pastikan file foto tersedia di folder foto/ dan nama file sesuai dengan kolom foto.'
+                    . 'Pastikan file foto tersedia di folder foto/ dalam ZIP. Kolom foto cukup diisi nama file '
+                    . 'dengan atau tanpa ekstensi; huruf besar/kecil tidak berpengaruh.'
+                ],
+            ];
+        }
+
+        // Calculate hash
+        $hash = hash_file('sha256', $foundPath);
+
+        // Check duplicate with existing database photos
+        if (isset($existingPhotoHashes[$hash])) {
+            $existingPhoto = MemberPhoto::where('photo_hash', $hash)->with('member')->first();
+            return [
+                'errors' => [
+                    'FOTO DUPLICATE: Foto yang diupload memiliki isi yang sama dengan foto anggota lain. '
+                    . "NIK: {$existingPhoto->member->nik}, Nama: {$existingPhoto->member->nama}, File: " . basename($existingPhoto->photo_path)
+                ],
+            ];
+        }
+
+        // Check duplicate within current batch
+        if (isset($processedNikHashes[$hash])) {
+            return [
+                'errors' => [
+                    "FOTO DUPLICATE DALAM BATCH: Foto pada baris $rowNum memiliki isi yang sama dengan foto pada "
+                    . 'baris lain dalam file yang sama. Gunakan foto yang berbeda.'
                 ],
             ];
         }
 
         // Validate image is actually a valid image
-        $imageInfo = @getimagesize($foundFile['path']);
-        if (!$imageInfo) {
+        if (!@getimagesize($foundPath)) {
             return [
                 'errors' => [
-                    "FOTO TIDAK VALID: File {$searchBaseName}.{$foundFile['extension']} bukan file gambar yang valid."
+                    "FOTO TIDAK VALID: File {$requestedBaseName} bukan file gambar yang valid."
                 ],
             ];
         }
 
-        return ['data' => $foundFile];
+        return ['data' => [
+            'source_name' => basename($foundPath), // original filename in ZIP
+            'path' => $foundPath,
+            'hash' => $hash,
+            'extension' => strtolower(pathinfo($foundPath, PATHINFO_EXTENSION)),
+        ]];
     }
 
     /**
@@ -924,8 +992,8 @@ class ImportService
             }
 
             // Get photo data
-            $fotoColumn = $row['foto'] ?? null;
-            $searchKey = $fotoColumn ?? $rowNum;
+            $fotoColumn = isset($row['foto']) ? trim((string) $row['foto']) : null;
+            $searchKey = ($fotoColumn !== null && $fotoColumn !== '') ? $fotoColumn : $rowNum;
             $photoData = $photosData[$searchKey] ?? null;
 
             // Determine company code
@@ -1041,28 +1109,24 @@ class ImportService
     private function resolveCompany(array $row, ?string $kode = null): ?Company
     {
         $kode = $kode ?? (!empty($row['kode_perusahaan']) ? strtoupper(trim($row['kode_perusahaan'])) : null);
-        $nama = !empty($row['nama_perusahaan']) ? trim($row['nama_perusahaan']) : null;
 
-        if (empty($kode) && empty($nama)) {
+        if (empty($kode)) {
             return null;
         }
 
-        // Find by kode (case-insensitive) - kode acts as the data puller
+        // Find by kode (case-insensitive) - kode alone identifies the company
         $company = Company::findByKode($kode);
         if ($company) {
             return $company;
         }
 
-        // Create new company
-        if ($kode && $nama) {
-            return Company::create([
-                'kode' => $kode,
-                'name' => $nama,
-                'is_active' => true,
-            ]);
-        }
-
-        return null;
+        // Create a new company. The kode is used as the placeholder name;
+        // the name can be completed later in the company management menu.
+        return Company::create([
+            'kode' => $kode,
+            'name' => $kode,
+            'is_active' => true,
+        ]);
     }
 
     /**

@@ -30,7 +30,14 @@ class ImportController extends Controller
     {
         $templatePath = storage_path('app/private/imports/template_import.xlsx');
         $this->generateTemplateExcel($templatePath);
-        return response()->download($templatePath, 'template_import_anggota.xlsx');
+
+        // Always regenerate, and tell the browser not to reuse a previously
+        // downloaded copy of the template (same filename every time).
+        return response()->download($templatePath, 'template_import_anggota.xlsx', [
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
     }
 
     /**
@@ -57,7 +64,6 @@ class ImportController extends Controller
         $sheet->getColumnDimension('L')->setWidth(16); // tanggal_pembuatan
         $sheet->getColumnDimension('M')->setWidth(22); // foto
         $sheet->getColumnDimension('N')->setWidth(15); // kode_perusahaan
-        $sheet->getColumnDimension('O')->setWidth(30); // nama_perusahaan
 
         // Header row styling
         $headerStyle = [
@@ -65,14 +71,14 @@ class ImportController extends Controller
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'color' => ['rgb' => '1e40af']],
             'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
         ];
-        $sheet->getStyle('A1:O1')->applyFromArray($headerStyle);
+        $sheet->getStyle('A1:N1')->applyFromArray($headerStyle);
 
         // Headers (nomor_anggota optional - filled = used as-is, empty = auto-generated)
         $headers = [
             'nomor_anggota', 'nama', 'tempat_lahir', 'tanggal_lahir', 'alamat',
             'provinsi', 'kabupaten_kota', 'kecamatan', 'jenis_kelamin',
             'agama', 'berlaku_hingga', 'tanggal_pembuatan', 'foto',
-            'kode_perusahaan', 'nama_perusahaan'
+            'kode_perusahaan'
         ];
         $sheet->fromArray($headers, null, 'A1');
 
@@ -85,20 +91,30 @@ class ImportController extends Controller
         $sheet->setCellValue('F2', 'Jawa Barat');
         $sheet->setCellValue('G2', 'Karawang');
         $sheet->setCellValue('H2', 'Kecamatan');
-        $sheet->setCellValue('I2', 'Laki-laki');
+        $sheet->setCellValueExplicit('I2', '1', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
         $sheet->setCellValue('J2', 'Islam');
         $sheet->setCellValueExplicit('K2', '2031-12-31', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
         $sheet->setCellValueExplicit('L2', '2026-01-01', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-        $sheet->setCellValue('M2', 'ABC-0001.jpg'); // foto filename from ZIP
+        $sheet->setCellValue('M2', 'ABC-0001'); // foto: name only, extension is auto-detected
         $sheet->setCellValue('N2', 'ABC'); // kode_perusahaan
-        $sheet->setCellValue('O2', 'PT ABC Indonesia'); // nama_perusahaan
+
+        // Dropdown 1/2 for the jenis_kelamin column.
+        $genderValidation = new \PhpOffice\PhpSpreadsheet\Cell\DataValidation();
+        $genderValidation->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
+        $genderValidation->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_INFORMATION);
+        $genderValidation->setAllowBlank(true);
+        $genderValidation->setShowDropDown(true);
+        $genderValidation->setFormula1('"1,2"');
+        for ($row = 2; $row <= 1000; $row++) {
+            $sheet->getCell('I' . $row)->setDataValidation(clone $genderValidation);
+        }
 
         // Note row
-        $sheet->setCellValue('A4', 'CATATAN: Kolom nomor_anggota opsional — isi jika nomor sudah ada (cth: 1.02.01.038.0123), kosongkan agar dibuat otomatis oleh sistem. Kolom foto = nama file foto di folder foto/ (cth: ABC-0001.jpg). Kolom provinsi, kabupaten_kota, kecamatan, kode_perusahaan & nama_perusahaan opsional.');
+        $sheet->setCellValue('A4', 'CATATAN: Kolom nomor_anggota opsional — isi jika nomor sudah ada (cth: 1.02.01.038.0123), kosongkan agar dibuat otomatis oleh sistem. Jenis kelamin cukup diisi 1 = Laki-laki atau 2 = Perempuan. Kolom foto cukup diisi nama filenya saja (cth: ABC-0001) — sistem otomatis mengenali .jpg/.jpeg/.png tanpa membedakan huruf besar/kecil. Perusahaan cukup diisi kode_perusahaan; kode baru akan dibuat otomatis. Kolom provinsi, kabupaten_kota, kecamatan & kode_perusahaan opsional.');
         $sheet->getStyle('A4')->applyFromArray([
             'font' => ['italic' => true, 'color' => ['rgb' => 'dc2626'], 'size' => 10],
         ]);
-        $sheet->mergeCells('A4:O4');
+        $sheet->mergeCells('A4:N4');
 
         // Freeze header row
         $sheet->freezePane('A2');
