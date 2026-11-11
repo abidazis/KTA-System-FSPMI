@@ -47,6 +47,14 @@ class MemberController extends Controller
             $query->where('district_id', $request->district_id);
         }
 
+        if ($request->filled('company_id')) {
+            if ($request->company_id === 'none') {
+                $query->whereNull('company_id');
+            } else {
+                $query->where('company_id', $request->company_id);
+            }
+        }
+
         if ($request->filled('jenis_kelamin')) {
             $query->where('jenis_kelamin', $request->jenis_kelamin);
         }
@@ -478,6 +486,7 @@ class MemberController extends Controller
             'province_id',
             'regency_id',
             'district_id',
+            'company_id',
             'jenis_kelamin',
             'agama',
             'status',
@@ -503,6 +512,18 @@ class MemberController extends Controller
             }
             if (!empty($filters['district_id'])) {
                 $filterParts[] = 'kec';
+            }
+            if (!empty($filters['company_id'])) {
+                $filterParts[] = 'comp';
+            }
+            if (!empty($filters['jenis_kelamin'])) {
+                $filterParts[] = 'gender';
+            }
+            if (!empty($filters['agama'])) {
+                $filterParts[] = 'agama';
+            }
+            if (!empty($filters['masa_berlaku'])) {
+                $filterParts[] = $filters['masa_berlaku'];
             }
             if (!empty($filters['status'])) {
                 $filterParts[] = $filters['status'];

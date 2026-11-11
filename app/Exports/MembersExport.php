@@ -144,6 +144,15 @@ class MembersExport implements FromCollection, WithHeadings, WithColumnFormattin
             $query->where('district_id', $this->filters['district_id']);
         }
 
+        // Company filter
+        if (!empty($this->filters['company_id'])) {
+            if ($this->filters['company_id'] === 'none') {
+                $query->whereNull('company_id');
+            } else {
+                $query->where('company_id', $this->filters['company_id']);
+            }
+        }
+
         // Gender filter
         if (!empty($this->filters['jenis_kelamin'])) {
             $query->where('jenis_kelamin', $this->filters['jenis_kelamin']);

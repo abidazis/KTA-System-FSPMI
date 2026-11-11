@@ -4,21 +4,36 @@
 @section('header', 'Data Anggota')
 
 @section('content')
+@php
+    $exportFilterKeys = ['search', 'province_id', 'regency_id', 'district_id', 'company_id', 'jenis_kelamin', 'agama', 'status', 'masa_berlaku'];
+    $activeExportFilters = array_filter(
+        request()->only($exportFilterKeys),
+        function ($value) {
+            return $value !== null && $value !== '';
+        }
+    );
+@endphp
 <div class="card">
     <div class="card-header">
         <h3>Daftar Anggota</h3>
         <div style="display:flex;gap:0.75rem;">
             <a href="{{ route('imports.index') }}" class="btn btn-outline">Import</a>
-            <a href="{{ route('members.export', request()->query()) }}" class="btn btn-success">
+            <a href="{{ route('members.export') }}" class="btn btn-success" title="Export seluruh data anggota">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;margin-right:0.25rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Export Excel
             </a>
+            @if(!empty($activeExportFilters))
+            <a href="{{ route('members.export', $activeExportFilters) }}" class="btn btn-success" title="Export data sesuai filter yang sedang aktif">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;margin-right:0.25rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export Hasil Filter ({{ $members->total() }})
+            </a>
+            @endif
             <a href="{{ route('members.create') }}" class="btn btn-primary">+ Tambah</a>
         </div>
     </div>
 
     {{-- Filters --}}
-    <form method="GET" class="filters" style="gap:0.5rem;padding:0.75rem;">
+    <form method="GET" class="filters" style="gap:0.5rem;padding:0.75rem;align-items:center;">
         <input type="text" name="search" placeholder="Cari..." value="{{ request('search') }}" style="flex:1;min-width:120px;padding:0.5rem 0.75rem;font-size:0.9rem;">
         <select name="province_id" id="filter-province" style="padding:0.5rem 0.75rem;font-size:0.9rem;min-width:140px;">
             <option value="">Semua Provinsi</option>
@@ -31,6 +46,13 @@
         </select>
         <select name="district_id" id="filter-district" disabled style="padding:0.5rem 0.75rem;font-size:0.9rem;min-width:140px;">
             <option value="">Kecamatan</option>
+        </select>
+        <select name="company_id" style="padding:0.5rem 0.75rem;font-size:0.9rem;min-width:160px;">
+            <option value="">Semua Perusahaan</option>
+            @foreach($companies as $company)
+            <option value="{{ $company->id }}" {{ request('company_id') == $company->id ? 'selected' : '' }}>{{ $company->name }}</option>
+            @endforeach
+            <option value="none" {{ request('company_id') === 'none' ? 'selected' : '' }}>Belum Diisi</option>
         </select>
         <select name="jenis_kelamin" style="padding:0.5rem 0.75rem;font-size:0.9rem;min-width:100px;">
             <option value="">Gender</option>
