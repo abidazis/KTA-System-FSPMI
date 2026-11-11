@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Sistem KTA Federasi')</title>
-    <link href="{{ asset('build/assets/app-C0sIAfS7.css') }}?v=20240908" rel="stylesheet">
+    @vite('resources/css/app.css')
     {{-- Flatpickr Date Picker --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
@@ -344,8 +344,31 @@
         }
 
         /* ===== PAGINATION ===== */
-        .pagination { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
+        .pagination-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .pagination-info {
+            margin: 0;
+            font-size: 0.95rem;
+            color: var(--gray-600);
+        }
+        .pagination-info strong { color: var(--gray-800); }
+        .pagination {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0;
+        }
         .pagination a, .pagination span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             padding: 0.625rem 1rem;
             border: 1px solid var(--gray-200);
             border-radius: 0.375rem;
@@ -363,6 +386,12 @@
         .pagination .disabled {
             opacity: 0.5;
             pointer-events: none;
+        }
+        /* Force a sane icon size - never let SVGs stretch to fill the row */
+        .pagination svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
         }
 
         /* ===== FILTERS ===== */
