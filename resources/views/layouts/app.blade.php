@@ -5,7 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Sistem KTA Federasi')</title>
-    @vite('resources/css/app.css')
+    {{-- Load compiled CSS tanpa mewajibkan manifest Vite (aman untuk production
+         yang hanya meng-upload folder public/build tanpa menjalankan npm build). --}}
+    @php
+        $appCss = null;
+        try {
+            $appCss = app(\Illuminate\Foundation\Vite::class)->asset('resources/css/app.css');
+        } catch (\Throwable $e) {
+            $builtCss = glob(public_path('build/assets/app-*.css')) ?: [];
+            usort($builtCss, fn ($a, $b) => filemtime($b) <=> filemtime($a));
+            $appCss = $builtCss ? asset('build/assets/'.basename($builtCss[0])) : null;
+        }
+    @endphp
+    @if ($appCss)
+        <link href="{{ $appCss }}" rel="stylesheet">
+    @endif
     {{-- Flatpickr Date Picker --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
