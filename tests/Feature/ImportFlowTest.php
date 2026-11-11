@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\Member;
+use App\Models\MemberNumber;
 use App\Models\MemberNumberFormula;
+use App\Models\MemberPhoto;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -525,6 +527,166 @@ class ImportFlowTest extends TestCase
         $response->assertStatus(200);
         $response->assertSeeText('Validasi Berhasil');
         $response->assertSeeText('1 Valid');
+
+        @unlink($zipPath);
+    }
+
+    /**
+     * Test: deleting a member releases its nomor anggota and photo so the
+     * exact same data can be imported again.
+     */
+    public function test_deleting_member_releases_number_and_photo_for_reimport(): void
+    {
+        Permission::create(['name' => 'anggota-view']);
+        Permission::create(['name' => 'anggota-delete']);
+
+        $user = User::factory()->create()->givePermissionTo(['import', 'anggota-view', 'anggota-delete']);
+        $this->actingAs($user);
+
+        $company = Company::where('kode', 'ABC')->first();
+        $photoContent = $this->createTestImage();
+        $photoPath = 'members/photos/ABC-0100.jpg';
+        Storage::disk('local')->put($photoPath, $photoContent);
+
+        $member = Member::create([
+            'nik' => '1.02.01.038.0777',
+            'nama' => 'Old Member',
+            'tempat_lahir' => 'Jakarta',
+            'tanggal_lahir' => '1990-01-01',
+            'alamat' => 'Alamat',
+            'jenis_kelamin' => 'Laki-laki',
+            'agama' => 'Islam',
+            'berlaku_hingga' => '2030-01-01',
+            'tanggal_pembuatan' => '2025-01-01',
+            'foto_path' => $photoPath,
+            'status' => 'ready',
+            'company_id' => $company->id,
+        ]);
+
+        MemberPhoto::create([
+            'member_id' => $member->id,
+            'photo_path' => $photoPath,
+            'photo_hash' => hash('sha256', $photoContent),
+        ]);
+
+        MemberNumber::create([
+            'number' => '1.02.01.038.0777',
+            'status' => MemberNumber::STATUS_USED,
+            'member_id' => $member->id,
+            'company_id' => $company->id,
+            'prefix_value' => '',
+            'sequence' => 777,
+        ]);
+
+        $this->deleteJson("/members/{$member->id}")->assertOk();
+
+        $this->assertSoftDeleted('members', ['id' => $member->id]);
+        $this->assertDatabaseHas('member_numbers', [
+            'number' => '1.02.01.038.0777',
+            'status' => 'available',
+            'member_id' => null,
+        ]);
+        $this->assertDatabaseMissing('member_photos', ['member_id' => $member->id]);
+        Storage::disk('local')->assertMissing($photoPath);
+
+        // The same nomor and the same photo content can be imported again.
+        $zipPath = $this->createTestZip([
+            'data.xlsx' => $this->createTestExcel([
+                ['nomor_anggota' => '1.02.01.038.0777', 'nama' => 'Reused Member',
+                 'tempat_lahir' => 'Jakarta', 'tanggal_lahir' => '2020-12-16',
+                 'alamat' => 'Jl. Merdeka 1', 'provinsi' => '', 'kabupaten_kota' => '',
+                 'kecamatan' => '', 'jenis_kelamin' => '1', 'agama' => 'Islam',
+                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
+                 'foto' => 'REUSE-0001.jpg', 'kode_perusahaan' => 'ABC'],
+            ], includeNomorAnggota: true),
+            'foto/REUSE-0001.jpg' => $photoContent,
+        ]);
+
+        $this->post('/import/validate', [
+            'file' => new UploadedFile($zipPath, 'import.zip', 'application/zip', null, true),
+        ])->assertSeeText('Validasi Berhasil');
+
+        $token = session('import_token');
+        $this->post('/import', ['import_token' => $token])->assertRedirect('/members');
+
+        $reimported = Member::where('nama', 'Reused Member')->first();
+        $this->assertNotNull($reimported);
+        $this->assertEquals('1.02.01.038.0777', $reimported->nik);
+
+        @unlink($zipPath);
+    }
+
+    /**
+     * Test: a member soft-deleted by the old code (nik, number, and photo
+     * still reserved) no longer blocks importing the same data.
+     */
+    public function test_legacy_trashed_member_does_not_block_reimport(): void
+    {
+        $user = User::factory()->create()->givePermissionTo('import');
+        $this->actingAs($user);
+
+        $company = Company::where('kode', 'ABC')->first();
+        $photoContent = $this->createTestImage();
+        $photoPath = 'members/photos/ABC-0200.jpg';
+        Storage::disk('local')->put($photoPath, $photoContent);
+
+        $trashed = Member::create([
+            'nik' => '1.02.01.038.0888',
+            'nama' => 'Legacy Deleted',
+            'tempat_lahir' => 'Bandung',
+            'tanggal_lahir' => '1990-01-01',
+            'alamat' => 'Alamat',
+            'jenis_kelamin' => 'Laki-laki',
+            'agama' => 'Islam',
+            'berlaku_hingga' => '2030-01-01',
+            'tanggal_pembuatan' => '2025-01-01',
+            'foto_path' => $photoPath,
+            'status' => 'ready',
+            'company_id' => $company->id,
+        ]);
+
+        // Old behaviour: soft delete keeps the nik, the member number, and the photo.
+        $trashed->delete();
+
+        MemberPhoto::create([
+            'member_id' => $trashed->id,
+            'photo_path' => $photoPath,
+            'photo_hash' => hash('sha256', $photoContent),
+        ]);
+
+        MemberNumber::create([
+            'number' => '1.02.01.038.0888',
+            'status' => MemberNumber::STATUS_USED,
+            'member_id' => $trashed->id,
+            'company_id' => $company->id,
+            'prefix_value' => '',
+            'sequence' => 888,
+        ]);
+
+        $zipPath = $this->createTestZip([
+            'data.xlsx' => $this->createTestExcel([
+                ['nomor_anggota' => '1.02.01.038.0888', 'nama' => 'Reimported Legacy',
+                 'tempat_lahir' => 'Bandung', 'tanggal_lahir' => '2020-12-16',
+                 'alamat' => 'Jl. Asia 2', 'provinsi' => '', 'kabupaten_kota' => '',
+                 'kecamatan' => '', 'jenis_kelamin' => '2', 'agama' => 'Islam',
+                 'berlaku_hingga' => '2031-12-31', 'tanggal_pembuatan' => '2026-01-01',
+                 'foto' => 'LEGACY-0001.jpg', 'kode_perusahaan' => 'ABC'],
+            ], includeNomorAnggota: true),
+            'foto/LEGACY-0001.jpg' => $photoContent,
+        ]);
+
+        $response = $this->post('/import/validate', [
+            'file' => new UploadedFile($zipPath, 'import.zip', 'application/zip', null, true),
+        ]);
+        $response->assertSeeText('Validasi Berhasil');
+        $response->assertDontSeeText('sudah terdaftar');
+
+        $token = session('import_token');
+        $this->post('/import', ['import_token' => $token])->assertRedirect('/members');
+
+        $reimported = Member::where('nama', 'Reimported Legacy')->first();
+        $this->assertNotNull($reimported);
+        $this->assertEquals('1.02.01.038.0888', $reimported->nik);
 
         @unlink($zipPath);
     }

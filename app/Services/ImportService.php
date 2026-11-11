@@ -124,7 +124,12 @@ class ImportService
         }
 
         // Get existing photo hashes for duplicate detection
-        $existingPhotoHashes = MemberPhoto::pluck('photo_hash', 'photo_hash')->filter()->flip()->toArray();
+        // Only photos of members that still exist (not soft-deleted) block the import.
+        $existingPhotoHashes = MemberPhoto::whereHas('member')
+            ->pluck('photo_hash', 'photo_hash')
+            ->filter()
+            ->flip()
+            ->toArray();
 
         // Index every photo in the ZIP once so per-row lookups stay fast and
         // every extension (".JPG", ".jpeg", ".png", or none at all) is recognized.
@@ -483,6 +488,10 @@ class ImportService
                     throw new RuntimeException("Nomor anggota tidak dapat dibuat untuk baris #" . ($index + 1));
                 }
 
+                // A member deleted via the system may still hold this number in
+                // old rows (soft-deleted). Release it before inserting the new one.
+                $this->releaseTrashedNumber($nomorAnggota);
+
                 // Find or create company
                 $company = $this->resolveCompany($row, $preview['company_kode'] ?? null);
 
@@ -699,12 +708,13 @@ class ImportService
         if ($hasNomorAnggota && !empty($row['nomor_anggota'])) {
             $nomorAnggota = trim($row['nomor_anggota']);
 
-            // Check duplicate against database (including soft-deleted members,
-            // since the unique index on nik still covers them)
-            if (Member::withTrashed()->where('nik', $nomorAnggota)->exists()) {
+            // Check duplicate against members that still exist. Soft-deleted
+            // members are ignored so their nomor anggota can be reused.
+            if (Member::where('nik', $nomorAnggota)->exists()) {
                 $errors[] = "Nomor anggota '$nomorAnggota' sudah terdaftar";
             } elseif (MemberNumber::where('number', $nomorAnggota)
                 ->where('status', MemberNumber::STATUS_USED)
+                ->whereHas('member')
                 ->exists()) {
                 $errors[] = "Nomor anggota '$nomorAnggota' sudah dipakai anggota lain";
             } elseif (isset($seenNomorAnggota[$nomorAnggota])) {
@@ -909,7 +919,7 @@ class ImportService
 
         // Check duplicate with existing database photos
         if (isset($existingPhotoHashes[$hash])) {
-            $existingPhoto = MemberPhoto::where('photo_hash', $hash)->with('member')->first();
+            $existingPhoto = MemberPhoto::where('photo_hash', $hash)->whereHas('member')->with('member')->first();
             return [
                 'errors' => [
                     'FOTO DUPLICATE: Foto yang diupload memiliki isi yang sama dengan foto anggota lain. '
@@ -1076,7 +1086,9 @@ class ImportService
         $existing = MemberNumber::where('number', $number)->first();
 
         if ($existing) {
-            if ($existing->isAvailable()) {
+            // Re-use the row when the number is available or its previous owner
+            // was deleted (the belongsTo relation excludes soft-deleted members).
+            if ($existing->isAvailable() || $existing->member === null) {
                 $existing->markAsUsed($member);
             }
 
@@ -1101,6 +1113,31 @@ class ImportService
             'prefix_value' => '',
             'sequence' => $sequence,
         ]);
+    }
+
+    /**
+     * Free the given nomor anggota from any soft-deleted member that still
+     * holds it (data deleted before the cleanup was introduced).
+     */
+    private function releaseTrashedNumber(string $number): void
+    {
+        $trashedMembers = Member::onlyTrashed()->where('nik', $number)->get();
+
+        foreach ($trashedMembers as $trashed) {
+            $trashed->forceFill(['nik' => 'DELETED-' . $trashed->id])->saveQuietly();
+
+            MemberNumber::where('member_id', $trashed->id)->update([
+                'status' => MemberNumber::STATUS_AVAILABLE,
+                'member_id' => null,
+            ]);
+
+            foreach (MemberPhoto::where('member_id', $trashed->id)->get() as $photo) {
+                if ($photo->photo_path) {
+                    Storage::disk('local')->delete($photo->photo_path);
+                }
+                $photo->delete();
+            }
+        }
     }
 
     /**

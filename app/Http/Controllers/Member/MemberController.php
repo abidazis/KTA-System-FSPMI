@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Company;
 use App\Models\Member;
+use App\Models\MemberNumber;
+use App\Models\MemberPhoto;
 use App\Models\Province;
 use App\Models\Regency;
 use App\Models\District;
@@ -13,6 +15,7 @@ use App\Models\KtaSetting;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
@@ -242,6 +245,8 @@ class MemberController extends Controller
     {
         $oldData = $member->toArray();
 
+        $this->releaseMemberResources($member);
+
         if ($member->foto_path) {
             Storage::disk('local')->delete($member->foto_path);
         }
@@ -260,6 +265,35 @@ class MemberController extends Controller
         return redirect()
             ->route('members.index')
             ->with('success', 'Anggota berhasil dihapus.');
+    }
+
+    /**
+     * Release everything a member reserved so the same data can be used again.
+     *
+     * The member row itself stays soft-deleted for audit purposes, but:
+     * - its unique nik is replaced with a "DELETED-{id}" marker,
+     * - the nomor anggota is returned to the available pool,
+     * - photo records and files are removed.
+     */
+    private function releaseMemberResources(Member $member): void
+    {
+        DB::transaction(function () use ($member) {
+            if ($member->nik !== 'DELETED-' . $member->id) {
+                $member->forceFill(['nik' => 'DELETED-' . $member->id])->saveQuietly();
+            }
+
+            MemberNumber::where('member_id', $member->id)->update([
+                'status' => MemberNumber::STATUS_AVAILABLE,
+                'member_id' => null,
+            ]);
+
+            foreach (MemberPhoto::where('member_id', $member->id)->get() as $photo) {
+                if ($photo->photo_path) {
+                    Storage::disk('local')->delete($photo->photo_path);
+                }
+                $photo->delete();
+            }
+        });
     }
 
     public function getRegencies($provinceId): JsonResponse
@@ -345,10 +379,12 @@ class MemberController extends Controller
                 case 'delete':
                     $members = Member::whereIn('id', $validated['member_ids'])->get();
                     foreach ($members as $member) {
+                        $oldData = $member->toArray();
+                        $this->releaseMemberResources($member);
                         if ($member->foto_path) {
                             Storage::disk('local')->delete($member->foto_path);
                         }
-                        AuditLog::log('delete_member', null, $member->toArray(), null);
+                        AuditLog::log('delete_member', null, $oldData, null);
                         $member->delete();
                     }
                     return response()->json([
