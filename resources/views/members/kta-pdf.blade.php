@@ -79,7 +79,7 @@
 
         .kta-field {
             position: absolute;
-            font-weight: 700;
+            font-weight: bold !important;
             color: #000;
             white-space: nowrap;
             overflow: hidden;

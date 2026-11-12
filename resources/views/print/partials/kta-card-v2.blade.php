@@ -79,6 +79,65 @@
         return implode('<br>', $lines);
     };
 
+    /* CASE HELPER - alamat mengikuti huruf kecil data aslinya.
+       Kata yang seluruhnya KAPITAL (nama desa/kecamatan/kota) dirapikan ke
+       Title Case: CIBITUNG -> Cibitung, BEKASI -> Bekasi.
+       Singkatan pendek (RT/RW/JL) dan token berangka (MM2100) dibiarkan.
+       Huruf depan alamat / awal kalimat tetap kapital. */
+    $naturalCase = function ($text) {
+        if ($text === null || trim((string) $text) === '') {
+            return '-';
+        }
+
+        $text = trim((string) $text);
+
+        $tokens = preg_split('/(\s+)/u', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+        foreach ($tokens as $i => $token) {
+            $core = preg_replace('/[^\p{L}\p{N}]/u', '', $token);
+
+            if ($core === '' || preg_match('/\d/u', $core)) {
+                continue;
+            }
+
+            if (mb_strlen($core, 'UTF-8') > 3 && mb_strtoupper($core, 'UTF-8') === $core) {
+                $tokens[$i] = mb_convert_case(
+                    mb_strtolower($token, 'UTF-8'),
+                    MB_CASE_TITLE,
+                    'UTF-8'
+                );
+            }
+        }
+
+        $text = implode('', $tokens);
+
+        // Rapikan spasi sebelum tanda baca: "BEKASI ,BEKASI" -> "Bekasi, Bekasi"
+        $text = preg_replace('/\s+([,.;:])/u', '$1', $text);
+        $text = preg_replace('/([,;])(?=\S)/u', '$1 ', $text);
+
+        return preg_replace_callback(
+            '/(^|[.]\s+)(\p{Ll})/u',
+            function ($m) {
+                return $m[1] . mb_strtoupper($m[2], 'UTF-8');
+            },
+            $text
+        );
+    };
+
+    /* AUTO-FIT FONT SIZE - pilih ukuran teks terbesar dalam batas yang muat
+       satu baris. DomPDF tidak menjalankan JavaScript, jadi penghitungan
+       dilakukan di PHP memakai rata-rata lebar glyph Arial Bold. */
+    $fitFontSize = function ($text, $widthMm, $maxSizeMm, $emFactor = 0.69, $letterSpacingMm = 0, $minSizeMm = 1.2) {
+        $len = mb_strlen(trim((string) $text), 'UTF-8');
+        if ($len === 0) {
+            return $maxSizeMm;
+        }
+
+        $size = ($widthMm - ($len * $letterSpacingMm)) / ($len * $emFactor);
+
+        return round(max($minSizeMm, min($maxSizeMm, $size)), 2);
+    };
+
     /*
     |--------------------------------------------------------------------------
     | FIELD POSITIONS (mm from top-left of PORTRAIT card: 54mm x 85.6mm)
@@ -90,9 +149,9 @@
         'front' => [
             // Foto sedikit lebih pas di frame kuning
             'foto'          => ['left' => 26.5, 'top' => 30.5, 'width' => 22.5, 'height' => 30.5],
-            // Nama & No. Anggota (Lebar disamakan dengan foto agar center presisi)
-            'nama'          => ['left' => 25.5, 'top' => 62, 'font_size' => 1.8, 'width' => 24.5],
-            'nik'           => ['left' => 25.5, 'top' => 64, 'font_size' => 1.9, 'width' => 24.5],
+            // Nama & No. Anggota - rata kanan, tepi kanan sejajar tepi kanan foto (49mm)
+            'nama'          => ['left' => 16.5, 'top' => 62.0, 'font_size' => 3.8, 'width' => 32.5],
+            'nik'           => ['left' => 16.5, 'top' => 65.8, 'font_size' => 3.8, 'width' => 32.5],
         ],
         'back' => [
             // Nama PT - diposisikan persis di bawah PUK SPAMK FSPMI di background
@@ -113,14 +172,15 @@
             'alamat_label'  => ['left' => 3, 'top' => 27.6, 'font_size' => 1.75, 'width' => 14],
             'alamat'        => ['left' => 17, 'top' => 27.6, 'font_size' => 1.75, 'width' => 34, 'height' => 8],
 
-            'jk_label'      => ['left' => 3, 'top' => 34, 'font_size' => 1.75, 'width' => 14],
-            'jk'            => ['left' => 17, 'top' => 34, 'font_size' => 1.75, 'width' => 34],
+            // Jarak baris setelah alamat (alamat bisa 3-4 baris) agar tidak menempel
+            'jk_label'      => ['left' => 3, 'top' => 37, 'font_size' => 1.75, 'width' => 14],
+            'jk'            => ['left' => 17, 'top' => 37, 'font_size' => 1.75, 'width' => 34],
 
-            'agama_label'   => ['left' => 3, 'top' => 37, 'font_size' => 1.75, 'width' => 14],
-            'agama'         => ['left' => 17, 'top' => 37, 'font_size' => 1.75, 'width' => 34],
+            'agama_label'   => ['left' => 3, 'top' => 40, 'font_size' => 1.75, 'width' => 14],
+            'agama'         => ['left' => 17, 'top' => 40, 'font_size' => 1.75, 'width' => 34],
 
-            'berlaku_label' => ['left' => 3, 'top' => 40, 'font_size' => 1.75, 'width' => 14],
-            'berlaku'       => ['left' => 17, 'top' => 40, 'font_size' => 1.75, 'width' => 34],
+            'berlaku_label' => ['left' => 3, 'top' => 43, 'font_size' => 1.75, 'width' => 14],
+            'berlaku'       => ['left' => 17, 'top' => 43, 'font_size' => 1.75, 'width' => 34],
 
             // Footer (Tanggal, Pimpinan Pusat, TTD) - Posisinya dinaikkan sedikit agar tidak mentok bawah
             'tanggal_ttd'   => ['left' => 0, 'top' => 50, 'font_size' => 1.75, 'width' => 54],
@@ -134,12 +194,53 @@
             'ttd_ketua'       => ['left' => 32, 'top' => 64, 'width' => 16, 'height' => 8],
             'nama_ketua'      => ['left' => 28, 'top' => 73, 'font_size' => 1.75, 'width' => 24],
 
-            // Stempel organisasi - diletakkan di antara kedua tanda tangan
-            'stempel'         => ['left' => 19, 'top' => 62, 'width' => 16, 'height' => 12],
+            // Stempel organisasi - diperkecil & digeser mendekati TTD Sekretaris Umum
+            'stempel'         => ['left' => 14.5, 'top' => 63.5, 'width' => 11, 'height' => 8.5],
         ],
     ];
 
     $fieldPositions = $positions[$side] ?? [];
+
+    // NAMA & NIK: teks sebesar mungkin, otomatis mengecil hanya bila kepanjangan
+    if ($side === 'front' && isset($fieldPositions['nama'], $fieldPositions['nik'])) {
+        $fieldPositions['nama']['font_size'] = $fitFontSize(
+            strtoupper($member->nama ?? '-'),
+            $fieldPositions['nama']['width'],
+            $fieldPositions['nama']['font_size'],
+            0.69,
+            0.08
+        );
+
+        // Lebar glyph NIK dihitung per karakter (angka & titik) agar presisi
+        $nikText = (string) ($member->nik ?? '-');
+        $nikEm = 0.0;
+        foreach (preg_split('//u', $nikText, -1, PREG_SPLIT_NO_EMPTY) as $ch) {
+            if (ctype_digit($ch)) {
+                $nikEm += 0.556;
+            } elseif (strpos('., ', $ch) !== false) {
+                $nikEm += 0.278;
+            } else {
+                $nikEm += 0.6;
+            }
+        }
+        $nikEmFactor = $nikEm > 0
+            ? $nikEm / max(1, mb_strlen($nikText, 'UTF-8'))
+            : 0.55;
+
+        $fieldPositions['nik']['font_size'] = $fitFontSize(
+            $nikText,
+            $fieldPositions['nik']['width'],
+            $fieldPositions['nik']['font_size'],
+            $nikEmFactor,
+            0.05
+        );
+
+        // Jarak NAMA -> NO. ANGGOTA rapat & konsisten, mengikuti tinggi baris nama
+        $fieldPositions['nik']['top'] = round(
+            $fieldPositions['nama']['top'] + $fieldPositions['nama']['font_size'] + 0.35,
+            2
+        );
+    }
 @endphp
 
 @if($side === 'front')
@@ -171,11 +272,11 @@
                         top:{{ $fieldPositions['nama']['top'] }}mm;
                         font-size:{{ $fieldPositions['nama']['font_size'] }}mm;
                         font-weight:bold;
-                        text-align:center;
+                        text-align:right;
                         width:{{ $fieldPositions['nama']['width'] }}mm;
-                        line-height: 1.0; 
+                        line-height: 1.0;
                         word-wrap: break-word;
-                        letter-spacing: -0.1mm;">
+                        letter-spacing: 0.08mm;">
                 {{ strtoupper($member->nama ?? '-') }}
             </div>
         @endif
@@ -187,8 +288,9 @@
                         top:{{ $fieldPositions['nik']['top'] }}mm;
                         font-size:{{ $fieldPositions['nik']['font_size'] }}mm;
                         font-weight:bold;
-                        text-align:center;
+                        text-align:right;
                         width:{{ $fieldPositions['nik']['width'] }}mm;
+                        letter-spacing: 0.05mm;
                         line-height: 1.0;">
                 {{ $member->nik ?? '-' }}
             </div>
@@ -227,8 +329,9 @@
                         font-size:{{ $fieldPositions['alamat_perusahaan']['font_size'] }}mm;
                         width:{{ $fieldPositions['alamat_perusahaan']['width'] }}mm;
                         color:#000; font-weight:bold;
-                        line-height: 1.1; text-align:center;">
-                {!! $wrapText($member->company?->full_address ?? '-', 45) !!}
+                        letter-spacing: 0.03mm;
+                        line-height: 1.1; text-align:center; text-transform:none;">
+                {!! $wrapText($naturalCase($member->company?->full_address ?? null), 45) !!}
             </div>
         @endif
 
@@ -238,7 +341,7 @@
                 ['label' => 'NO. ANGGOTA', 'val_key' => 'nik', 'value' => $member->nik ?? '-'],
                 ['label' => 'NAMA', 'val_key' => 'nama', 'value' => strtoupper($member->nama ?? '-')],
                 ['label' => 'Tempat/Tgl Lahir', 'val_key' => 'ttl', 'value' => strtoupper($member->tempat_lahir ?? '-') . ' ' . $tanggalLahir],
-                ['label' => 'Alamat', 'val_key' => 'alamat', 'value' => $member->alamat ?? '-'],
+                ['label' => 'Alamat', 'val_key' => 'alamat', 'value' => $naturalCase($member->alamat ?? null)],
                 ['label' => 'Jenis Kelamin', 'val_key' => 'jk', 'value' => $member->jenis_kelamin ?? '-'],
                 ['label' => 'Agama', 'val_key' => 'agama', 'value' => $member->agama ?? '-'],
                 ['label' => 'Berlaku Hingga', 'val_key' => 'berlaku', 'value' => $berlakuHingga]
@@ -267,7 +370,8 @@
                      style="left:{{ $fieldPositions[$f['val_key']]['left'] }}mm;
                             top:{{ $fieldPositions[$f['val_key']]['top'] }}mm;
                             font-size:{{ $fieldPositions[$f['val_key']]['font_size'] }}mm;
-                            font-weight:bold; color:#000; text-align:left;
+                            font-weight:bold; color:#000; text-align:left; text-transform:none;
+                            letter-spacing: 0.05mm;
                             width:{{ $fieldPositions[$f['val_key']]['width'] }}mm;
                             @if(isset($fieldPositions[$f['val_key']]['height']) && $f['val_key'] !== 'alamat') height:{{ $fieldPositions[$f['val_key']]['height'] }}mm; overflow:hidden; line-height: 1.2; @endif
                             @if($f['val_key'] === 'alamat') line-height: 1.2; @endif">
