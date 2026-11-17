@@ -61,7 +61,7 @@
         @csrf
 
         {{-- Header dengan count dan tombol preview --}}
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid #e2e8f0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid #e2e8f0;">
             <div>
                 <h3 style="margin:0 0 0.25rem 0;font-size:1rem;font-weight:600;">Pilih Anggota</h3>
                 <span id="selected-count-display" style="font-size:0.85rem;color:#64748b;">0 anggota dipilih</span>
@@ -114,7 +114,7 @@
         </div>
 
         {{-- Tabel dengan max-height untuk scroll --}}
-        <div style="max-height:500px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:0.5rem;">
+        <div class="table-responsive" style="max-height:500px;overflow:auto;border:1px solid #e2e8f0;border-radius:0.5rem;">
         <table style="width:100%;">
             <thead style="position:sticky;top:0;background:#f8fafc;z-index:1;">
                 <tr>

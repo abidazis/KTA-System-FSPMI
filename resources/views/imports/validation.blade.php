@@ -11,7 +11,7 @@
 
     <div style="padding:1.5rem;">
         {{-- Summary Stats --}}
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.5rem;">
             <div style="padding:1.25rem;border-radius:0.5rem;text-align:center;background:var(--gray-100);">
                 <div style="font-size:2rem;font-weight:700;color:var(--primary);">{{ $result['total'] ?? 0 }}</div>
                 <div style="font-size:0.85rem;color:var(--gray-500);">Total Data</div>
@@ -57,7 +57,7 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                 Detail Error ({{ count($result['errors']) }})
             </h5>
-            <div style="max-height:500px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:0.5rem;">
+            <div style="max-height:500px;overflow:auto;border:1px solid var(--gray-200);border-radius:0.5rem;">
                 <table style="width:100%;border-collapse:collapse;">
                     <thead style="background:var(--danger-light);position:sticky;top:0;">
                         <tr>
@@ -209,7 +209,7 @@
             <form action="{{ route('imports.process') }}" method="POST" id="import-confirm-form">
                 @csrf
                 <input type="hidden" name="import_token" value="{{ $importToken }}">
-                <div style="display:flex;gap:0.75rem;">
+                <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
                     <button type="submit" class="btn btn-success btn-lg" id="confirm-import-btn">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                         Ya, Simpan & Import {{ $result['valid'] }} Data

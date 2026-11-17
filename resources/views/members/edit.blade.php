@@ -32,7 +32,7 @@
                 <h4 style="margin: 0; color: var(--gray-700);">Identitas Anggota</h4>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="nik" style="font-weight: 500; color: var(--gray-700); margin-bottom: 0.5rem;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 0.25rem;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -65,7 +65,7 @@
                 <h4 style="margin: 0; color: var(--gray-700);">Data Pribadi</h4>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="tempat_lahir" style="font-weight: 500; color: var(--gray-700); margin-bottom: 0.5rem;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 0.25rem;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
@@ -104,7 +104,7 @@
                 <h4 style="margin: 0; color: var(--gray-700);">Wilayah</h4>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="province_id" style="font-weight: 500; color: var(--gray-700); margin-bottom: 0.5rem;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 0.25rem;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
@@ -158,7 +158,7 @@
                 <h4 style="margin: 0; color: var(--gray-700);">Informasi Tambahan</h4>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="jenis_kelamin" style="font-weight: 500; color: var(--gray-700); margin-bottom: 0.5rem;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 0.25rem;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
@@ -207,7 +207,7 @@
                 <h4 style="margin: 0; color: var(--gray-700);">Informasi KTA</h4>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label for="tanggal_pembuatan" style="font-weight: 500; color: var(--gray-700); margin-bottom: 0.5rem;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 0.25rem;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -234,7 +234,7 @@
                 <h4 style="margin: 0; color: var(--gray-700);">Foto Anggota</h4>
             </div>
 
-            <div style="display: flex; gap: 1.5rem; align-items: flex-start;">
+            <div style="display: flex; gap: 1.5rem; align-items: flex-start; flex-wrap: wrap;">
                 <div style="flex: 1;">
                     <label for="foto" style="font-weight: 500; color: var(--gray-700); margin-bottom: 0.5rem; display: block;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 0.25rem;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
@@ -260,7 +260,7 @@
         </div>
 
         {{-- Action Buttons --}}
-        <div style="padding: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end; border-top: 1px solid var(--gray-200); background: white;">
+        <div style="padding: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end; flex-wrap: wrap; border-top: 1px solid var(--gray-200); background: white;">
             <a href="{{ route('members.index') }}" class="btn btn-outline" style="padding: 0.75rem 1.5rem;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 0.25rem;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 Batal

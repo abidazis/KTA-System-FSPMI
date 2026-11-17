@@ -29,6 +29,19 @@
     display: flex;
     justify-content: center;
     margin-bottom: 2rem;
+    max-width: 100%;
+}
+
+/* Di layar kecil, halaman A4 (29.7cm) tidak diperkecil agar tetap akurat cetak;
+   pengguna dapat menggeser secara horizontal. */
+@media (max-width: 1180px) {
+    .page-wrapper {
+        justify-content: flex-start;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 0.5rem;
+    }
+    .preview-page { flex-shrink: 0; }
 }
 
 .preview-page {
@@ -262,7 +275,7 @@
         @foreach($memberIds as $id)
         <input type="hidden" name="member_ids[]" value="{{ $id }}">
         @endforeach
-        <div style="display:flex;gap:1rem;margin-top:1rem;">
+        <div style="display:flex;gap:1rem;margin-top:1rem;flex-wrap:wrap;">
             <a href="{{ route('print.create') }}" class="btn btn-outline">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                 Pilih Ulang

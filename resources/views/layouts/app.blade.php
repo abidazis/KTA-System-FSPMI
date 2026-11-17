@@ -76,13 +76,18 @@
         /* ===== SIDEBAR - Clean & Professional ===== */
         .sidebar {
             position: fixed;
+            top: 0;
+            left: 0;
             width: 280px;
             height: 100vh;
+            height: 100dvh;
             background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: var(--white);
             padding: 0;
             overflow-y: auto;
             box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+            z-index: 50;
+            transition: transform 0.25s ease;
         }
 
         .sidebar .logo {
@@ -142,7 +147,7 @@
         }
 
         /* ===== MAIN CONTENT ===== */
-        .main { margin-left: 280px; min-height: 100vh; }
+        .main { margin-left: 280px; min-height: 100vh; min-width: 0; }
 
         /* ===== TOPBAR - Clean Header ===== */
         .topbar {
@@ -152,6 +157,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 0.75rem;
             position: sticky;
             top: 0;
             z-index: 10;
@@ -161,6 +167,38 @@
             font-size: 1.35rem;
             font-weight: 600;
             color: var(--gray-800);
+            min-width: 0;
+            flex: 1 1 auto;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        /* Tombol menu mobile (hanya tampil di layar kecil) */
+        .menu-toggle {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+            border: 1px solid var(--gray-200);
+            border-radius: 0.5rem;
+            background: var(--white);
+            color: var(--gray-700);
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        .menu-toggle:hover { background: var(--gray-100); color: var(--primary); }
+        .menu-toggle svg { width: 22px; height: 22px; }
+        /* Overlay gelap saat sidebar mobile terbuka */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 36, 64, 0.55);
+            z-index: 45;
+            opacity: 0;
+            transition: opacity 0.25s ease;
         }
         .topbar .user-menu { display: flex; align-items: center; gap: 1rem; }
         .topbar .user-menu .dropdown { position: relative; }
@@ -176,7 +214,9 @@
             z-index: 100;
             border: 1px solid var(--gray-200);
         }
-        .topbar .user-menu .dropdown:hover .dropdown-content { display: block; }
+        .topbar .user-menu .dropdown:hover .dropdown-content,
+        .topbar .user-menu .dropdown:focus-within .dropdown-content,
+        .topbar .user-menu .dropdown.open .dropdown-content { display: block; }
         .topbar .user-menu .dropdown-content a {
             display: block;
             padding: 0.875rem 1.25rem;
@@ -493,6 +533,18 @@
             cursor: pointer;
         }
 
+        /* ===== TABLE RESPONSIVE WRAPPER ===== */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .table-responsive > table {
+            width: 100%;
+        }
+        /* Cegah gambar (foto, preview) melebihi lebar layar */
+        img { max-width: 100%; }
+
         /* ===== RESPONSIVE ===== */
         @media (max-width: 1024px) {
             .sidebar { width: 80px; }
@@ -501,10 +553,63 @@
             .sidebar .section-title { display: none; }
             .main { margin-left: 80px; }
         }
+        @media (max-width: 900px) {
+            /* Sidebar jadi off-canvas (tersembunyi, muncul saat tombol menu ditekan) */
+            .sidebar {
+                width: 280px;
+                transform: translateX(-100%);
+                z-index: 50;
+                pointer-events: none;
+                transition: transform 0.25s ease;
+            }
+            .sidebar.open { transform: translateX(0); pointer-events: auto; }
+            /* Saat terbuka, tampilkan kembali label menu (override rail 80px) */
+            .sidebar .logo h1 { display: flex; }
+            .sidebar .logo span { display: block; }
+            .sidebar nav a span { display: inline; }
+            .sidebar nav a { justify-content: flex-start; padding: 0.875rem 1.5rem; }
+            .sidebar .section-title { display: block; }
+            .main { margin-left: 0; }
+            .menu-toggle { display: inline-flex; }
+            .sidebar-overlay { display: block; pointer-events: none; }
+            .sidebar-overlay.active { opacity: 1; pointer-events: auto; }
+            body.sidebar-open { overflow: hidden; }
+            .topbar { padding: 0.75rem 1rem; }
+            .topbar h2 { font-size: 1.1rem; }
+            .card-header { flex-wrap: wrap; gap: 0.75rem; }
+            .card-header > div { flex-wrap: wrap; }
+        }
         @media (max-width: 768px) {
             .content { padding: 1rem; }
-            .filters { flex-direction: column; }
+            .filters { flex-direction: column; align-items: stretch !important; }
+            .filters .form-group { width: 100%; min-width: 0; }
+            .filters > input,
+            .filters > select,
+            .filters > button,
+            .filters > a { width: 100%; min-width: 0; }
             .stats-grid { grid-template-columns: 1fr 1fr; }
+            .card { padding: 1rem; border-radius: 0.5rem; }
+            .card-header { margin-bottom: 1rem; padding-bottom: 0.75rem; }
+            .card-header h3 { font-size: 1rem; }
+            .table-responsive > table { min-width: 640px; }
+            .table-responsive > table.table-detail { min-width: 0; }
+            table th { padding: 0.75rem; }
+            table td { padding: 0.75rem; }
+            .pagination-wrapper { justify-content: center; }
+            .pagination-info { width: 100%; text-align: center; }
+            .fspmi-modal-footer { flex-wrap: wrap; }
+            .fspmi-modal-footer .btn { flex: 1 1 auto; }
+        }
+        @media (max-width: 560px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .topbar .user-menu > .dropdown > a > span { display: none; }
+            .card-header > .btn,
+            .card-header > div > .btn { flex: 1 1 auto; justify-content: center; }
+        }
+        @media (max-width: 420px) {
+            .content { padding: 0.75rem; }
+            .card { padding: 0.875rem; }
+            .btn { padding: 0.55rem 0.9rem; font-size: 0.9rem; }
         }
 
         /* ===== CUSTOM MODAL SYSTEM - FSPMI Design ===== */
@@ -695,7 +800,7 @@
             <div id="fspmi-modal-footer" class="fspmi-modal-footer"></div>
         </div>
     </div>
-    <aside class="sidebar">
+    <aside class="sidebar" id="app-sidebar">
         <div class="logo">
             <h1><span class="logo-icon"></span> KTA FSPMI</h1>
             <span>Federasi Serikat Pekerja Metal Indonesia</span>
@@ -770,13 +875,17 @@
             @endcan
         </nav>
     </aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <main class="main">
         <header class="topbar">
+            <button type="button" class="menu-toggle" id="sidebar-toggle" aria-label="Buka menu" aria-controls="app-sidebar" aria-expanded="false">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
             <h2>@yield('header', 'Dashboard')</h2>
             <div class="user-menu">
                 <div class="dropdown">
-                    <a href="#" style="display:flex;align-items:center;gap:0.75rem;color:var(--gray-700);text-decoration:none;font-weight:500;">
+                    <a href="#" class="user-dropdown-toggle" aria-haspopup="true" aria-expanded="false" style="display:flex;align-items:center;gap:0.75rem;color:var(--gray-700);text-decoration:none;font-weight:500;">
                         <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="background:var(--gray-100);border-radius:50%;padding:0.375rem;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                         <span>{{ auth()->user()->name }}</span>
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -1043,6 +1152,96 @@
             if (!msg) return;
             // Remove inline onsubmit to avoid double-confirm
             form.removeAttribute('onsubmit');
+        });
+    })();
+
+    // ===== MOBILE SIDEBAR TOGGLE =====
+    (function() {
+        var sidebar = document.getElementById('app-sidebar');
+        var toggle = document.getElementById('sidebar-toggle');
+        var overlay = document.getElementById('sidebar-overlay');
+        if (!sidebar || !toggle) return;
+
+        function isMobile() { return window.matchMedia('(max-width: 900px)').matches; }
+
+        function openSidebar() {
+            sidebar.classList.add('open');
+            sidebar.inert = false;
+            if (overlay) overlay.classList.add('active');
+            document.body.classList.add('sidebar-open');
+            toggle.setAttribute('aria-expanded', 'true');
+            toggle.setAttribute('aria-label', 'Tutup menu');
+        }
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            sidebar.inert = isMobile();
+            if (overlay) overlay.classList.remove('active');
+            document.body.classList.remove('sidebar-open');
+            toggle.setAttribute('aria-expanded', 'false');
+            toggle.setAttribute('aria-label', 'Buka menu');
+        }
+        function isOpen() { return sidebar.classList.contains('open'); }
+
+        // Saat halaman dimuat di layar kecil, sidebar yang tersembunyi tidak
+        // dapat difokuskan keyboard sampai menu dibuka.
+        if (isMobile()) sidebar.inert = true;
+
+        toggle.addEventListener('click', function() {
+            if (isOpen()) { closeSidebar(); } else { openSidebar(); }
+        });
+
+        if (overlay) overlay.addEventListener('click', closeSidebar);
+
+        // Tutup menu setelah navigasi (fungsi link tetap berjalan)
+        sidebar.querySelectorAll('nav a').forEach(function(link) {
+            link.addEventListener('click', function() {
+                if (window.matchMedia('(max-width: 900px)').matches) closeSidebar();
+            });
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && isOpen()) closeSidebar();
+        });
+
+        // Kembalikan ke keadaan normal saat layar diperbesar
+        window.addEventListener('resize', function() {
+            if (!isMobile()) {
+                sidebar.classList.remove('open');
+                sidebar.inert = false;
+                if (overlay) overlay.classList.remove('active');
+                document.body.classList.remove('sidebar-open');
+                toggle.setAttribute('aria-expanded', 'false');
+                toggle.setAttribute('aria-label', 'Buka menu');
+            }
+        });
+    })();
+
+    // ===== USER DROPDOWN (dukungan sentuh di mobile) =====
+    (function() {
+        var dropdown = document.querySelector('.topbar .user-menu .dropdown');
+        if (!dropdown) return;
+        var trigger = dropdown.querySelector('.user-dropdown-toggle');
+        if (!trigger) return;
+
+        trigger.addEventListener('click', function(e) {
+            e.preventDefault();
+            var willOpen = !dropdown.classList.contains('open');
+            dropdown.classList.toggle('open', willOpen);
+            trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!dropdown.contains(e.target)) {
+                dropdown.classList.remove('open');
+                trigger.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                dropdown.classList.remove('open');
+                trigger.setAttribute('aria-expanded', 'false');
+            }
         });
     })();
 

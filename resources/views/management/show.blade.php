@@ -56,7 +56,7 @@ function hideEditForm(id) {
 </div>
 
 {{-- Stempel & Tanda Tangan Side by Side --}}
-<div style="display:grid;grid-template-columns:350px 1fr;gap:1.5rem;">
+<div class="management-media-grid" style="display:grid;gap:1.5rem;">
     {{-- STEMPEL --}}
     <div class="card">
         <div class="card-header">
@@ -74,7 +74,7 @@ function hideEditForm(id) {
             <form action="{{ route('management.stempel', $period) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
-                <div style="display:flex;gap:0.75rem;align-items:center;">
+                <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
                     <input type="file" name="stempel" accept="image/png" style="flex:1;padding:0.5rem;">
                     <button type="submit" class="btn btn-primary">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:middle;margin-right:0.25rem;"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
@@ -110,7 +110,7 @@ function hideEditForm(id) {
             </h3>
             <small style="color:var(--gray-500);">Digunakan untuk KTA anggota</small>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;padding:1rem;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.5rem;padding:1rem;">
             {{-- KETUA UMUM --}}
             <div style="border:2px solid var(--gray-200);border-radius:0.5rem;padding:1.25rem;text-align:center;">
                 <h4 style="margin-bottom:1rem;color:var(--primary);">
@@ -243,6 +243,7 @@ function hideEditForm(id) {
         </form>
     </div>
 
+    <div class="table-responsive">
     <table>
         <thead>
             <tr>
@@ -339,5 +340,15 @@ function hideEditForm(id) {
             @endforelse
         </tbody>
     </table>
+    </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+    .management-media-grid { grid-template-columns: 350px 1fr; }
+    @media (max-width: 900px) {
+        .management-media-grid { grid-template-columns: 1fr; }
+    }
+</style>
+@endpush

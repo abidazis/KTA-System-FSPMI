@@ -72,7 +72,7 @@
             <p style="font-size:1.1rem;">Belum ada background KTA yang diimport.</p>
         </div>
     @else
-        <div style="overflow-x:auto;">
+        <div class="table-responsive">
             <table>
                 <thead>
                     <tr>

@@ -64,7 +64,7 @@
 
 {{-- Modal Popup 1: Konfirmasi Awal --}}
 <div id="delete-modal-1" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-    <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 400px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+    <div style="background: white; padding: 2rem; border-radius: 12px; width: 100%; max-width: min(400px, calc(100% - 2rem)); text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
         <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
         <h4 style="margin-bottom: 1rem; color: var(--gray-800);">Konfirmasi Hapus</h4>
         <p style="margin-bottom: 1.5rem; color: var(--gray-600);">
@@ -81,7 +81,7 @@
 
 {{-- Modal Popup 2: Konfirmasi Final --}}
 <div id="delete-modal-2" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1001; justify-content: center; align-items: center;">
-    <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 450px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 3px solid #dc3545;">
+    <div style="background: white; padding: 2rem; border-radius: 12px; width: 100%; max-width: min(450px, calc(100% - 2rem)); text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 3px solid #dc3545;">
         <div style="font-size: 3rem; margin-bottom: 1rem;">🚨</div>
         <h4 style="margin-bottom: 0.5rem; color: #dc3545;">PERHATIAN!</h4>
         <p style="margin-bottom: 1rem; color: var(--gray-700); font-weight: 600;">

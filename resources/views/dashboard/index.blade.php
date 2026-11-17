@@ -42,6 +42,7 @@
         <h3>Daftar Anggota Terbaru</h3>
         <a href="{{ route('members.index') }}" class="btn btn-outline">Lihat Semua</a>
     </div>
+    <div class="table-responsive">
     <table>
         <thead>
             <tr>
@@ -73,6 +74,7 @@
             @endforelse
         </tbody>
     </table>
+    </div>
 </div>
 
 {{-- Stats Grid --}}

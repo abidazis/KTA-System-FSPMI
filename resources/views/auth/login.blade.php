@@ -166,6 +166,12 @@
             color: #94a3b8;
             font-size: 0.85rem;
         }
+        @media (max-width: 480px) {
+            body { padding: 0.75rem; }
+            .login-box { padding: 1.5rem; border-radius: 0.75rem; }
+            .login-header h1 { font-size: 1.5rem; }
+            .login-header { margin-bottom: 1.5rem; }
+        }
     </style>
 </head>
 <body>

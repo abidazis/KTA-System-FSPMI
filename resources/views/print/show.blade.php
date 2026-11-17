@@ -31,7 +31,7 @@
         </div>
     </div>
 
-    <div style="background:#dbeafe;padding:1rem;border-radius:0.5rem;margin-bottom:1.5rem;">
+    <div style="background:#dbeafe;padding:1rem;border-radius:0.5rem;margin-bottom:1.5rem;overflow-wrap:break-word;">
 
         <strong>Petunjuk Cetak:</strong>
 
@@ -82,6 +82,7 @@
     </div>
 
     <h4 style="margin-bottom:1rem;">Daftar Anggota</h4>
+    <div class="table-responsive">
     <table>
         <thead>
             <tr>
@@ -105,5 +106,6 @@
             @endforeach
         </tbody>
     </table>
+    </div>
 </div>
 @endsection

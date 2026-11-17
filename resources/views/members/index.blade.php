@@ -76,7 +76,7 @@
     {{-- Bulk Actions --}}
     <form id="bulk-form" method="POST" action="/members/bulk-action">
         @csrf
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding:1rem;background:var(--gray-50);border-radius:0.5rem;border:1px solid var(--gray-200);">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem;margin-bottom:1rem;padding:1rem;background:var(--gray-50);border-radius:0.5rem;border:1px solid var(--gray-200);">
             <label style="display:flex;align-items:center;gap:0.75rem;cursor:pointer;">
                 <input type="checkbox" id="select-all" style="width:1.25rem;height:1.25rem;">
                 <span style="font-weight:500;">Pilih Semua</span>
@@ -141,6 +141,7 @@
         </div>
     </div>
 
+        <div class="table-responsive">
         <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
             <thead>
                 <tr style="background:var(--gray-50);">
@@ -209,6 +210,7 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
 
         <div style="margin-top:1.5rem;">
             {{ $members->withQueryString()->links() }}

@@ -119,6 +119,7 @@
             @endif
         </div>
     @else
+        <div class="table-responsive">
         <table>
             <thead>
                 <tr>
@@ -185,6 +186,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
 
         <div style="padding: 1rem;">
             {{ $memberNumbers->withQueryString()->links() }}

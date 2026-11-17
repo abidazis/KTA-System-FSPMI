@@ -38,7 +38,7 @@
                     </select>
                 </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; margin-bottom: 1rem;">
+            <div class="kta-add-grid" style="display: grid; gap: 1rem; margin-bottom: 1rem;">
                 <div class="form-group" style="margin-bottom: 0;">
                     <label>Nilai Default</label>
                     <input type="text" name="value" placeholder="5" required>
@@ -59,6 +59,7 @@
         </form>
     </div>
 
+    <div class="table-responsive">
     <table>
         <thead>
             <tr>
@@ -143,7 +144,17 @@
             @endforelse
         </tbody>
     </table>
+    </div>
 </div>
+
+@push('styles')
+<style>
+    .kta-add-grid { grid-template-columns: 1fr 2fr; }
+    @media (max-width: 768px) {
+        .kta-add-grid { grid-template-columns: 1fr; }
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>

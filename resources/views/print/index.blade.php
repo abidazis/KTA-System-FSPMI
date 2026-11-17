@@ -27,6 +27,7 @@
         </div>
     </form>
 
+    <div class="table-responsive">
     <table>
         <thead>
             <tr>
@@ -78,6 +79,7 @@
             @endforelse
         </tbody>
     </table>
+    </div>
 
     <div style="margin-top:1.5rem;">
         {{ $batches->withQueryString()->links() }}

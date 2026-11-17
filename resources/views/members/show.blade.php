@@ -27,7 +27,7 @@
         </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:280px 1fr;gap:2rem;">
+    <div class="member-detail-grid" style="display:grid;gap:2rem;">
         {{-- Photo & Basic Info --}}
         <div style="text-align:center;">
             @if($member->hasPhoto() && $member->getPhotoUrl())
@@ -147,6 +147,7 @@
     <div class="card-header">
         <h3>Riwayat Cetak KTA</h3>
     </div>
+    <div class="table-responsive">
     <table>
         <thead>
             <tr>
@@ -170,6 +171,7 @@
             @endforeach
         </tbody>
     </table>
+    </div>
 </div>
 @endif
 
@@ -180,3 +182,12 @@
     </a>
 </div>
 @endsection
+
+@push('styles')
+<style>
+    .member-detail-grid { grid-template-columns: 280px 1fr; }
+    @media (max-width: 768px) {
+        .member-detail-grid { grid-template-columns: 1fr; }
+    }
+</style>
+@endpush

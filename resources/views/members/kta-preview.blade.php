@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>KTA {{ $member->nik }} - Preview</title>
 
@@ -111,8 +112,16 @@
         .actions {
             display: flex;
             justify-content: center;
+            flex-wrap: wrap;
             gap: 12px;
             margin-top: 30px;
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+            .preview-header { padding: 14px; }
+            .preview-header h2 { font-size: 1.15rem; }
+            .kta-preview-grid { gap: 24px; }
         }
 
         .btn {

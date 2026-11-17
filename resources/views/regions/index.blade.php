@@ -42,12 +42,12 @@
             @forelse($provinces as $province)
             <div class="region-item" style="border: 1px solid var(--gray-200); border-radius: 8px; margin-bottom: 0.75rem; overflow: hidden;">
                 {{-- Province Header --}}
-                <div class="region-header" style="display: flex; align-items: center; padding: 1rem; background: var(--gray-50); cursor: pointer;" onclick="toggleRegion(this)">
+                <div class="region-header" style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; padding: 1rem; background: var(--gray-50); cursor: pointer;" onclick="toggleRegion(this)">
                     <span class="toggle-icon" style="margin-right: 0.75rem; font-size: 1.25rem; transition: transform 0.2s;">▶</span>
                     <div style="flex: 1;">
                         <strong style="color: var(--primary); font-size: 1rem;">{{ $province->name }}</strong>
                     </div>
-                    <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
                         <span class="badge badge-ready">{{ $province->regencies->count() }} Kabupaten/Kota</span>
                         <span class="badge badge-generated">{{ $province->regencies->sum(fn($r) => $r->districts->count()) }} Kecamatan</span>
                         <a href="{{ route('regions.edit', $province) }}" class="btn btn-sm btn-outline" onclick="event.stopPropagation();">Edit</a>
