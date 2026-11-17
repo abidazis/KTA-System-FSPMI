@@ -183,8 +183,9 @@
             'label_ketua'     => ['left' => 28, 'top' => 61, 'font_size' => 1.75, 'width' => 24],
             'ttd_ketua'       => ['left' => 32, 'top' => 64, 'width' => 16, 'height' => 8],
             'nama_ketua'      => ['left' => 28, 'top' => 73, 'font_size' => 1.75, 'width' => 24],
-            // Stempel organisasi - diperkecil & digeser mendekati TTD Sekretaris Umum
-            'stempel'         => ['left' => 14.5, 'top' => 63.5, 'width' => 11, 'height' => 8.5],
+            // Stempel organisasi - kotak 1:1 agar tidak lonjong di DomPDF
+            // (object-fit tidak didukung DomPDF, jadi rasio harus sama)
+            'stempel'         => ['left' => 15.75, 'top' => 63.5, 'width' => 8.5, 'height' => 8.5],
         ],
     ];
 
@@ -346,7 +347,7 @@
             $fields = [
                 ['label' => 'NO. ANGGOTA', 'val_key' => 'nik', 'value' => $member->nik ?? '-'],
                 ['label' => 'NAMA', 'val_key' => 'nama', 'value' => strtoupper($member->nama ?? '-')],
-                ['label' => 'Tempat/Tgl Lahir', 'val_key' => 'ttl', 'value' => strtoupper($member->tempat_lahir ?? '-') . ' ' . $tanggalLahir],
+                ['label' => 'Tempat/Tgl Lahir', 'val_key' => 'ttl', 'value' => $naturalCase($member->tempat_lahir ?? null) . ' ' . $tanggalLahir],
                 ['label' => 'Alamat', 'val_key' => 'alamat', 'value' => $naturalCase($member->alamat ?? null)],
                 ['label' => 'Jenis Kelamin', 'val_key' => 'jk', 'value' => $member->jenis_kelamin ?? '-'],
                 ['label' => 'Agama', 'val_key' => 'agama', 'value' => $member->agama ?? '-'],
@@ -377,6 +378,7 @@
                             font-size:{{ $fieldPositions[$f['val_key']]['font_size'] }}mm;
                             font-weight:bold; color:#000; text-align:left; text-transform:none;
                             letter-spacing: 0.05mm;
+                            padding-left: {{ round(1.2 * $sf, 2) }}mm; text-indent: -{{ round(1.2 * $sf, 2) }}mm;
                             width:{{ $fieldPositions[$f['val_key']]['width'] }}mm;
                             @if($f['val_key'] === 'alamat') line-height: 1.1; @endif">
                     : {!! $displayValue !!}
