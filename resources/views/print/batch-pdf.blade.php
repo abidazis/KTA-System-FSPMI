@@ -167,6 +167,23 @@
             transform-origin: center center;
             -webkit-transform-origin: center center;
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | FLIP VERTIKAL BARIS BAWAH (hanya mode MIRROR)
+        |--------------------------------------------------------------------------
+        | Baris bawah (sisi belakang KTA) di-rotate 180° (scaleX(-1) scaleY(-1)).
+        | Karena berada di dalam scope page-mirror (scaleX(-1)), komposisinya
+        | menghasilkan flip VERTIKAL murni (scaleY(-1)) — persis mirror ke air:
+        | teks terbaca upside-down, urutan kiri-kanan tidak berubah.
+        |--------------------------------------------------------------------------
+        */
+        .row-flip-y {
+            transform: scaleX(-1) scaleY(-1);
+            -webkit-transform: scaleX(-1) scaleY(-1);
+            transform-origin: center center;
+            -webkit-transform-origin: center center;
+        }
     </style>
 </head>
 <body>
@@ -201,7 +218,7 @@
         @endif
     @endforeach
 
-    {{-- ROW 2: 5 KTA BELAKANG berjejer horizontal --}}
+    {{-- ROW 2: 5 KTA BELAKANG berjejer horizontal (di-flip atas-bawah saat mode mirror) --}}
     @foreach([0, 1, 2, 3, 4] as $i)
         @if(isset($pageMembersArray[$i]))
             @php
@@ -215,7 +232,7 @@
                 $stempel_path = $kta['stempel_path'] ?? null;
                 $side = 'back';
             @endphp
-            <div style="position:absolute; left:{{ 5 + $i * 57 }}mm; top:105mm;">
+            <div class="{{ $mirror ? 'row-flip-y' : '' }}" style="position:absolute; left:{{ 5 + $i * 57 }}mm; top:105mm;">
                 @include('print.partials.kta-card-v2')
             </div>
         @endif
