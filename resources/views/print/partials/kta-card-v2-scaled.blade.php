@@ -179,10 +179,10 @@
             'pimpinan_pusat' => ['left' => 2, 'top' => 53, 'font_size' => 1.75, 'width' => 50],
             'label_sekretaris'=> ['left' => 2, 'top' => 61, 'font_size' => 1.75, 'width' => 24],
             'ttd_sekretaris'  => ['left' => 6, 'top' => 64, 'width' => 16, 'height' => 8],
-            'nama_sekretaris' => ['left' => 2, 'top' => 73, 'font_size' => 1.75, 'width' => 24],
+            'nama_sekretaris' => ['left' => 2, 'top' => 73, 'font_size' => 1.5, 'width' => 24],
             'label_ketua'     => ['left' => 28, 'top' => 61, 'font_size' => 1.75, 'width' => 24],
             'ttd_ketua'       => ['left' => 32, 'top' => 64, 'width' => 16, 'height' => 8],
-            'nama_ketua'      => ['left' => 28, 'top' => 73, 'font_size' => 1.75, 'width' => 24],
+            'nama_ketua'      => ['left' => 28, 'top' => 73, 'font_size' => 1.5, 'width' => 24],
             // Stempel organisasi - kotak 1:1 agar tidak lonjong di DomPDF
             // (object-fit tidak didukung DomPDF, jadi rasio harus sama)
             'stempel'         => ['left' => 15.75, 'top' => 63.5, 'width' => 8.5, 'height' => 8.5],

@@ -103,6 +103,11 @@
             overflow: hidden;
         }
 
+        .kta-card-wrapper .kta-field-center {
+            text-align: center;
+            white-space: normal;
+        }
+
         .kta-card-wrapper .kta-photo,
         .kta-card-wrapper .kta-signature,
         .kta-card-wrapper .kta-seal {

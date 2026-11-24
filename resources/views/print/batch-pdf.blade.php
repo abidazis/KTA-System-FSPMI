@@ -88,6 +88,7 @@
 
         .kta-field-center {
             text-align: center;
+            white-space: normal;
         }
 
         .kta-field-center br {
